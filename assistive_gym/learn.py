@@ -1,8 +1,8 @@
 import os, sys, multiprocessing, gym, ray, shutil, argparse, importlib, glob
 import numpy as np
 # from ray.rllib.agents.ppo import PPOTrainer, DEFAULT_CONFIG
-from ray.rllib.agents import ppo
-from ray.rllib.algorithms import sac
+# from ray.rllib.agents import ppo
+from ray.rllib.algorithms import ppo, sac
 from ray.tune.logger import pretty_print
 from numpngw import write_apng
 

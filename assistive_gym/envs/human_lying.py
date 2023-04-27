@@ -59,7 +59,7 @@ def configure_human(human):
     # pose = pose.reshape(165, 1)
 
     # pose = pose.reshape(165, 1)
-    data = load_smpl( os.path.join(os.getcwd(), "examples/data/smpl_bp_ros_smpl_7.pkl"))
+    data = load_smpl( os.path.join(os.getcwd(), "examples/data/smpl_bp_ros_smpl_3.pkl"))
     pose = data["body_pose"]
     joint_pos = unpack_smplx_pose(human, pose)
     human.setup_joints(joint_pos, use_static_joints=False, reactive_force=None)
@@ -133,7 +133,7 @@ def convert_aa_to_euler(aa):
     # print ("mat", mat)
     quats = t3d.matrix_to_quaternion(mat)
     euler = t3d.matrix_to_euler_angles(mat, "XYZ")
-    return aa
+    return euler
 
 def unpack_smplx_pose(human, pose):
     print (pose[smpl_dict.get_pose_ids("right_shoulder")])
@@ -163,17 +163,18 @@ def unpack_smplx_pose(human, pose):
     #              (human.j_left_shoulder_z, -left_shoulder[0]),
     #              (human.j_right_elbow, -right_elbow[1]),
     #              (human.j_left_elbow, left_elbow[1])]
-    #              # (human.j_right_wrist_x, right_wrist[0]),
+    #              # (human.j_right_wrist_x, right_wrist[0]),   
     #              # (human.j_left_wrist_x, left_wrist[0])]
 
-    joint_pos = [(human.j_right_shoulder_x, right_shoulder[2]-np.pi/2.),
-                 (human.j_right_shoulder_y, right_shoulder[0]),
-                 (human.j_right_shoulder_z, -right_shoulder[1]),
+    # print (right_shoulder, left_shoulder    )
+    joint_pos = [(human.j_right_shoulder_x, -right_shoulder[2]-np.pi/2.),
+                 (human.j_right_shoulder_y, -right_shoulder[0]),
+                 (human.j_right_shoulder_z, right_shoulder[1]),
                  (human.j_left_shoulder_x, -left_shoulder[2]+np.pi/2.),
-                 (human.j_left_shoulder_y, left_shoulder[0]),
-                 (human.j_left_shoulder_z, -left_shoulder[1]),
-                 (human.j_right_elbow, -right_elbow[2]),
-                 (human.j_left_elbow, -left_elbow[2])]
+                 (human.j_left_shoulder_y, -left_shoulder[0]),
+                 (human.j_left_shoulder_z, left_shoulder[1]),
+                 (human.j_right_elbow, -right_elbow[1]),
+                 (human.j_left_elbow, left_elbow[1])]
                  # (human.j_right_wrist_x, right_wrist[0]),
                  # (human.j_left_wrist_x, left_wrist[0])]
 
@@ -188,11 +189,11 @@ def unpack_smplx_pose(human, pose):
     #               (human.j_right_knee, right_knee[0])]
 
     joint_pos += [(human.j_left_hip_x, left_hip[0]),
-                  (human.j_left_hip_y, left_hip[1]),
-                  (human.j_left_hip_z, left_hip[2]),
+                  (human.j_left_hip_y, -left_hip[2]),
+                  (human.j_left_hip_z, left_hip[1]),
                   (human.j_right_hip_x, right_hip[0]),
-                  (human.j_right_hip_y, right_hip[1]),
-                  (human.j_right_hip_z, right_hip[2]),
+                  (human.j_right_hip_y, -right_hip[2]),
+                  (human.j_right_hip_z, right_hip[1]),
                   (human.j_left_knee, left_knee[0]),
                   (human.j_right_knee, right_knee[0])]
     print ("left_hip: ", left_hip/np.pi*180, "right_hip: ", right_hip/np.pi*180, "left_knee: ", left_knee/np.pi*180, "right_knee: ", right_knee/np.pi*180)
@@ -208,9 +209,9 @@ def unpack_smplx_pose(human, pose):
     #               (human.j_left_pecs_z, left_collar[2])]
 
     # Head
-    joint_pos += [(human.j_neck, neck[2]),
+    joint_pos += [(human.j_neck,   neck[2]),
                   (human.j_head_x, head[2]),
-                  (human.j_head_y, head[0]),
+                  (human.j_head_y, -head[0]),
                   (human.j_head_z, head[1])]
 
     for i in range(len(joint_pos)):

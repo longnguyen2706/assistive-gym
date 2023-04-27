@@ -162,3 +162,19 @@ sudo apt-get install build-essential zlib1g-dev libffi-dev libssl-dev libbz2-dev
 ```
 - There is backward incompatible change in gym package. To fix it, we need to modify the source code in `/.pyenv/versions/3.7.10/lib/python3.7/site-packages/gym/wrappers/time_limit.py`
 Please refer to https://stackoverflow.com/questions/74060371/gym-super-mario-bros-7-3-0-valueerror-not-enough-values-to-unpack-expected
+
+- Missing installations
+```
+# downgrade protobuf 
+pip3 install protobuf==3.20.*
+
+
+pip3 install pytorch3
+
+pip3 install opencv-python
+
+pip3 install matplotlib
+
+pip3 install chumpy
+
+```
