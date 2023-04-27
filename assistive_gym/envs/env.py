@@ -199,7 +199,9 @@ class AssistiveEnv(gym.Env):
                     print('Received agent actions of length %d does not match expected action length of %d' % (len(action), agent_action_len))
                     exit()
             # Append the new action to the current measured joint angles
+        
             agent_joint_angles = agent.get_joint_angles(agent.controllable_joint_indices)
+            # print ("agent_joint_angles: ", agent_joint_angles )
             # Update the target robot/human joint angles based on the proposed action and joint limits
             for _ in range(self.frame_skip):
                 if needs_action:
