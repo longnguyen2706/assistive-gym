@@ -1,0 +1,104 @@
+digraph G {
+node [shape=box];
+"torso" [label="torso"];
+"link1_2" [label="link1_2"];
+"link1_3" [label="link1_3"];
+"lwaist" [label="lwaist"];
+"link1_5" [label="link1_5"];
+"pelvis" [label="pelvis"];
+"link1_16" [label="link1_16"];
+"link1_17" [label="link1_17"];
+"link1_18" [label="link1_18"];
+"left_thigh" [label="left_thigh"];
+"link1_20" [label="link1_20"];
+"left_shin" [label="left_shin"];
+"link1_22" [label="link1_22"];
+"link1_23" [label="link1_23"];
+"left_foot" [label="left_foot"];
+"link1_7" [label="link1_7"];
+"link1_8" [label="link1_8"];
+"link1_9" [label="link1_9"];
+"right_thigh" [label="right_thigh"];
+"link1_11" [label="link1_11"];
+"right_shin" [label="right_shin"];
+"link1_13" [label="link1_13"];
+"link1_14" [label="link1_14"];
+"right_foot" [label="right_foot"];
+"link1_30" [label="link1_30"];
+"link1_31" [label="link1_31"];
+"left_upper_arm" [label="left_upper_arm"];
+"link1_33" [label="link1_33"];
+"left_lower_arm" [label="left_lower_arm"];
+"link1_25" [label="link1_25"];
+"link1_26" [label="link1_26"];
+"right_upper_arm" [label="right_upper_arm"];
+"link1_28" [label="link1_28"];
+"right_lower_arm" [label="right_lower_arm"];
+node [shape=ellipse, color=blue, fontcolor=blue];
+"torso" -> "abdomen_z" [label="xyz: -0.01026 0 -0.195 \nrpy: 0 -0.004 0"]
+"abdomen_z" -> "link1_2"
+"link1_2" -> "abdomen_y" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"abdomen_y" -> "link1_3"
+"link1_3" -> "jointfix_7_3" [label="xyz: 0 0 -0.065 \nrpy: 0 -0 0"]
+"jointfix_7_3" -> "lwaist"
+"lwaist" -> "abdomen_x" [label="xyz: -0.0004 0 -0.065 \nrpy: 0 -0.004 0"]
+"abdomen_x" -> "link1_5"
+"link1_5" -> "jointfix_6_5" [label="xyz: 0 0 -0.1 \nrpy: 0 -0 0"]
+"jointfix_6_5" -> "pelvis"
+"pelvis" -> "left_hip_x" [label="xyz: 0 0.1 -0.04 \nrpy: 0 -0 0"]
+"left_hip_x" -> "link1_16"
+"link1_16" -> "left_hip_z" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"left_hip_z" -> "link1_17"
+"link1_17" -> "left_hip_y" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"left_hip_y" -> "link1_18"
+"link1_18" -> "jointfix_5_18" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"jointfix_5_18" -> "left_thigh"
+"left_thigh" -> "left_knee" [label="xyz: 0 -0.01 -0.383 \nrpy: 0 -0 0"]
+"left_knee" -> "link1_20"
+"link1_20" -> "jointfix_4_20" [label="xyz: 0 0 -0.02 \nrpy: 0 -0 0"]
+"jointfix_4_20" -> "left_shin"
+"left_shin" -> "left_ankle_y" [label="xyz: 0 0 -0.31 \nrpy: 0 -0 0"]
+"left_ankle_y" -> "link1_22"
+"link1_22" -> "left_ankle_x" [label="xyz: 0 0 -0.04 \nrpy: 0 -0 0"]
+"left_ankle_x" -> "link1_23"
+"link1_23" -> "jointfix_3_23" [label="xyz: 0 0 -0.08 \nrpy: 0 -0 0"]
+"jointfix_3_23" -> "left_foot"
+"pelvis" -> "right_hip_x" [label="xyz: 0 -0.1 -0.04 \nrpy: 0 -0 0"]
+"right_hip_x" -> "link1_7"
+"link1_7" -> "right_hip_z" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"right_hip_z" -> "link1_8"
+"link1_8" -> "right_hip_y" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"right_hip_y" -> "link1_9"
+"link1_9" -> "jointfix_2_9" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"jointfix_2_9" -> "right_thigh"
+"right_thigh" -> "right_knee" [label="xyz: 0 0.01 -0.383 \nrpy: 0 -0 0"]
+"right_knee" -> "link1_11"
+"link1_11" -> "jointfix_1_11" [label="xyz: 0 0 -0.02 \nrpy: 0 -0 0"]
+"jointfix_1_11" -> "right_shin"
+"right_shin" -> "right_ankle_y" [label="xyz: 0 0 -0.31 \nrpy: 0 -0 0"]
+"right_ankle_y" -> "link1_13"
+"link1_13" -> "right_ankle_x" [label="xyz: 0 0 -0.04 \nrpy: 0 -0 0"]
+"right_ankle_x" -> "link1_14"
+"link1_14" -> "jointfix_0_14" [label="xyz: 0 0 -0.08 \nrpy: 0 -0 0"]
+"jointfix_0_14" -> "right_foot"
+"torso" -> "left_shoulder1" [label="xyz: 0 0.17 0.06 \nrpy: 0 -0 0"]
+"left_shoulder1" -> "link1_30"
+"link1_30" -> "left_shoulder2" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"left_shoulder2" -> "link1_31"
+"link1_31" -> "jointfix_11_31" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"jointfix_11_31" -> "left_upper_arm"
+"left_upper_arm" -> "left_elbow" [label="xyz: 0.18 0.18 -0.18 \nrpy: 0 -0 0"]
+"left_elbow" -> "link1_33"
+"link1_33" -> "jointfix_10_33" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"jointfix_10_33" -> "left_lower_arm"
+"torso" -> "right_shoulder1" [label="xyz: 0 -0.17 0.06 \nrpy: 0 -0 0"]
+"right_shoulder1" -> "link1_25"
+"link1_25" -> "right_shoulder2" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"right_shoulder2" -> "link1_26"
+"link1_26" -> "jointfix_9_26" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"jointfix_9_26" -> "right_upper_arm"
+"right_upper_arm" -> "right_elbow" [label="xyz: 0.18 -0.18 -0.18 \nrpy: 0 -0 0"]
+"right_elbow" -> "link1_28"
+"link1_28" -> "jointfix_8_28" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"jointfix_8_28" -> "right_lower_arm"
+}

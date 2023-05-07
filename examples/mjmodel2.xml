@@ -1,0 +1,289 @@
+<mujoco model="humanoid">
+    <compiler angle="radian" />
+    <option timestep="0.00222222" />
+    <size njmax="2500" nconmax="500" />
+    <visual>
+        <quality shadowsize="2048" />
+        <headlight ambient="0.4 0.4 0.4" diffuse="0.8 0.8 0.8" specular="0.1 0.1 0.1" />
+    </visual>
+    <statistic extent="3" center="0 0 1" />
+    <default class="main">
+        <joint limited="true" armature="0.01" />
+        <geom contype="7" condim="1" margin="0.001" rgba="0.8 0.6 0.4 1" />
+    </default>
+    <asset>
+        <texture type="skybox" builtin="gradient" rgb1="0.4 0.5 0.6" rgb2="0 0 0" width="100" height="600" />
+        <texture type="cube" name="texgeom" builtin="flat" mark="cross" rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" markrgb="1 1 1" width="127" height="762" />
+        <texture type="2d" name="texplane" builtin="checker" rgb1="0 0 0" rgb2="0.8 0.8 0.8" width="100" height="100" />
+        <material name="MatPlane" texture="texplane" texrepeat="60 60" specular="1" shininess="1" reflectance="0.5" />
+        <material name="geom" texture="texgeom" texuniform="true" />
+        <mesh name="Pelvis" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/Pelvis.stl" />
+        <mesh name="L_Hip" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/L_Hip.stl" />
+        <mesh name="R_Hip" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/R_Hip.stl" />
+        <mesh name="Torso" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/Torso.stl" />
+        <mesh name="L_Knee" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/L_Knee.stl" />
+        <mesh name="R_Knee" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/R_Knee.stl" />
+        <mesh name="Spine" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/Spine.stl" />
+        <mesh name="L_Ankle" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/L_Ankle.stl" />
+        <mesh name="R_Ankle" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/R_Ankle.stl" />
+        <mesh name="Chest" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/Chest.stl" />
+        <mesh name="L_Toe" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/L_Toe.stl" />
+        <mesh name="R_Toe" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/R_Toe.stl" />
+        <mesh name="Neck" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/Neck.stl" />
+        <mesh name="L_Thorax" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/L_Thorax.stl" />
+        <mesh name="R_Thorax" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/R_Thorax.stl" />
+        <mesh name="Head" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/Head.stl" />
+        <mesh name="L_Shoulder" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/L_Shoulder.stl" />
+        <mesh name="R_Shoulder" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/R_Shoulder.stl" />
+        <mesh name="L_Elbow" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/L_Elbow.stl" />
+        <mesh name="R_Elbow" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/R_Elbow.stl" />
+        <mesh name="L_Wrist" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/L_Wrist.stl" />
+        <mesh name="R_Wrist" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/R_Wrist.stl" />
+        <mesh name="L_Hand" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/L_Hand.stl" />
+        <mesh name="R_Hand" file="/home/louis/Documents/Projects/UniversalHumanoidControl/assets/mujoco_models/geom/R_Hand.stl" />
+    </asset>
+    <worldbody>
+        <geom name="floor" size="100 100 0.2" type="plane" condim="3" material="MatPlane" rgba="0.8 0.9 0.8 1" />
+        <body name="Pelvis" pos="-0.0022 -0.2408 0.0286">
+            <inertial pos="0.00109778 0.00761155 -0.0179998" quat="0.640625 0.306665 0.629449 0.315198" mass="14.892" diaginertia="0.184042 0.164466 0.124611" />
+        
+            <geom pos="0.0022 0.2408 -0.0286" type="mesh" contype="1" mesh="Pelvis" />
+            <body name="L_Hip" pos="0.0586 -0.0823 -0.0177">
+                <inertial pos="0.032008 -0.141224 0.0141257" quat="0.658929 0.73694 0.0955172 -0.116657" mass="8.0093" diaginertia="0.0900893 0.0864781 0.0327751" />
+                <joint type="revolute" name="L_Hip_z" pos="0 0 0" axis="0 0 1" range="-3.14159 3.14159" />
+                <joint type="revolute" name="L_Hip_y" pos="0 0 0" axis="0 1 0" range="-3.14159 3.14159" />
+                <joint type="revolute" name="L_Hip_x" pos="0 0 0" axis="1 0 0" range="-3.14159 3.14159" />
+                <geom pos="-0.0564 0.3231 -0.0109" type="mesh" contype="1" mesh="L_Hip" />
+                <body name="L_Knee" pos="0.0435 -0.3864 0.0081">
+                    <inertial pos="-0.00497998 -0.13064 -0.0387141" quat="0.675513 0.731031 -0.0657878 0.0703459" mass="3.47983" diaginertia="0.0386011 0.0377553 0.00584979" />
+                    <joint type="revolute" name="L_Knee_z" pos="0 0 0" axis="0 0 1" range="-0.19635 0.19635" />
+                    <joint type="revolute" name="L_Knee_y" pos="0 0 0" axis="0 1 0" range="-0.19635 0.19635" />
+                    <joint type="revolute" name="L_Knee_x" pos="0 0 0" axis="1 0 0" range="-0.19635 3.14159" />
+                    <geom pos="-0.0999 0.7095 -0.019" type="mesh" contype="1" mesh="L_Knee" />
+                    <body name="L_Ankle" pos="-0.0148 -0.4269 -0.0375">
+                        <inertial pos="0.0178654 0.0162214 0.018274" quat="0.926645 0.0881038 0.00882314 0.365361" mass="0.66438" diaginertia="0.00138891 0.00128652 0.000539495" />
+                        <joint type="revolute" name="L_Ankle_z" pos="0 0 0" axis="0 0 1" range="-1.5708 1.5708" />
+                        <joint type="revolute" name="L_Ankle_y" pos="0 0 0" axis="0 1 0" range="-1.5708 1.5708" />
+                        <joint type="revolute" name="L_Ankle_x" pos="0 0 0" axis="1 0 0" range="-1.5708 1.5708" />
+                        <geom pos="-0.0851 1.1364 0.0185" type="mesh" contype="1" mesh="L_Ankle" />
+                        <body name="L_Toe" pos="0.041 -0.0603 0.1221">
+                            <inertial pos="-0.0204402 0.0512076 0.00683566" quat="0.250159 0.697103 0.592608 0.316678" mass="0.163854" diaginertia="0.000165516 0.000115589 7.14179e-05" />
+                            <joint type="revolute" name="L_Toe_z" pos="0 0 0" axis="0 0 1" range="-0.785398 0.785398" />
+                            <joint type="revolute" name="L_Toe_y" pos="0 0 0" axis="0 1 0" range="-0.785398 0.785398" />
+                            <joint type="revolute" name="L_Toe_x" pos="0 0 0" axis="1 0 0" range="-1.5708 1.5708" />
+                            <geom pos="-0.1261 1.1967 -0.1036" type="mesh" contype="1" mesh="L_Toe" />
+                        </body>
+                    </body>
+                </body>
+            </body>
+            <body name="R_Hip" pos="-0.0603 -0.0905 -0.0136">
+                <inertial pos="-0.0299918 -0.13622 0.00768488" quat="0.662161 0.744407 -0.0422222 0.0749544" mass="7.82704" diaginertia="0.0865649 0.0836359 0.0314436" />
+                <joint type="revolute" name="R_Hip_z" pos="0 0 0" axis="0 0 1" range="-3.14159 3.14159" />
+                <joint type="revolute" name="R_Hip_y" pos="0 0 0" axis="0 1 0" range="-3.14159 3.14159" />
+                <joint type="revolute" name="R_Hip_x" pos="0 0 0" axis="1 0 0" range="-3.14159 3.14159" />
+                <geom pos="0.0625 0.3313 -0.015" type="mesh" contype="1" mesh="R_Hip" />
+                <body name="R_Knee" pos="-0.0432 -0.3837 -0.0048">
+                    <inertial pos="0.00789359 -0.125549 -0.0323828" quat="0.681796 0.730386 0.0243563 -0.0331275" mass="3.49046" diaginertia="0.0385585 0.0377946 0.00588399" />
+                    <joint type="revolute" name="R_Knee_z" pos="0 0 0" axis="0 0 1" range="-0.19635 0.19635" />
+                    <joint type="revolute" name="R_Knee_y" pos="0 0 0" axis="0 1 0" range="-0.19635 0.19635" />
+                    <joint type="revolute" name="R_Knee_x" pos="0 0 0" axis="1 0 0" range="-0.19635 3.14159" />
+                    <geom pos="0.1057 0.715 -0.0102" type="mesh" contype="1" mesh="R_Knee" />
+                    <body name="R_Ankle" pos="0.019 -0.42 -0.0346">
+                        <inertial pos="-0.0181083 0.0149275 0.0257761" quat="0.935419 0.094003 -0.00902153 -0.340697" mass="0.677256" diaginertia="0.00146931 0.00136329 0.000547661" />
+                        <joint type="revolute" name="R_Ankle_z" pos="0 0 0" axis="0 0 1" range="-1.5708 1.5708" />
+                        <joint type="revolute" name="R_Ankle_y" pos="0 0 0" axis="0 1 0" range="-1.5708 1.5708" />
+                        <joint type="revolute" name="R_Ankle_x" pos="0 0 0" axis="1 0 0" range="-1.5708 1.5708" />
+                        <geom pos="0.0867 1.135 0.0244" type="mesh" contype="1" mesh="R_Ankle" />
+                        <body name="R_Toe" pos="-0.0348 -0.0621 0.1304">
+                            <inertial pos="0.014355 0.0504851 0.00651341" quat="0.578315 0.316951 0.249966 0.70895" mass="0.169479" diaginertia="0.000170655 0.000117185 7.70023e-05" />
+                            <joint type="revolute" name="R_Toe_z" pos="0 0 0" axis="0 0 1" range="-0.785398 0.785398" />
+                            <joint type="revolute" name="R_Toe_y" pos="0 0 0" axis="0 1 0" range="-0.785398 0.785398" />
+                            <joint type="revolute" name="R_Toe_x" pos="0 0 0" axis="1 0 0" range="-1.5708 1.5708" />
+                            <geom pos="0.1215 1.1971 -0.106" type="mesh" contype="1" mesh="R_Toe" />
+                        </body>
+                    </body>
+                </body>
+            </body>
+            <body name="Torso" pos="0.0045 0.1244 -0.0384">
+                <inertial pos="-0.00411764 0.053655 0.0416336" quat="0.487585 0.507239 0.419974 0.573228" mass="5.66475" diaginertia="0.0523972 0.0335851 0.0287335" />
+                <joint type="revolute" name="Torso_z" pos="0 0 0" axis="0 0 1" range="-3.14159 3.14159" />
+                <joint type="revolute" name="Torso_y" pos="0 0 0" axis="0 1 0" range="-3.14159 3.14159" />
+                <joint type="revolute" name="Torso_x" pos="0 0 0" axis="1 0 0" range="-3.14159 3.14159" />
+                <geom pos="-0.0023 0.1164 0.0098" type="mesh" contype="1" mesh="Torso" />
+                <body name="Spine" pos="0.0045 0.138 0.0268">
+                    <inertial pos="-0.00528583 0.0138479 0.017869" quat="0.536658 0.45864 0.505488 0.496115" mass="5.35434" diaginertia="0.0542917 0.0371168 0.0244827" />
+                    <joint type="revolute" name="Spine_z" pos="0 0 0" axis="0 0 1" range="-3.14159 3.14159" />
+                    <joint type="revolute" name="Spine_y" pos="0 0 0" axis="0 1 0" range="-3.14159 3.14159" />
+                    <joint type="revolute" name="Spine_x" pos="0 0 0" axis="1 0 0" range="-3.14159 3.14159" />
+                    <geom pos="-0.0068 -0.0216 -0.017" type="mesh" contype="1" mesh="Spine" />
+                    <body name="Chest" pos="-0.0023 0.056 0.0029">
+                        <inertial pos="-0.00395801 0.0759356 -0.0264724" quat="0.17589 0.67982 0.185977 0.687256" mass="12.5222" diaginertia="0.144752 0.139866 0.0845494" />
+                        <joint type="revolute" name="Chest_z" pos="0 0 0" axis="0 0 1" range="-3.14159 3.14159" />
+                        <joint type="revolute" name="Chest_y" pos="0 0 0" axis="0 1 0" range="-3.14159 3.14159" />
+                        <joint type="revolute" name="Chest_x" pos="0 0 0" axis="1 0 0" range="-3.14159 3.14159" />
+                        <geom pos="-0.0045 -0.0776 -0.0199" type="mesh" contype="1" mesh="Chest" />
+                        <body name="Neck" pos="-0.0134 0.2116 -0.0335">
+                            <inertial pos="0.00950752 0.0246441 0.0172888" quat="0.676806 0.163263 0.0197524 0.717557" mass="0.600898" diaginertia="0.00104283 0.000709549 0.000667349" />
+                            <joint type="revolute" name="Neck_z" pos="0 0 0" axis="0 0 1" range="-3.14159 3.14159" />
+                            <joint type="revolute" name="Neck_y" pos="0 0 0" axis="0 1 0" range="-3.14159 3.14159" />
+                            <joint type="revolute" name="Neck_x" pos="0 0 0" axis="1 0 0" range="-3.14159 3.14159" />
+                            <geom pos="0.0089 -0.2892 0.0136" type="mesh" contype="1" mesh="Neck" />
+                            <body name="Head" pos="0.0101 0.089 0.0504">
+                                <inertial pos="-0.000565019 0.0628434 -0.0172264" quat="0.885539 0.464124 0.00988257 -0.0176626" mass="3.83607" diaginertia="0.019512 0.0170738 0.0129998" />
+                                <joint type="revolute" name="Head_z" pos="0 0 0" axis="0 0 1" range="-3.14159 3.14159" />
+                                <joint type="revolute" name="Head_y" pos="0 0 0" axis="0 1 0" range="-3.14159 3.14159" />
+                                <joint type="revolute" name="Head_x" pos="0 0 0" axis="1 0 0" range="-3.14159 3.14159" />
+                                <geom pos="-0.0012 -0.3782 -0.0368" type="mesh" contype="1" mesh="Head" />
+                            </body>
+                        </body>
+                        <body name="L_Thorax" pos="0.0717 0.114 -0.0189">
+                            <inertial pos="0.0684647 0.033064 -0.0290117" quat="0.929033 -0.0462697 0.179572 0.320172" mass="1.07144" diaginertia="0.0027081 0.0021015 0.00153829" />
+                            <joint type="revolute" name="L_Thorax_z" pos="0 0 0" axis="0 0 1" range="-3.14159 3.14159" />
+                            <joint type="revolute" name="L_Thorax_y" pos="0 0 0" axis="0 1 0" range="-3.14159 3.14159" />
+                            <joint type="revolute" name="L_Thorax_x" pos="0 0 0" axis="1 0 0" range="-3.14159 3.14159" />
+                            <geom pos="-0.0762 -0.1916 -0.001" type="mesh" contype="1" mesh="L_Thorax" />
+                            <body name="L_Shoulder" pos="0.1229 0.0452 -0.0191">
+                                <inertial pos="0.0935959 -0.024641 -0.00520118" quat="-0.167516 0.709617 -0.15242 0.667196" mass="1.84853" diaginertia="0.00876722 0.00839157 0.00265123" />
+                                <joint type="revolute" name="L_Shoulder_z" pos="0 0 0" axis="0 0 1" range="-3.14159 3.14159" />
+                                <joint type="revolute" name="L_Shoulder_y" pos="0 0 0" axis="0 1 0" range="-3.14159 3.14159" />
+                                <joint type="revolute" name="L_Shoulder_x" pos="0 0 0" axis="1 0 0" range="-3.14159 3.14159" />
+                                <geom pos="-0.1991 -0.2368 0.0181" type="mesh" contype="1" mesh="L_Shoulder" />
+                                <body name="L_Elbow" pos="0.2553 -0.0156 -0.0229">
+                                    <inertial pos="0.0797123 -0.000701381 0.00451142" quat="-0.146759 0.70936 -0.13357 0.676335" mass="1.01367" diaginertia="0.00516875 0.00507681 0.000727339" />
+                                    <joint type="revolute" name="L_Elbow_z" pos="0 0 0" axis="0 0 1" range="-12.5664 12.5664" />
+                                    <joint type="revolute" name="L_Elbow_y" pos="0 0 0" axis="0 1 0" range="-12.5664 12.5664" />
+                                    <joint type="revolute" name="L_Elbow_x" pos="0 0 0" axis="1 0 0" range="-12.5664 12.5664" />
+                                    <geom pos="-0.4544 -0.2212 0.041" type="mesh" contype="1" mesh="L_Elbow" />
+                                    <body name="L_Wrist" pos="0.2658 0.0127 -0.0074">
+                                        <inertial pos="0.014695 -0.0213008 0.0198232" quat="0.697613 0.261618 0.185984 0.640548" mass="0.292256" diaginertia="0.000398972 0.000312583 0.000159163" />
+                                        <joint type="revolute" name="L_Wrist_z" pos="0 0 0" axis="0 0 1" range="-3.14159 3.14159" />
+                                        <joint type="revolute" name="L_Wrist_y" pos="0 0 0" axis="0 1 0" range="-3.14159 3.14159" />
+                                        <joint type="revolute" name="L_Wrist_x" pos="0 0 0" axis="1 0 0" range="-3.14159 3.14159" />
+                                        <geom pos="-0.7202 -0.2339 0.0484" type="mesh" contype="1" mesh="L_Wrist" />
+                                        <body name="L_Hand" pos="0.0866 -0.0107 -0.0156">
+                                            <inertial pos="0.00346402 -0.00913941 0.00702865" quat="0.640867 0.289461 0.351604 0.617961" mass="0.154982" diaginertia="0.000198571 0.000124878 8.46402e-05" />
+                                            <joint type="revolute" name="L_Hand_z" pos="0 0 0" axis="0 0 1" range="-3.14159 3.14159" />
+                                            <joint type="revolute" name="L_Hand_y" pos="0 0 0" axis="0 1 0" range="-3.14159 3.14159" />
+                                            <joint type="revolute" name="L_Hand_x" pos="0 0 0" axis="1 0 0" range="-3.14159 3.14159" />
+                                            <geom pos="-0.8068 -0.2232 0.064" type="mesh" contype="1" mesh="L_Hand" />
+                                        </body>
+                                    </body>
+                                </body>
+                            </body>
+                        </body>
+                        <body name="R_Thorax" pos="-0.083 0.1125 -0.0237">
+                            <inertial pos="-0.0636111 0.0328594 -0.0249942" quat="0.923892 -0.0610014 -0.1588 -0.34276" mass="1.05329" diaginertia="0.00261381 0.00202201 0.00150592" />
+                            <joint type="revolute" name="R_Thorax_z" pos="0 0 0" axis="0 0 1" range="-3.14159 3.14159" />
+                            <joint type="revolute" name="R_Thorax_y" pos="0 0 0" axis="0 1 0" range="-3.14159 3.14159" />
+                            <joint type="revolute" name="R_Thorax_x" pos="0 0 0" axis="1 0 0" range="-3.14159 3.14159" />
+                            <geom pos="0.0785 -0.1901 0.0038" type="mesh" contype="1" mesh="R_Thorax" />
+                            <body name="R_Shoulder" pos="-0.1132 0.0468 -0.0085">
+                                <inertial pos="-0.0988981 -0.0261444 -0.0123907" quat="-0.134275 0.669211 -0.148587 0.715576" mass="1.94592" diaginertia="0.00932795 0.00899778 0.00291384" />
+                                <joint type="revolute" name="R_Shoulder_z" pos="0 0 0" axis="0 0 1" range="-3.14159 3.14159" />
+                                <joint type="revolute" name="R_Shoulder_y" pos="0 0 0" axis="0 1 0" range="-3.14159 3.14159" />
+                                <joint type="revolute" name="R_Shoulder_x" pos="0 0 0" axis="1 0 0" range="-3.14159 3.14159" />
+                                <geom pos="0.1917 -0.2369 0.0123" type="mesh" contype="1" mesh="R_Shoulder" />
+                                <body name="R_Elbow" pos="-0.2601 -0.0143 -0.0313">
+                                    <inertial pos="-0.0821824 -0.00355565 0.00541132" quat="-0.103335 0.682614 -0.112827 0.714584" mass="1.04934" diaginertia="0.00531593 0.00525045 0.000778514" />
+                                    <joint type="revolute" name="R_Elbow_z" pos="0 0 0" axis="0 0 1" range="-12.5664 12.5664" />
+                                    <joint type="revolute" name="R_Elbow_y" pos="0 0 0" axis="0 1 0" range="-12.5664 12.5664" />
+                                    <joint type="revolute" name="R_Elbow_x" pos="0 0 0" axis="1 0 0" range="-12.5664 12.5664" />
+                                    <geom pos="0.4518 -0.2226 0.0436" type="mesh" contype="1" mesh="R_Elbow" />
+                                    <body name="R_Wrist" pos="-0.2691 0.0068 -0.006">
+                                        <inertial pos="-0.0136442 -0.0200153 0.0197851" quat="0.646657 -0.162657 -0.263747 0.697004" mass="0.308997" diaginertia="0.00043767 0.000337135 0.000178858" />
+                                        <joint type="revolute" name="R_Wrist_z" pos="0 0 0" axis="0 0 1" range="-3.14159 3.14159" />
+                                        <joint type="revolute" name="R_Wrist_y" pos="0 0 0" axis="0 1 0" range="-3.14159 3.14159" />
+                                        <joint type="revolute" name="R_Wrist_x" pos="0 0 0" axis="1 0 0" range="-3.14159 3.14159" />
+                                        <geom pos="0.7209 -0.2294 0.0496" type="mesh" contype="1" mesh="R_Wrist" />
+                                        <body name="R_Hand" pos="-0.0888 -0.0087 -0.0101">
+                                            <inertial pos="-0.000364543 -0.00885471 0.00131959" quat="0.330208 0.631451 0.648463 0.26782" mass="0.159211" diaginertia="0.00020301 0.000124491 9.03447e-05" />
+                                            <joint type="revolute" name="R_Hand_z" pos="0 0 0" axis="0 0 1" range="-3.14159 3.14159" />
+                                            <joint type="revolute" name="R_Hand_y" pos="0 0 0" axis="0 1 0" range="-3.14159 3.14159" />
+                                            <joint type="revolute" name="R_Hand_x" pos="0 0 0" axis="1 0 0" range="-3.14159 3.14159" />
+                                            <geom pos="0.8097 -0.2207 0.0597" type="mesh" contype="1" mesh="R_Hand" />
+                                        </body>
+                                    </body>
+                                </body>
+                            </body>
+                        </body>
+                    </body>
+                </body>
+            </body>
+        </body>
+    </worldbody>
+    <contact>
+        <exclude name="add01" body1="Chest" body2="L_Shoulder" />
+        <exclude name="add02" body1="Chest" body2="R_Shoulder" />
+    </contact>
+    <actuator>
+        <general name="L_Hip_z" joint="L_Hip_z" />
+        <general name="L_Hip_y" joint="L_Hip_y" />
+        <general name="L_Hip_x" joint="L_Hip_x" />
+        <general name="L_Knee_z" joint="L_Knee_z" />
+        <general name="L_Knee_y" joint="L_Knee_y" />
+        <general name="L_Knee_x" joint="L_Knee_x" />
+        <general name="L_Ankle_z" joint="L_Ankle_z" />
+        <general name="L_Ankle_y" joint="L_Ankle_y" />
+        <general name="L_Ankle_x" joint="L_Ankle_x" />
+        <general name="L_Toe_z" joint="L_Toe_z" />
+        <general name="L_Toe_y" joint="L_Toe_y" />
+        <general name="L_Toe_x" joint="L_Toe_x" />
+        <general name="R_Hip_z" joint="R_Hip_z" />
+        <general name="R_Hip_y" joint="R_Hip_y" />
+        <general name="R_Hip_x" joint="R_Hip_x" />
+        <general name="R_Knee_z" joint="R_Knee_z" />
+        <general name="R_Knee_y" joint="R_Knee_y" />
+        <general name="R_Knee_x" joint="R_Knee_x" />
+        <general name="R_Ankle_z" joint="R_Ankle_z" />
+        <general name="R_Ankle_y" joint="R_Ankle_y" />
+        <general name="R_Ankle_x" joint="R_Ankle_x" />
+        <general name="R_Toe_z" joint="R_Toe_z" />
+        <general name="R_Toe_y" joint="R_Toe_y" />
+        <general name="R_Toe_x" joint="R_Toe_x" />
+        <general name="Torso_z" joint="Torso_z" />
+        <general name="Torso_y" joint="Torso_y" />
+        <general name="Torso_x" joint="Torso_x" />
+        <general name="Spine_z" joint="Spine_z" />
+        <general name="Spine_y" joint="Spine_y" />
+        <general name="Spine_x" joint="Spine_x" />
+        <general name="Chest_z" joint="Chest_z" />
+        <general name="Chest_y" joint="Chest_y" />
+        <general name="Chest_x" joint="Chest_x" />
+        <general name="Neck_z" joint="Neck_z" />
+        <general name="Neck_y" joint="Neck_y" />
+        <general name="Neck_x" joint="Neck_x" />
+        <general name="Head_z" joint="Head_z" />
+        <general name="Head_y" joint="Head_y" />
+        <general name="Head_x" joint="Head_x" />
+        <general name="L_Thorax_z" joint="L_Thorax_z" />
+        <general name="L_Thorax_y" joint="L_Thorax_y" />
+        <general name="L_Thorax_x" joint="L_Thorax_x" />
+        <general name="L_Shoulder_z" joint="L_Shoulder_z" />
+        <general name="L_Shoulder_y" joint="L_Shoulder_y" />
+        <general name="L_Shoulder_x" joint="L_Shoulder_x" />
+        <general name="L_Elbow_z" joint="L_Elbow_z" />
+        <general name="L_Elbow_y" joint="L_Elbow_y" />
+        <general name="L_Elbow_x" joint="L_Elbow_x" />
+        <general name="L_Wrist_z" joint="L_Wrist_z" />
+        <general name="L_Wrist_y" joint="L_Wrist_y" />
+        <general name="L_Wrist_x" joint="L_Wrist_x" />
+        <general name="L_Hand_z" joint="L_Hand_z" />
+        <general name="L_Hand_y" joint="L_Hand_y" />
+        <general name="L_Hand_x" joint="L_Hand_x" />
+        <general name="R_Thorax_z" joint="R_Thorax_z" />
+        <general name="R_Thorax_y" joint="R_Thorax_y" />
+        <general name="R_Thorax_x" joint="R_Thorax_x" />
+        <general name="R_Shoulder_z" joint="R_Shoulder_z" />
+        <general name="R_Shoulder_y" joint="R_Shoulder_y" />
+        <general name="R_Shoulder_x" joint="R_Shoulder_x" />
+        <general name="R_Elbow_z" joint="R_Elbow_z" />
+        <general name="R_Elbow_y" joint="R_Elbow_y" />
+        <general name="R_Elbow_x" joint="R_Elbow_x" />
+        <general name="R_Wrist_z" joint="R_Wrist_z" />
+        <general name="R_Wrist_y" joint="R_Wrist_y" />
+        <general name="R_Wrist_x" joint="R_Wrist_x" />
+        <general name="R_Hand_z" joint="R_Hand_z" />
+        <general name="R_Hand_y" joint="R_Hand_y" />
+        <general name="R_Hand_x" joint="R_Hand_x" />
+    </actuator>
+</mujoco>

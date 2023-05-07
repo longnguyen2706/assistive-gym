@@ -10,4 +10,5 @@ from assistive_gym.envs.human_testing import HumanTestingEnv
 from assistive_gym.envs.smplx_testing import SMPLXTestingEnv
 from assistive_gym.envs.human_resting import HumanRestingEnv
 from assistive_gym.envs.human_lying import HumanLyingEnv
+from assistive_gym.envs.human_lying2 import HumanLying2Env
 

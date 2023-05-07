@@ -20,13 +20,14 @@ from torch import tensor
 # human_controllable_joint_indices = human.motion_right_arm_joints
 smpl_dict = SMPLDict()
 # join all lists
-controllable_joints = (
-    human.right_arm_joints
-    + human.left_arm_joints
-    + human.right_leg_joints
-    + human.left_leg_joints
-    + human.head_joints
-)
+# controllable_joints = (
+#     human.right_arm_joints
+#     + human.left_arm_joints
+#     + human.right_leg_joints
+#     + human.left_leg_joints
+#     + human.head_joints
+# )
+controllable_joints = [0,1]
 
 def load_smpl(filename):
     with open(filename, "rb") as handle:
