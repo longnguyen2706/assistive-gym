@@ -137,7 +137,7 @@ class HumanMesh(Agent):
         # out_mesh.apply_transform(scale)
         # rot = trimesh.transformations.rotation_matrix(np.deg2rad(90), [1, 0, 0])
         # out_mesh.apply_transform(rot)
-
+        out_mesh.show()
         return out_mesh, vertices, joints
 
     def init(self, directory, id, np_random, gender='female', height=None, body_shape=None, joint_angles=[], position=[0, 0, 0], orientation=[0, 0, 0], skin_color='random', specular_color=[0.1, 0.1, 0.1], body_pose=None, out_mesh=None, vertices=None, joints=None):
@@ -156,7 +156,8 @@ class HumanMesh(Agent):
             self.right_arm_vertex_indices = np.loadtxt(os.path.join(model_folder, 'right_arm_vertex_indices.csv'), delimiter=',', dtype=np.int)
 
         # Load mesh into environment
-        with tempfile.NamedTemporaryFile(suffix='.obj') as f:
+        with tempfile.NamedTemporaryFile(suffix='.obj', delete=False) as f:
+            print ("obj file:", f.name)
             out_mesh.export(f.name)
             human_visual = p.createVisualShape(shapeType=p.GEOM_MESH, fileName=f.name, meshScale=1.0, rgbaColor=self.skin_color, specularColor=specular_color, physicsClientId=id)
             human_collision = p.createCollisionShape(shapeType=p.GEOM_MESH, fileName=f.name, meshScale=1.0, flags=p.GEOM_FORCE_CONCAVE_TRIMESH, physicsClientId=id)

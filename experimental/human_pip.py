@@ -1,3 +1,4 @@
+import colorsys
 import os
 import pickle
 
@@ -22,7 +23,7 @@ def change_color(id_robot, color):
     :param color: Vector4 for rgba.
     """
     for j in range(p.getNumJoints(id_robot)):
-        p.changeVisualShape(id_robot, j, rgbaColor=color)
+        p.changeVisualShape(id_robot, j, rgbaColor=color, specularColor=[0.1, 0.1, 0.1])
 
 def load_smpl(filename):
     with open(filename, "rb") as handle:
@@ -58,66 +59,72 @@ def euler_convert_np(q, from_seq='XYZ', to_seq='XYZ'):
     """
     from scipy.spatial.transform import Rotation
     return Rotation.from_euler(from_seq, q).as_euler(to_seq)
-def set_global_angle(robotId, pose):
+def set_global_angle(humanId, pose):
     euler = convert_aa_to_euler(pose[smpl_dict.get_pose_ids("pelvis")])
     # euler = euler_convert_np(euler, from_seq='XYZ', to_seq='ZYX')
-    quat = np.array(p.getQuaternionFromEuler(np.array(euler), physicsClientId=robotId))
-    p.resetBasePositionAndOrientation(robotId, [0, 0, 0], quat)
+    quat = np.array(p.getQuaternionFromEuler(np.array(euler), physicsClientId=humanId))
+    p.resetBasePositionAndOrientation(humanId, [0, 0, 0], quat)
 
 def mul_tuple(t, multiplier):
     return tuple(multiplier * elem for elem in t)
-def set_joint_angle(robotId, pose, smpl_joint_name, robot_joint_name):
+def set_joint_angle(humanId, pose, smpl_joint_name, robot_joint_name):
     smpl_angles = convert_aa_to_euler(pose[smpl_dict.get_pose_ids(smpl_joint_name)])
 
     # smpl_angles = pose[smpl_dict.get_pose_ids(smpl_joint_name)]
     robot_joints = human_pip_dict.get_joint_ids(robot_joint_name)
     for i in range(0, 3):
-        p.resetJointState(robotId, robot_joints[i], smpl_angles[i])
+        p.resetJointState(humanId, robot_joints[i], smpl_angles[i])
 
-def set_joint_angles(robotId, smpl_data):
+def set_joint_angles(humanId, smpl_data):
 
     print ("global_orient", smpl_data["global_orient"])
     print ("pelvis", smpl_data["body_pose"][0:3])
     pose = smpl_data["body_pose"]
     # global_orient = smpl_data["global_orient"]
     # global_orient = convert_aa_to_euler(global_orient)
-    # quat = np.array(p.getQuaternionFromEuler(np.array(global_orient), physicsClientId=robotId))
-    # p.resetBasePositionAndOrientation(robotId, [0, 0, 0], quat)
-    set_global_angle(robotId, pose)
+    # quat = np.array(p.getQuaternionFromEuler(np.array(global_orient), physicsClientId=humanId))
+    # p.resetBasePositionAndOrientation(humanId, [0, 0, 0], quat)
+    # set_global_angle(humanId, pose)
 
-    set_joint_angle(robotId, pose, "right_hip", "right_hip")
-    set_joint_angle(robotId, pose, "lower_spine", "spine_2")
-    set_joint_angle(robotId, pose, "middle_spine", "spine_3")
-    set_joint_angle(robotId, pose, "upper_spine", "spine_4")
+    set_joint_angle(humanId, pose, "right_hip", "right_hip")
+    set_joint_angle(humanId, pose, "lower_spine", "spine_2")
+    set_joint_angle(humanId, pose, "middle_spine", "spine_3")
+    set_joint_angle(humanId, pose, "upper_spine", "spine_4")
 
-    set_joint_angle(robotId, pose, "left_hip", "left_hip")
-    set_joint_angle(robotId, pose, "left_knee", "left_knee")
-    set_joint_angle(robotId, pose, "left_ankle", "left_ankle")
-    set_joint_angle(robotId, pose, "left_foot", "left_foot")
+    set_joint_angle(humanId, pose, "left_hip", "left_hip")
+    set_joint_angle(humanId, pose, "left_knee", "left_knee")
+    set_joint_angle(humanId, pose, "left_ankle", "left_ankle")
+    set_joint_angle(humanId, pose, "left_foot", "left_foot")
 
-    set_joint_angle(robotId, pose, "right_hip", "right_hip")
-    set_joint_angle(robotId, pose, "right_knee", "right_knee")
-    set_joint_angle(robotId, pose, "right_ankle", "right_ankle")
-    set_joint_angle(robotId, pose, "right_foot", "right_foot")
+    set_joint_angle(humanId, pose, "right_hip", "right_hip")
+    set_joint_angle(humanId, pose, "right_knee", "right_knee")
+    set_joint_angle(humanId, pose, "right_ankle", "right_ankle")
+    set_joint_angle(humanId, pose, "right_foot", "right_foot")
 
-    set_joint_angle(robotId, pose, "right_collar", "right_clavicle")
-    set_joint_angle(robotId, pose, "right_shoulder", "right_shoulder")
-    set_joint_angle(robotId, pose, "right_elbow", "right_elbow")
-    set_joint_angle(robotId, pose, "right_wrist", "right_lowarm")
-    set_joint_angle(robotId, pose, "right_hand", "right_hand")
+    set_joint_angle(humanId, pose, "right_collar", "right_clavicle")
+    set_joint_angle(humanId, pose, "right_shoulder", "right_shoulder")
+    set_joint_angle(humanId, pose, "right_elbow", "right_elbow")
+    set_joint_angle(humanId, pose, "right_wrist", "right_lowarm")
+    set_joint_angle(humanId, pose, "right_hand", "right_hand")
 
-    set_joint_angle(robotId, pose, "left_collar", "left_clavicle")
-    set_joint_angle(robotId, pose, "left_shoulder", "left_shoulder")
-    set_joint_angle(robotId, pose, "left_elbow", "left_elbow")
-    set_joint_angle(robotId, pose, "left_wrist", "left_lowarm")
-    set_joint_angle(robotId, pose, "left_hand", "left_hand")
+    set_joint_angle(humanId, pose, "left_collar", "left_clavicle")
+    set_joint_angle(humanId, pose, "left_shoulder", "left_shoulder")
+    set_joint_angle(humanId, pose, "left_elbow", "left_elbow")
+    set_joint_angle(humanId, pose, "left_wrist", "left_lowarm")
+    set_joint_angle(humanId, pose, "left_hand", "left_hand")
 
-    set_joint_angle(robotId, pose, "neck", "neck")
-    set_joint_angle(robotId, pose, "head", "head")
+    set_joint_angle(humanId, pose, "neck", "neck")
+    set_joint_angle(humanId, pose, "head", "head")
 
-def scale_body_part(robotId, physicsClient, scale=10):
+def get_skin_color():
+    hsv = list(colorsys.rgb_to_hsv(0.8, 0.6, 0.4))
+    hsv[-1] = np.random.uniform(0.4, 0.8)
+    skin_color = list(colorsys.hsv_to_rgb(*hsv)) + [1]
+    return skin_color
+
+def scale_body_part(humanId, physicsClient, scale=10):
     editor = UrdfEditor()
-    editor.initializeFromBulletBody(robotId, physicsClient) # load all properties to editor
+    editor.initializeFromBulletBody(humanId, physicsClient) # load all properties to editor
     # scaling the robot
     for link in editor.urdfLinks:
         for v in link.urdf_visual_shapes:
@@ -149,22 +156,27 @@ if __name__ == "__main__":
 
     # Load the URDF file
     p.setAdditionalSearchPath(pybullet_data.getDataPath())
-    # planeId = p.loadURDF("../assistive_gym/envs/assets/plane/plane.urdf", [0,0,0])
-    robotId = p.loadURDF("assistive_gym/envs/assets/human/human_pip.urdf", [0, 0, 0], [0, 0, 0,1])
-    # robotId = p.loadURDF("assistive_gym/envs/assets/human/test10.urdf", [0, 0, 0], [0, 0, 0,1])
-    # change_color(robotId, [1,0,0,1])
+    planeId = p.loadURDF("assistive_gym/envs/assets/plane/plane.urdf", [0,0,0])
+    bedId = p.loadURDF("assistive_gym/envs/assets/bed/hospital_bed.urdf", [0, 0, 0], [0, 0, 0, 1])
+
+    bed_bounding = p.getAABB(bedId)
+    print(bed_bounding)
+    humanId = p.loadURDF("assistive_gym/envs/assets/human/human_pip.urdf", [0, 0, 0.2], [0, 0, 0,1])
+    # humanId = p.loadURDF("assistive_gym/envs/assets/human/test10.urdf", [0, 0, 0], [0, 0, 0,1])
+    change_color(humanId, get_skin_color())
 
     # print all the joints
-    for j in range(p.getNumJoints(robotId)):
-        print (p.getJointInfo(robotId, j))
+    for j in range(p.getNumJoints(humanId)):
+        print (p.getJointInfo(humanId, j))
     # Set the simulation parameters
     p.setGravity(0,0,-9.81)
     p.setTimeStep(1./240.)
 
-    smpl_data = load_smpl(os.path.join(os.getcwd(), "examples/data/smpl_bp_ros_smpl_3.pkl"))
-    set_joint_angles(robotId, smpl_data)
+    smpl_data = load_smpl(os.path.join(os.getcwd(), "examples/data/smpl_bp_ros_smpl_6.pkl"))
+    set_joint_angles(humanId, smpl_data)
+
     # move the robot
-    # p.setJointMotorControlArray(robotId, [0,1,2,3,4,5,6,7,8,9,10,11,12,13], p.POSITION_CONTROL, targetPositions=[0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+    # p.setJointMotorControlArray(humanId, [0,1,2,3,4,5,6,7,8,9,10,11,12,13], p.POSITION_CONTROL, targetPositions=[0,0,0,0,0,0,0,0,0,0,0,0,0,0])
 
 
     # Set the camera view
@@ -174,9 +186,8 @@ if __name__ == "__main__":
     cameraTargetPosition = [0,0,1]
     p.resetDebugVisualizerCamera(cameraDistance, cameraYaw, cameraPitch, cameraTargetPosition)
     while True:
-        # p.stepSimulation()'
+        # p.stepSimulation()
         pass
     # Disconnect from the simulation
     p.disconnect()
-
 

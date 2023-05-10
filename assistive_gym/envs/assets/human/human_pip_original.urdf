@@ -8,14 +8,14 @@
 	</link>
 	<link name = "root">
 		<inertial>
-			<origin rpy = "0 1.57 0"  xyz = "0 0 0" />
+			<origin rpy = "0 0 0"  xyz = "0 0 0" />
 			<mass value =  "15" />
 			<inertia ixx = "0.1" ixy = "0" ixz = "0" iyy = "0.1" iyz = "0" izz = "0.1" />
 		</inertial>
 		<collision>
-			<origin rpy = "0 1.57 0"  xyz = "0 0 0" />
+			<origin rpy = "0 0 0"  xyz = "0 0 0" />
 			<geometry>
-				<capsule radius="0.05" length="0.15"/>
+				<sphere radius="0.07" />
 			</geometry>
 		</collision>
 	</link>
@@ -164,14 +164,14 @@
 	</joint>
 	<link name = "spine_2_limb">
 		<inertial>
-			<origin rpy = "1.57 0 0"  xyz = "-0.018163575 0.002204645 0.0607225" />
+			<origin rpy = "0 0 0"  xyz = "-0.018163575 0.002204645 0.0607225" />
 			<mass value =  "2" />
 			<inertia ixx = "0.1" ixy = "0" ixz = "0" iyy = "0.1" iyz = "0" izz = "0.1" />
 		</inertial>
 		<collision>
-			<origin rpy = "1.57 0 0"  xyz = "-0.018163575 0.002204645 0.0607225" />
+			<origin rpy = "0 0 0"  xyz = "-0.018163575 0.002204645 0.0607225" />
 			<geometry>
-				<capsule radius="0.06" length="0.07" />
+				<sphere radius="0.05" />
 			</geometry>
 		</collision>
 	</link>
@@ -249,7 +249,7 @@
 		<collision>
 			<origin rpy = "0 0 0"  xyz = "0.00429500000000003 0.022133375 -0.19404" />
 			<geometry>
-				<capsule length="0.29605029420748488" radius="0.075" />
+				<capsule length="0.29605029420748488" radius="0.05" />
 			</geometry>
 		</collision>
 	</link>
@@ -327,7 +327,7 @@
 		<collision>
 			<origin rpy = "0 0 0"  xyz = "-0.00208367 -0.02202295 -0.1928575" />
 			<geometry>
-				<capsule length="0.29416381919362977" radius="0.075" />
+				<capsule length="0.29416381919362977" radius="0.05" />
 			</geometry>
 		</collision>
 	</link>
@@ -398,14 +398,14 @@
 	</joint>
 	<link name = "spine_3_limb">
 		<inertial>
-			<origin rpy = "1.57 0 0"  xyz = "0.01246275 0.002206725 0.068345999999999995" />
+			<origin rpy = "0 0 0"  xyz = "0.01246275 0.002206725 0.068345999999999995" />
 			<mass value =  "2" />
 			<inertia ixx = "0.1" ixy = "0" ixz = "0" iyy = "0.1" iyz = "0" izz = "0.1" />
 		</inertial>
 		<collision>
-			<origin rpy = "1.57 0 0"  xyz = "0.01246275 0.002206725 0.068345999999999995" />
+			<origin rpy = "0 0 0"  xyz = "0.01246275 0.002206725 0.068345999999999995" />
 			<geometry>
-				<capsule radius="0.06" length="0.07"/>
+				<sphere radius="0.05" />
 			</geometry>
 		</collision>
 	</link>
@@ -632,14 +632,14 @@
 	</joint>
 	<link name = "spine_4_limb">
 		<inertial>
-			<origin rpy = "1.57 0 0"  xyz = "0.001202165 -0.001064685 0.027093855" />
+			<origin rpy = "0 0 0"  xyz = "0.001202165 -0.001064685 0.027093855" />
 			<mass value =  "2" />
 			<inertia ixx = "0.1" ixy = "0" ixz = "0" iyy = "0.1" iyz = "0" izz = "0.1" />
 		</inertial>
 		<collision>
-			<origin rpy = "1.57 0 0"  xyz = "0.001202165 -0.001064685 0.027093855" />
+			<origin rpy = "0 0 0"  xyz = "0.001202165 -0.001064685 0.027093855" />
 			<geometry>
-				<capsule radius="0.084" length="0.0373"/>
+				<sphere radius="0.05" />
 			</geometry>
 		</collision>
 	</link>
@@ -945,7 +945,7 @@
 		<collision>
 			<origin rpy = "0 0 0"  xyz = "-0.0158011999999999995 -0.0066519500000000002 0.1045037499999999995" />
 			<geometry>
-				<capsule radius="0.04" length="0.08" />
+				<sphere radius="0.07" />
 			</geometry>
 		</collision>
 	</link>
@@ -1143,7 +1143,7 @@
 		<collision>
 			<origin rpy = "0 0 0"  xyz = "0.02402485 0.00502685 0.0440528375" />
 			<geometry>
-				<capsule radius="0.065" length="0.07"/>
+				<sphere radius="0.07" />
 			</geometry>
 		</collision>
 	</link>
@@ -1214,14 +1214,14 @@
 	</joint>
 	<link name = "left_shoulder_limb">
 		<inertial>
-			<origin rpy = "1.57 0 0"  xyz = "-0.009016 0.060354250000000003 0.022670799999999999" />
+			<origin rpy = "0 0 0"  xyz = "-0.009016 0.060354250000000003 0.022670799999999999" />
 			<mass value =  "1" />
 			<inertia ixx = "0.1" ixy = "0" ixz = "0" iyy = "0.1" iyz = "0" izz = "0.1" />
 		</inertial>
 		<collision>
-			<origin rpy = "1.57 0 0"  xyz = "-0.0 0.0480003 0.0" />
+			<origin rpy = "0 0 0"  xyz = "-0.0 0.0480003 0.0" />
 			<geometry>
-				<capsule radius="0.07" length="0.02"/>
+				<sphere radius="0.05" />
 			</geometry>
 		</collision>
 	</link>
@@ -1292,14 +1292,14 @@
 	</joint>
 	<link name = "right_shoulder_limb">
 		<inertial>
-			<origin rpy = "1.57 0 0"  xyz = "-0.0 -0.048354250000000003 0.0" />
+			<origin rpy = "0 0 0"  xyz = "-0.0 -0.048354250000000003 0.0" />
 			<mass value =  "1" />
 			<inertia ixx = "0.1" ixy = "0" ixz = "0" iyy = "0.1" iyz = "0" izz = "0.1" />
 		</inertial>
 		<collision>
-			<origin rpy = "1.57 0 0"  xyz = "-0.0 -0.048354250000000003 0.0" />
+			<origin rpy = "0 0 0"  xyz = "-0.0 -0.048354250000000003 0.0" />
 			<geometry>
-				<capsule radius="0.07" length="0.02"/>
+				<sphere radius="0.05" />
 			</geometry>
 		</collision>
 	</link>
@@ -1375,9 +1375,9 @@
 			<inertia ixx = "0.1" ixy = "0" ixz = "0" iyy = "0.1" iyz = "0" izz = "0.1" />
 		</inertial>
 		<collision>
-			<origin rpy = "1.57 0 0"  xyz = "-0.0 0.088 -0.0" />
+			<origin rpy = "1.59 0 0"  xyz = "-0.0 0.088 -0.0" />
 			<geometry>
-				<capsule radius="0.033" length="0.2"/>
+				<capsule radius="0.023" length="0.2"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1456,7 +1456,7 @@
 		<collision>
 			<origin rpy = "1.59 0 0"  xyz = "-0.0 -0.088062 -0.0" />
 			<geometry>
-				<capsule radius="0.033" length="0.2"/>
+				<capsule radius="0.023" length="0.2"/>
 			</geometry>
 		</collision>
 	</link>
