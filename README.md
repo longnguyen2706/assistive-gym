@@ -178,3 +178,10 @@ pip3 install matplotlib
 pip3 install chumpy
 
 ```
+Added lib for geom 
+```
+numpy-stl
+vtk
+```
+
+

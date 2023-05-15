@@ -30,6 +30,34 @@ class HumanPipDict:
             "right_hand": 91
         }
 
+        self.urdf_to_smpl_dict  = {
+            "left_hip": "L_Hip",
+            "left_knee": "L_Knee",
+            "left_ankle": "L_Ankle",
+            "left_foot": "L_Foot",
+            "right_hip": "R_Hip",
+            "right_knee": "R_Knee",
+            "right_ankle": "R_Ankle",
+            "right_foot": "R_Foot",
+            "spine_2": "Spine1",
+            "spine_3": "Spine2",
+            "spine_4": "Spine3",
+            "neck": "Neck",
+            "head": "Head",
+            "left_clavicle": "L_Collar",
+            "left_shoulder": "L_Shoulder",
+            "left_elbow": "L_Elbow",
+            "left_lowarm": "L_Wrist",
+            "left_hand": "L_Hand",
+            "right_clavicle": "R_Collar",
+            "right_shoulder": "R_Shoulder",
+            "right_elbow": "R_Elbow",
+            "right_lowarm": "R_Wrist",
+            "right_hand": "R_Hand"
+        }
+
+
     def get_joint_ids(self, joint_name):
         joint_id = self.joint_dict[joint_name]
         return [joint_id, joint_id + 1, joint_id + 2]
+
