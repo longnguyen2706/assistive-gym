@@ -12,8 +12,8 @@ from vtk import (
 import torch
 from assistive_gym.envs.utils.smpl_parser import SMPL_Parser
 
-BETAS = torch.Tensor(np.random.uniform(-1, 5, (1, 10))) # random betas
-# BETAS = torch.Tensor(np.zeros((1, 10))) # random betas
+# BETAS = torch.Tensor(np.random.uniform(-1, 5, (1, 10))) # random betas
+BETAS = torch.Tensor(np.zeros((1, 10))) # random betas
 # show human mesh for debugging
 def show_human_mesh(model_path):
     model = smplx.create(model_path, model_type='smpl', gender='neutral')
@@ -22,7 +22,7 @@ def show_human_mesh(model_path):
     out_mesh = trimesh.Trimesh(vertices, model.faces)
     out_mesh.show()
 
-def generate_body_hull(jname, vert, outdir):
+def generate_body_hull(jname, vert, outdir, joint_pos = (0, 0, 0)):
     """
     Generate a convex hull for each joint
     Save the convex hull as an obj file with vert name
@@ -33,9 +33,11 @@ def generate_body_hull(jname, vert, outdir):
 
     p_cloud = trimesh.PointCloud(vert)
     p_hull = p_cloud.convex_hull
+    centroid = p_hull.centroid
+    # p_hull.vertices = p_hull.vertices - centroid
+    p_hull.vertices = p_hull.vertices - joint_pos
 
-    # p_hull.show()
-    # print (jname, " volume: ", p_hull.volume, " area: ", p_hull.area, " inertia: ", p_hull.moment_inertia)
+    print (jname, "pos: ", joint_pos, " centroid: ", centroid, " volume: ", p_hull.volume, " area: ", p_hull.area, " inertia: ", p_hull.moment_inertia, )
     # Export the mesh to an OBJ file
     outfile = f"{outdir}/{jname}.obj"
     p_hull.export(outfile)
@@ -66,7 +68,7 @@ def generate_geom(model_path):
     hull_dict = {}
 
     # create joint geometries
-    geom_dir = "/home/louis/Downloads/goem"
+    geom_dir = "/home/louis/Documents/Projects/assistive-gym/assistive_gym/envs/assets/human/meshes/"
     os.makedirs(geom_dir, exist_ok=True)
     joint_pos_dict = {}
 
@@ -112,15 +114,16 @@ def generate_geom(model_path):
         # reduction_rate = min(0.9, 1.0 - min_num_vert / cur_num_vert)
         #
         # quadric_mesh_decimation(fname, reduction_rate , verbose=True)
-        r = generate_body_hull(jname, vert, geom_dir)
+        r = generate_body_hull(jname, vert, geom_dir, joint_pos=smpl_jts[jind])
         joint_pos_dict[jname] = smpl_jts[jind]
+
         hull_dict[jname] = {
             "verts": vert,
             "hull": r["hull"],
             "filename": r["filename"],
         }
 
-    return hull_dict, joint_pos_dict
+    return hull_dict, joint_pos_dict, joint_offsets
 
 # TODO: Clear this out
 def quadric_mesh_decimation(fname, reduction_rate, verbose=False):
@@ -240,5 +243,6 @@ def quadric_mesh_decimation(fname, reduction_rate, verbose=False):
 
 if __name__ == "__main__":
     model_path = os.path.join(os.getcwd(), "examples/data/SMPL_NEUTRAL.pkl")
-    show_human_mesh(model_path)
+
     generate_geom(model_path)
+    show_human_mesh(model_path)

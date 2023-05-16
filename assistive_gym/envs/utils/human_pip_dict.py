@@ -31,6 +31,7 @@ class HumanPipDict:
         }
 
         self.urdf_to_smpl_dict  = {
+            "pelvis": "Pelvis",
             "left_hip": "L_Hip",
             "left_knee": "L_Knee",
             "left_ankle": "L_Ankle",
@@ -55,6 +56,36 @@ class HumanPipDict:
             "right_lowarm": "R_Wrist",
             "right_hand": "R_Hand"
         }
+
+        self.joint_to_parent_joint_dict = {
+            "pelvis": "pelvis",
+            "left_hip": "pelvis",
+            "left_knee": "left_hip",
+            "left_ankle": "left_knee",
+            "left_foot": "left_ankle",
+            "right_hip": "pelvis",
+            "right_knee": "right_hip",
+            "right_ankle": "right_knee",
+            "right_foot": "right_ankle",
+            "spine_2": "pelvis",
+            "spine_3": "spine_2",
+            "spine_4": "spine_3",
+            "neck": "spine_4",
+            "head": "neck",
+            "left_clavicle": "spine_4",
+            "left_shoulder": "left_clavicle",
+            "left_elbow": "left_shoulder",
+            "left_lowarm": "left_elbow",
+            "left_hand": "left_lowarm",
+            "right_clavicle": "spine_4",
+            "right_shoulder": "right_clavicle",
+            "right_elbow": "right_shoulder",
+            "right_lowarm": "right_elbow",
+            "right_hand": "right_lowarm"
+        }
+
+
+
 
 
     def get_joint_ids(self, joint_name):
