@@ -1,5 +1,6 @@
 class SMPLDict:
     def __init__(self):
+        #TODO: generate this one based on index of joint names
         self.joint_dict = {
             "Pelvis": 0,
             "L_Hip": 1,

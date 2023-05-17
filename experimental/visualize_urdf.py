@@ -19,7 +19,7 @@ physicsClient = p.connect(p.GUI)
 
 # Load the URDF file
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
-# planeId = p.loadURDF("../assistive_gym/envs/assets/plane/plane.urdf", [0,0,0])
+planeId = p.loadURDF("assistive_gym/envs/assets/plane/plane.urdf", [0,0,0])
 # robotId = p.loadURDF("assistive_gym/envs/assets/human/human_pip_original.urdf", [0, 0, 0], [0, 0, 0,1])
 robotId = p.loadURDF("test_mesh.urdf", [0, 0, 0], [0, 0, 0,1])
 
@@ -59,8 +59,8 @@ cameraPitch = -30
 cameraTargetPosition = [0,0,1]
 p.resetDebugVisualizerCamera(cameraDistance, cameraYaw, cameraPitch, cameraTargetPosition)
 while True:
-    # p.stepSimulation()'
-    pass
+    p.stepSimulation()
+
 # Disconnect from the simulation
 p.disconnect()
 

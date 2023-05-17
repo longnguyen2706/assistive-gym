@@ -1,5 +1,6 @@
 # Reference: https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/gym/pybullet_utils/urdfEditor.py
 
+# TODO: switch to use pybullet's urdf editor
 import pybullet as p
 import time
 class UrdfInertial(object):

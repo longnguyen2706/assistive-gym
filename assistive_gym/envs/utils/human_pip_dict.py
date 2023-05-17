@@ -1,33 +1,34 @@
 class HumanPipDict:
     def __init__(self):
+        #TODO: dynamically generate this based on the URDF
         self.joint_dict = {
-            "left_hip": 2,
-            "left_knee": 6,
-            "left_ankle": 10,
-            "left_foot": 14,
+            "left_hip": 1,
+            "left_knee": 5,
+            "left_ankle": 9,
+            "left_foot": 13,
             "left_toe": 17,
             "left_heel": 18,
             "right_hip": 19,
             "right_knee": 23,
             "right_ankle": 27,
             "right_foot": 31,
-            "right_toe": 34,
-            "right_heel": 35,
+            "right_toe": 35,
+            "right_heel": 36,
             "spine_2": 37,
             "spine_3": 41,
             "spine_4": 45,
             "neck": 49,
             "head": 53,
-            "left_clavicle": 56,
-            "left_shoulder": 60,
-            "left_elbow": 64,
-            "left_lowarm": 68,
-            "left_hand": 72,
-            "right_clavicle": 75,
-            "right_shoulder": 79,
-            "right_elbow": 83,
-            "right_lowarm": 87,
-            "right_hand": 91
+            "left_clavicle": 57,
+            "left_shoulder": 61,
+            "left_elbow": 65,
+            "left_lowarm": 69,
+            "left_hand": 73,
+            "right_clavicle": 77,
+            "right_shoulder": 81,
+            "right_elbow":  85,
+            "right_lowarm": 89,
+            "right_hand": 93,
         }
 
         self.urdf_to_smpl_dict  = {
@@ -56,7 +57,7 @@ class HumanPipDict:
             "right_lowarm": "R_Wrist",
             "right_hand": "R_Hand"
         }
-
+        # TODO: change the smpl and robot joint to same name
         self.joint_to_parent_joint_dict = {
             "pelvis": "pelvis",
             "left_hip": "pelvis",
@@ -83,10 +84,6 @@ class HumanPipDict:
             "right_lowarm": "right_elbow",
             "right_hand": "right_lowarm"
         }
-
-
-
-
 
     def get_joint_ids(self, joint_name):
         joint_id = self.joint_dict[joint_name]

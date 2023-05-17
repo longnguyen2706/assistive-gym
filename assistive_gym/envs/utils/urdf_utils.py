@@ -8,34 +8,24 @@ from pytorch3d import transforms as t3d
 from assistive_gym.envs.utils.human_pip_dict import HumanPipDict
 from assistive_gym.envs.utils.urdf_editor import UrdfEditor
 
+
 def load_smpl(filename):
     with open(filename, "rb") as handle:
         data = pickle.load(handle)
-
-    # print("data keys", data.keys())
-    print(
-        "body_pose: ",
-        data["body_pose"].shape,
-        "betas: ",
-        data["betas"].shape,
-        "global_orient: ",
-        data["global_orient"].shape,
-    )
-
+    print("body_pose: ", data["body_pose"].shape, "betas: ", data["betas"].shape, "global_orient: ",
+          data["global_orient"].shape)
     return data
 
 
-# TODO: move to utils
-def convert_aa_to_euler(aa):
+def convert_aa_to_euler_quat(aa, seq="YZX"):
     aa = np.array(aa)
     mat = t3d.axis_angle_to_matrix(torch.from_numpy(aa))
     # print ("mat", mat)
-    quats = t3d.matrix_to_quaternion(mat)
-    euler = t3d.matrix_to_euler_angles(mat, "XYZ")
-    return euler
+    quat = t3d.matrix_to_quaternion(mat)
+    euler = t3d.matrix_to_euler_angles(mat, seq)
+    return euler, quat
 
 
-# TODO: move to utils
 def euler_convert_np(q, from_seq='XYZ', to_seq='XYZ'):
     r"""
     Convert euler angles into different axis orders. (numpy, single/batch)
@@ -52,20 +42,21 @@ def euler_convert_np(q, from_seq='XYZ', to_seq='XYZ'):
 def mul_tuple(t, multiplier):
     return tuple(multiplier * elem for elem in t)
 
+
 def scale_body_part(human_id, physic_client_id, scale=10):
     editor = UrdfEditor()
-    editor.initializeFromBulletBody(human_id, physic_client_id) # load all properties to editor
+    editor.initializeFromBulletBody(human_id, physic_client_id)  # load all properties to editor
     # scaling the robot
     for link in editor.urdfLinks:
         for v in link.urdf_visual_shapes:
-            if v.geom_type ==  p.GEOM_BOX:
+            if v.geom_type == p.GEOM_BOX:
                 v.geom_extents = mul_tuple(v.geom_extents, 10)
-            if v.geom_type ==  p.GEOM_SPHERE:
+            if v.geom_type == p.GEOM_SPHERE:
                 v.geom_radius *= 10
-            if v.geom_type ==  p.GEOM_CAPSULE:
+            if v.geom_type == p.GEOM_CAPSULE:
                 v.geom_radius *= 10
                 v.geom_length *= 10
-            v.origin_xyz= mul_tuple(v.origin_xyz, 10)
+            v.origin_xyz = mul_tuple(v.origin_xyz, 10)
 
         for c in link.urdf_collision_shapes:
             if c.geom_type == p.GEOM_BOX:
@@ -80,139 +71,61 @@ def scale_body_part(human_id, physic_client_id, scale=10):
         j.joint_origin_xyz = mul_tuple(j.joint_origin_xyz, 10)
     editor.saveUrdf("test10.urdf", True)
 
-def reposition_body_part2(human_id, physic_client_id, pos_dict):
-    editor = UrdfEditor()
-    editor.initializeFromBulletBody(human_id, physic_client_id) # load all properties to editor
-    human_dict = HumanPipDict()
 
-
-    for link in editor.urdfLinks:
-        # remove _limb from left_arm_limb
-        last_underscore_idx = link.link_name.rfind("_")
-        name = link.link_name[:last_underscore_idx]
-
-        print ("link_name", link.link_name, name)
-        # TODO: update inertia
-        # if name in human_dict.urdf_to_smpl_dict.keys():
-        #     urdf_name = human_dict.urdf_to_smpl_dict[name]
-        #     for v in link.urdf_visual_shapes:
-        #         v.origin_xyz = - pos_dict[urdf_name]
-        #     for c in link.urdf_collision_shapes:
-        #         c.origin_xyz = - pos_dict[urdf_name]
-
-        for v in link.urdf_visual_shapes:
-            v.origin_xyz = (0, 0, 0)
-        for c in link.urdf_collision_shapes:
-            c.origin_xyz = (0, 0, 0)
-
-    for j in editor.urdfJoints:
-        last_underscore_idx = j.joint_name.rfind("_")
-        name = j.joint_name[:last_underscore_idx]
-        axis = j.joint_name[last_underscore_idx+1:]
-        xyz = (0, 0, 0)
-        if name in human_dict.urdf_to_smpl_dict.keys():
-            urdf_name = human_dict.urdf_to_smpl_dict[name]
-            if axis == 'rx':
-                xyz = pos_dict[urdf_name]
-            elif axis == 'rzdammy':
-                xyz = - pos_dict[urdf_name]
-            else:
-                xyz = (0, 0, 0)
-        j.joint_origin_xyz = xyz
-
-    # for link in editor.urdfLinks:
-    #     for v in link.urdf_visual_shapes:
-    #         v.origin_xyz = (0, 0, 0)
-    #     for c in link.urdf_collision_shapes:
-    #         c.origin_xyz =  (0, 0, 0)
-    #
-    # for j in editor.urdfJoints:
-    #     last_underscore_idx = j.joint_name.rfind("_")
-    #     name = j.joint_name[:last_underscore_idx]
-    #     if name in human_dict.urdf_to_smpl_dict.keys():
-    #         urdf_name = human_dict.urdf_to_smpl_dict[name]
-    #         # j.joint_origin_xyz = pos_dict[urdf_name]
-    #         j.joint_origin_xyz = (0, 0, 0)
-    editor.saveUrdf("test_mesh.urdf", True)
+def get_bodypart_name(urdf_name):
+    """
+    :param urdf_name: joint or link name in urdf
+    :return:
+    """
+    # TODO: check for _
+    last_underscore_idx = urdf_name.rfind("_")
+    name = urdf_name[:last_underscore_idx]
+    suffix = urdf_name[last_underscore_idx + 1:]
+    return name, suffix
 
 
 def reposition_body_part(human_id, physic_client_id, pos_dict):
     editor = UrdfEditor()
-    editor.initializeFromBulletBody(human_id, physic_client_id) # load all properties to editor
+    editor.initializeFromBulletBody(human_id, physic_client_id)  # load all properties to editor
     human_dict = HumanPipDict()
-    special_links = ['left_hip_rx', 'right_hip_rx', 'left_clavicle_rx', 'right_clavicle_rx']
+
     for link in editor.urdfLinks:
-        # remove _limb from left_arm_limb
-        last_underscore_idx = link.link_name.rfind("_")
-        name = link.link_name[:last_underscore_idx]
-        last = link.link_name[last_underscore_idx + 1:]
-        print ("link_name", link.link_name, name)
-        # TODO: update inertia
+        name, suffix = get_bodypart_name(link.link_name)
         if name in human_dict.urdf_to_smpl_dict.keys():
-            urdf_name = human_dict.urdf_to_smpl_dict[name]
-            # if link.link_name in special_links:
-            #     xyz = pos_dict[urdf_name]
-            #     link.urdf_inertial.mass = 2  # TODO: get from mesh
-            # else:
-            #     if last == 'limb':
-            #         xyz = pos_dict[urdf_name]
-            #         link.urdf_inertial.mass = 2 # TODO: get from mesh
-            #     elif last == 'dammy':
-            #         xyz = pos_dict[urdf_name]
-            #         link.urdf_inertial.mass = 2
-            #     else:
-            #         xyz = (0, 0, 0)
-            #
-            xyz =(0, 0, 0)
+            xyz = (0, 0, 0)
             for v in link.urdf_visual_shapes:
                 v.origin_xyz = xyz
             for c in link.urdf_collision_shapes:
                 c.origin_xyz = xyz
+
+            # inertia
             link.urdf_inertial.origin_xyz = xyz
+            if suffix == 'limb':
+                link.urdf_inertial.mass = 2
 
-            link.urdf_inertial.origin_xyz = (0, 0, 0)
-
-    # reverse key, val to val, key dict
-    parent_to_child_joint_dict = {v: k for k, v in human_dict.joint_to_parent_joint_dict.items()}
+    # smpl joint is spherical.
+    # due to the limitation of pybullet (no joint limit for spherical joint),
+    # we need to decompose it to 3 revolute joints (rx, ry, rz) and 1 fixed joint (rzdammy) rx -> ry -> rz -> rzdammy
+    # the human body part is a link (_limb) that attached to the fixed joint
+    # we need to move the joint origin to correct position as follow
+    # - set rx joint origin = urdf_joint pos - parent urdf joint pos
+    # - set ry, rz, rxdammy origin = 0 (superimpose on the rx joint)
     for j in editor.urdfJoints:
-        last_underscore_idx = j.joint_name.rfind("_")
-        name = j.joint_name[:last_underscore_idx]
-        last = j.joint_name[last_underscore_idx + 1:]
-        special_joints= []
+        name, suffix = get_bodypart_name(j.joint_name)
         if name in human_dict.urdf_to_smpl_dict.keys():
             urdf_name = human_dict.urdf_to_smpl_dict[name]
-            pos = pos_dict[urdf_name]
-            if j.joint_name in special_joints:
+            if suffix == 'rx':
+                pos = pos_dict[urdf_name]
+
                 parent = human_dict.joint_to_parent_joint_dict[name]
                 pos_parent = pos_dict[human_dict.urdf_to_smpl_dict[parent]]
                 xyz = pos - pos_parent
             else:
-                # pos_child = 0
-                # if name in parent_to_child_joint_dict.keys():
-                #     child = parent_to_child_joint_dict[name]
-                #     pos_child = pos_dict[human_dict.urdf_to_smpl_dict[child]]
-                parent = human_dict.joint_to_parent_joint_dict[name]
-                pos_parent = pos_dict[human_dict.urdf_to_smpl_dict[parent]]
-
-                if last == 'rx':
-                    xyz = pos - pos_parent
-                else:
-                    xyz = (0, 0, 0)
+                xyz = (0, 0, 0)
             j.joint_origin_xyz = xyz
         else:
             j.joint_origin_xyz = (0, 0, 0)
-        # if name in human_dict.urdf_to_smpl_dict.keys() and last == 'rx':
-        #     parent = human_dict.joint_to_parent_joint_dict[name]
-        #     urdf_name = human_dict.urdf_to_smpl_dict[parent]
-        #     j.joint_origin_xyz = pos_dict[urdf_name]
-        # else:
-        #     j.joint_origin_xyz = (0, 0, 0)
-        # j.joint_origin_xyz = (0, 0, 0)
+        j.joint_lower_limit = -3.14
+        j.joint_upper_limit = 3.14
 
     editor.saveUrdf("test_mesh.urdf", True)
-
-    # new_body = p.loadURDF("test_mesh.urdf")
-    # editor.initializeFromBulletBody(new_body, physic_client_id)
-    # for j in editor.urdfJoints:
-    #     j.joint_origin_xyz = mul_tuple(j.joint_origin_xyz, -1)
-    # editor.saveUrdf("test_mesh_final.urdf", True)

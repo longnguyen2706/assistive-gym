@@ -1,42 +1,64 @@
-<?xml version="1.0" ?>
+<?xml version="0.0" ?>
 <robot name="human">
 	<link name="base">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00010"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 	</link>
 	<link name="pelvis_limb">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="assistive_gym/envs/assets/human/meshes/Pelvis.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="./assistive_gym/envs/assets/human/meshes/Pelvis.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+			<material name="mat_0_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./assistive_gym/envs/assets/human/meshes/Pelvis.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="left_hip_rx">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="0.00000"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00000"/>
 			</geometry>
 			<material name="mat_1_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="assistive_gym/envs/assets/human/meshes/Pelvis.obj" scale="1.00000 1.00000 1.00000"/>
+				<sphere radius="0.00000"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="left_hip_rx">
+	<link name="left_hip_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00000"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -45,20 +67,20 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="left_hip_ry">
+	<link name="left_hip_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00000"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -67,29 +89,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="left_hip_rz">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00000"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-			<material name="mat_4_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -97,34 +97,56 @@
 	</link>
 	<link name="left_hip_limb">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/L_Hip.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+			<material name="mat_4_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/L_Hip.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="left_knee_rx">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/L_Hip.obj" scale="1.00000 1.00000 1.00000"/>
+				<sphere radius="0.00000"/>
 			</geometry>
 			<material name="mat_5_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/L_Hip.obj" scale="1.00000 1.00000 1.00000"/>
+				<sphere radius="0.00000"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="left_knee_rx">
+	<link name="left_knee_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -133,29 +155,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="left_knee_ry">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-			<material name="mat_7_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -163,21 +163,21 @@
 	</link>
 	<link name="left_knee_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
-			<material name="mat_8_0">
+			<material name="mat_7_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
@@ -185,34 +185,56 @@
 	</link>
 	<link name="left_knee_limb">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="2.00000"/>
 			<inertia ixx="0.03487" ixy="0" ixz="0" iyy="0.00791" iyz="0" izz="0.03324"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/L_Knee.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/L_Knee.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+			<material name="mat_8_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/L_Knee.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="left_ankle_rx">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="0.00001"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00000"/>
 			</geometry>
 			<material name="mat_9_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/L_Knee.obj" scale="1.00000 1.00000 1.00000"/>
+				<sphere radius="0.00000"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="left_ankle_rx">
+	<link name="left_ankle_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -221,29 +243,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="left_ankle_ry">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-			<material name="mat_11_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -251,21 +251,21 @@
 	</link>
 	<link name="left_ankle_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
-			<material name="mat_12_0">
+			<material name="mat_11_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
@@ -273,34 +273,56 @@
 	</link>
 	<link name="left_ankle_limb">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="2.00000"/>
 			<inertia ixx="0.00736" ixy="0" ixz="0" iyy="0.00763" iyz="0" izz="0.00377"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/L_Ankle.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/L_Ankle.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+			<material name="mat_12_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/L_Ankle.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="left_foot_rx">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="0.00001"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00000"/>
 			</geometry>
 			<material name="mat_13_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/L_Ankle.obj" scale="1.00000 1.00000 1.00000"/>
+				<sphere radius="0.00000"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="left_foot_rx">
+	<link name="left_foot_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -309,29 +331,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="left_foot_ry">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-			<material name="mat_15_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -339,21 +339,21 @@
 	</link>
 	<link name="left_foot_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
-			<material name="mat_16_0">
+			<material name="mat_15_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
@@ -361,34 +361,34 @@
 	</link>
 	<link name="left_foot_limb">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="1.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
 			<inertia ixx="0.00118" ixy="0" ixz="0" iyy="0.00193" iyz="0" izz="0.00113"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/L_Foot.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/L_Foot.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
-			<material name="mat_17_0">
+			<material name="mat_16_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/L_Foot.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/L_Foot.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
 	<link name="left_toe">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<capsule length="0.04800" radius="0.00500"/>
 			</geometry>
@@ -396,12 +396,12 @@
 	</link>
 	<link name="left_heel">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<capsule length="0.04800" radius="0.00500"/>
 			</geometry>
@@ -409,12 +409,34 @@
 	</link>
 	<link name="right_hip_rx">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00000"/>
+			</geometry>
+			<material name="mat_19_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00000"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="right_hip_ry">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="0.00001"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -423,20 +445,20 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="right_hip_ry">
+	<link name="right_hip_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -445,29 +467,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="right_hip_rz">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-			<material name="mat_22_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -475,34 +475,56 @@
 	</link>
 	<link name="right_hip_limb">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/R_Hip.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+			<material name="mat_22_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/R_Hip.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="right_knee_rx">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/R_Hip.obj" scale="1.00000 1.00000 1.00000"/>
+				<sphere radius="0.00000"/>
 			</geometry>
 			<material name="mat_23_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/R_Hip.obj" scale="1.00000 1.00000 1.00000"/>
+				<sphere radius="0.00000"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="right_knee_rx">
+	<link name="right_knee_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -511,29 +533,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="right_knee_ry">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-			<material name="mat_25_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -541,21 +541,21 @@
 	</link>
 	<link name="right_knee_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
-			<material name="mat_26_0">
+			<material name="mat_25_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
@@ -563,34 +563,56 @@
 	</link>
 	<link name="right_knee_limb">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="2.00000"/>
 			<inertia ixx="0.03468" ixy="0" ixz="0" iyy="0.00776" iyz="0" izz="0.03330"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/R_Knee.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/R_Knee.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+			<material name="mat_26_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/R_Knee.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="right_ankle_rx">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="0.00001"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00000"/>
 			</geometry>
 			<material name="mat_27_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/R_Knee.obj" scale="1.00000 1.00000 1.00000"/>
+				<sphere radius="0.00000"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="right_ankle_rx">
+	<link name="right_ankle_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -599,29 +621,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="right_ankle_ry">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-			<material name="mat_29_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -629,21 +629,21 @@
 	</link>
 	<link name="right_ankle_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
-			<material name="mat_30_0">
+			<material name="mat_29_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
@@ -651,34 +651,56 @@
 	</link>
 	<link name="right_ankle_limb">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="2.00000"/>
 			<inertia ixx="0.00777" ixy="0" ixz="0" iyy="0.00782" iyz="0" izz="0.00385"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/R_Ankle.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/R_Ankle.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+			<material name="mat_30_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/R_Ankle.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="right_foot_rx">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="0.00001"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00000"/>
 			</geometry>
 			<material name="mat_31_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/R_Ankle.obj" scale="1.00000 1.00000 1.00000"/>
+				<sphere radius="0.00000"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="right_foot_rx">
+	<link name="right_foot_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -687,29 +709,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="right_foot_ry">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-			<material name="mat_33_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -717,21 +717,21 @@
 	</link>
 	<link name="right_foot_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
-			<material name="mat_34_0">
+			<material name="mat_33_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
@@ -739,34 +739,34 @@
 	</link>
 	<link name="right_foot_limb">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="1.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
 			<inertia ixx="0.00122" ixy="0" ixz="0" iyy="0.00197" iyz="0" izz="0.00116"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/R_Foot.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/R_Foot.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
-			<material name="mat_35_0">
+			<material name="mat_34_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/R_Foot.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/R_Foot.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
 	<link name="right_toe">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<capsule length="0.04800" radius="0.00500"/>
 			</geometry>
@@ -774,56 +774,34 @@
 	</link>
 	<link name="right_heel">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<capsule length="0.04800" radius="0.00500"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="spine_2_limb">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="2.00000"/>
-			<inertia ixx="0.01821" ixy="0" ixz="0" iyy="0.03264" iyz="0" izz="0.02330"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/Spine1.obj" scale="1.00000 1.00000 1.00000"/>
-			</geometry>
-			<material name="mat_38_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/Spine1.obj" scale="1.00000 1.00000 1.00000"/>
-			</geometry>
-		</collision>
-	</link>
 	<link name="spine_2_rx">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
-			<material name="mat_39_0">
+			<material name="mat_37_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -831,21 +809,21 @@
 	</link>
 	<link name="spine_2_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
-			<material name="mat_40_0">
+			<material name="mat_38_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -853,65 +831,65 @@
 	</link>
 	<link name="spine_2_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
+			</geometry>
+			<material name="mat_39_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00001"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="spine_2_limb">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
+			<inertia ixx="0.01821" ixy="0" ixz="0" iyy="0.03264" iyz="0" izz="0.02330"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/Spine1.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+			<material name="mat_40_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/Spine1.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="spine_3_rx">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="0.00001"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00000"/>
 			</geometry>
 			<material name="mat_41_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00001"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="spine_3_limb">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="2.00000"/>
-			<inertia ixx="0.01582" ixy="0" ixz="0" iyy="0.03312" iyz="0" izz="0.02315"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/Spine2.obj" scale="1.00000 1.00000 1.00000"/>
-			</geometry>
-			<material name="mat_42_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/Spine2.obj" scale="1.00000 1.00000 1.00000"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="spine_3_rx">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-			<material name="mat_43_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -919,21 +897,21 @@
 	</link>
 	<link name="spine_3_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
-			<material name="mat_44_0">
+			<material name="mat_42_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -941,65 +919,65 @@
 	</link>
 	<link name="spine_3_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
+			</geometry>
+			<material name="mat_43_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00001"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="spine_3_limb">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
+			<inertia ixx="0.01582" ixy="0" ixz="0" iyy="0.03312" iyz="0" izz="0.02315"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/Spine2.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+			<material name="mat_44_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/Spine2.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="spine_4_rx">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="0.00001"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00000"/>
 			</geometry>
 			<material name="mat_45_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00001"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="spine_4_limb">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="2.00000"/>
-			<inertia ixx="0.02460" ixy="0" ixz="0" iyy="0.04485" iyz="0" izz="0.04578"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/Spine3.obj" scale="1.00000 1.00000 1.00000"/>
-			</geometry>
-			<material name="mat_46_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/Spine3.obj" scale="1.00000 1.00000 1.00000"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="spine_4_rx">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-			<material name="mat_47_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1007,21 +985,21 @@
 	</link>
 	<link name="spine_4_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
-			<material name="mat_48_0">
+			<material name="mat_46_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1029,12 +1007,56 @@
 	</link>
 	<link name="spine_4_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00001"/>
+			</geometry>
+			<material name="mat_47_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00001"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="spine_4_limb">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
+			<inertia ixx="0.02460" ixy="0" ixz="0" iyy="0.04485" iyz="0" izz="0.04578"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/Spine3.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+			<material name="mat_48_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/Spine3.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="neck_rx">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="0.00001"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
@@ -1043,51 +1065,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00001"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="neck_limb">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="1.00000"/>
-			<inertia ixx="0.00260" ixy="0" ixz="0" iyy="0.00362" iyz="0" izz="0.00230"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/Neck.obj" scale="1.00000 1.00000 1.00000"/>
-			</geometry>
-			<material name="mat_50_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/Neck.obj" scale="1.00000 1.00000 1.00000"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="neck_rx">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00001"/>
-			</geometry>
-			<material name="mat_51_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
@@ -1095,21 +1073,21 @@
 	</link>
 	<link name="neck_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
-			<material name="mat_52_0">
+			<material name="mat_50_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1117,12 +1095,56 @@
 	</link>
 	<link name="neck_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00000"/>
+			</geometry>
+			<material name="mat_51_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00000"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="neck_limb">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
+			<inertia ixx="0.00260" ixy="0" ixz="0" iyy="0.00362" iyz="0" izz="0.00230"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/Neck.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+			<material name="mat_52_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/Neck.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="head_rx">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="0.00001"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1131,51 +1153,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="head_limb">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="1.00000"/>
-			<inertia ixx="0.00985" ixy="0" ixz="0" iyy="0.00811" iyz="0" izz="0.00814"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/Head.obj" scale="1.00000 1.00000 1.00000"/>
-			</geometry>
-			<material name="mat_54_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/Head.obj" scale="1.00000 1.00000 1.00000"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="head_rx">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-			<material name="mat_55_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1183,21 +1161,21 @@
 	</link>
 	<link name="head_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
-			<material name="mat_56_0">
+			<material name="mat_54_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1205,65 +1183,65 @@
 	</link>
 	<link name="head_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
+			</geometry>
+			<material name="mat_55_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00001"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="head_limb">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
+			<inertia ixx="0.00985" ixy="0" ixz="0" iyy="0.00811" iyz="0" izz="0.00814"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/Head.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+			<material name="mat_56_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/Head.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="left_clavicle_rx">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="0.00001"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00000"/>
 			</geometry>
 			<material name="mat_57_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00001"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="left_clavicle_limb">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/L_Collar.obj" scale="1.00000 1.00000 1.00000"/>
-			</geometry>
-			<material name="mat_58_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/L_Collar.obj" scale="1.00000 1.00000 1.00000"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="left_clavicle_rx">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-			<material name="mat_58_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1271,21 +1249,21 @@
 	</link>
 	<link name="left_clavicle_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
-			<material name="mat_59_0">
+			<material name="mat_58_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1293,56 +1271,78 @@
 	</link>
 	<link name="left_clavicle_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
+			</geometry>
+			<material name="mat_59_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00001"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="left_clavicle_limb">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/L_Collar.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_60_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<sphere radius="0.00001"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/L_Collar.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="left_shoulder_limb">
+	<link name="left_shoulder_rx">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="1.00000"/>
-			<inertia ixx="0.00327" ixy="0" ixz="0" iyy="0.00641" iyz="0" izz="0.00683"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="0.00001"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/L_Shoulder.obj" scale="1.00000 1.00000 1.00000"/>
+				<sphere radius="0.00000"/>
 			</geometry>
 			<material name="mat_61_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/L_Shoulder.obj" scale="1.00000 1.00000 1.00000"/>
+				<sphere radius="0.00000"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="left_shoulder_rx">
+	<link name="left_shoulder_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1351,29 +1351,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="left_shoulder_ry">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-			<material name="mat_63_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1381,65 +1359,65 @@
 	</link>
 	<link name="left_shoulder_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
+			</geometry>
+			<material name="mat_63_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00001"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="left_shoulder_limb">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
+			<inertia ixx="0.00327" ixy="0" ixz="0" iyy="0.00641" iyz="0" izz="0.00683"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/L_Shoulder.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_64_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<sphere radius="0.00001"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/L_Shoulder.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="left_elbow_limb">
+	<link name="left_elbow_rx">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="1.00000"/>
-			<inertia ixx="0.00164" ixy="0" ixz="0" iyy="0.00733" iyz="0" izz="0.00755"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="0.00001"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/L_Elbow.obj" scale="1.00000 1.00000 1.00000"/>
+				<sphere radius="0.03000"/>
 			</geometry>
 			<material name="mat_65_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/L_Elbow.obj" scale="1.00000 1.00000 1.00000"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="left_elbow_rx">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.03000"/>
-			</geometry>
-			<material name="mat_66_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.03000"/>
 			</geometry>
@@ -1447,21 +1425,21 @@
 	</link>
 	<link name="left_elbow_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
-			<material name="mat_67_0">
+			<material name="mat_66_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1469,56 +1447,78 @@
 	</link>
 	<link name="left_elbow_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
+			</geometry>
+			<material name="mat_67_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00001"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="left_elbow_limb">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
+			<inertia ixx="0.00164" ixy="0" ixz="0" iyy="0.00733" iyz="0" izz="0.00755"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/L_Elbow.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_68_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<sphere radius="0.00001"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/L_Elbow.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="left_lowarm_limb">
+	<link name="left_lowarm_rx">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="1.00000"/>
-			<inertia ixx="0.00227" ixy="0" ixz="0" iyy="0.00299" iyz="0" izz="0.00143"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="0.00001"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/L_Wrist.obj" scale="1.00000 1.00000 1.00000"/>
+				<sphere radius="0.00000"/>
 			</geometry>
 			<material name="mat_69_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/L_Wrist.obj" scale="1.00000 1.00000 1.00000"/>
+				<sphere radius="0.00000"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="left_lowarm_rx">
+	<link name="left_lowarm_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1527,29 +1527,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="left_lowarm_ry">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-			<material name="mat_71_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1557,56 +1535,78 @@
 	</link>
 	<link name="left_lowarm_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
+			</geometry>
+			<material name="mat_71_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00001"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="left_lowarm_limb">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
+			<inertia ixx="0.00227" ixy="0" ixz="0" iyy="0.00299" iyz="0" izz="0.00143"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/L_Wrist.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_72_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<sphere radius="0.00001"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/L_Wrist.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="left_hand_limb">
+	<link name="left_hand_rx">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.50000"/>
-			<inertia ixx="0.00066" ixy="0" ixz="0" iyy="0.00128" iyz="0" izz="0.00075"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="0.00001"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/L_Hand.obj" scale="1.00000 1.00000 1.00000"/>
+				<sphere radius="0.00000"/>
 			</geometry>
 			<material name="mat_73_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/L_Hand.obj" scale="1.00000 1.00000 1.00000"/>
+				<sphere radius="0.00000"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="left_hand_rx">
+	<link name="left_hand_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1615,29 +1615,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="left_hand_ry">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<sphere radius="0.00000"/>
-			</geometry>
-			<material name="mat_75_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1645,56 +1623,56 @@
 	</link>
 	<link name="left_hand_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
+			</geometry>
+			<material name="mat_75_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<sphere radius="0.00001"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="left_hand_limb">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
+			<inertia ixx="0.00066" ixy="0" ixz="0" iyy="0.00128" iyz="0" izz="0.00075"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/L_Hand.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_76_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<sphere radius="0.00001"/>
-			</geometry>
-		</collision>
-	</link>
-	<link name="right_clavicle_limb">
-		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.00001"/>
-			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
-		</inertial>
-		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/R_Collar.obj" scale="1.00000 1.00000 1.00000"/>
-			</geometry>
-			<material name="mat_77_0">
-				<color rgba="0.71879 0.53909 0.35939 1.00000" />
-			</material>
-		</visual>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/R_Collar.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/L_Hand.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
 	<link name="right_clavicle_rx">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1703,7 +1681,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1711,12 +1689,12 @@
 	</link>
 	<link name="right_clavicle_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1725,7 +1703,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1733,12 +1711,12 @@
 	</link>
 	<link name="right_clavicle_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
@@ -1747,42 +1725,42 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="right_shoulder_limb">
+	<link name="right_clavicle_limb">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="1.00000"/>
-			<inertia ixx="0.00355" ixy="0" ixz="0" iyy="0.00652" iyz="0" izz="0.00686"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
+			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/R_Shoulder.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/R_Collar.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_80_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/R_Shoulder.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/R_Collar.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
 	<link name="right_shoulder_rx">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1791,7 +1769,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1799,12 +1777,12 @@
 	</link>
 	<link name="right_shoulder_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1813,7 +1791,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1821,12 +1799,12 @@
 	</link>
 	<link name="right_shoulder_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
@@ -1835,42 +1813,42 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="right_elbow_limb">
+	<link name="right_shoulder_limb">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="1.00000"/>
-			<inertia ixx="0.00170" ixy="0" ixz="0" iyy="0.00717" iyz="0" izz="0.00735"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
+			<inertia ixx="0.00355" ixy="0" ixz="0" iyy="0.00652" iyz="0" izz="0.00686"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/R_Elbow.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/R_Shoulder.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_84_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/R_Elbow.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/R_Shoulder.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
 	<link name="right_elbow_rx">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.03000"/>
 			</geometry>
@@ -1879,7 +1857,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.03000"/>
 			</geometry>
@@ -1887,12 +1865,12 @@
 	</link>
 	<link name="right_elbow_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1901,7 +1879,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1909,12 +1887,12 @@
 	</link>
 	<link name="right_elbow_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
@@ -1923,42 +1901,42 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="right_lowarm_limb">
+	<link name="right_elbow_limb">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="1.00000"/>
-			<inertia ixx="0.00236" ixy="0" ixz="0" iyy="0.00304" iyz="0" izz="0.00140"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
+			<inertia ixx="0.00170" ixy="0" ixz="0" iyy="0.00717" iyz="0" izz="0.00735"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/R_Wrist.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/R_Elbow.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_88_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/R_Wrist.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/R_Elbow.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
 	<link name="right_lowarm_rx">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1967,7 +1945,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1975,12 +1953,12 @@
 	</link>
 	<link name="right_lowarm_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1989,7 +1967,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -1997,12 +1975,12 @@
 	</link>
 	<link name="right_lowarm_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
@@ -2011,42 +1989,42 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
 		</collision>
 	</link>
-	<link name="right_hand_limb">
+	<link name="right_lowarm_limb">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-			<mass value="0.50000"/>
-			<inertia ixx="0.00068" ixy="0" ixz="0" iyy="0.00127" iyz="0" izz="0.00072"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
+			<inertia ixx="0.00236" ixy="0" ixz="0" iyy="0.00304" iyz="0" izz="0.00140"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/R_Hand.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/R_Wrist.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_92_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="././assistive_gym/envs/assets/human/meshes/R_Hand.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/R_Wrist.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
 	<link name="right_hand_rx">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -2055,7 +2033,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -2063,12 +2041,12 @@
 	</link>
 	<link name="right_hand_ry">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -2077,7 +2055,7 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00000"/>
 			</geometry>
@@ -2085,12 +2063,12 @@
 	</link>
 	<link name="right_hand_rz">
 		<inertial>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<mass value="0.00001"/>
 			<inertia ixx="0.00000" ixy="0" ixz="0" iyy="0.00000" iyz="0" izz="0.00000"/>
 		</inertial>
 		<visual>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
 			</geometry>
@@ -2099,9 +2077,31 @@
 			</material>
 		</visual>
 		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
 				<sphere radius="0.00001"/>
+			</geometry>
+		</collision>
+	</link>
+	<link name="right_hand_limb">
+		<inertial>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<mass value="2.00000"/>
+			<inertia ixx="0.00068" ixy="0" ixz="0" iyy="0.00127" iyz="0" izz="0.00072"/>
+		</inertial>
+		<visual>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/R_Hand.obj" scale="1.00000 1.00000 1.00000"/>
+			</geometry>
+			<material name="mat_96_0">
+				<color rgba="0.71879 0.53909 0.35939 1.00000" />
+			</material>
+		</visual>
+		<collision>
+			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+			<geometry>
+				<mesh filename="./././assistive_gym/envs/assets/human/meshes/R_Hand.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -2109,7 +2109,7 @@
 		<parent link="base"/>
 		<child link="pelvis_limb"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_hip_rx" type="revolute">
@@ -2117,7 +2117,7 @@
 		<child link="left_hip_rx"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="1.40000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.05858 -0.08228 -0.01766"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.05858 -0.08228 -0.01766"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="left_hip_ry" type="revolute">
@@ -2125,7 +2125,7 @@
 		<child link="left_hip_ry"/>
 		<limit effort="1000.00000" lower="-0.60000" upper="0.60000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="left_hip_rz" type="revolute">
@@ -2133,22 +2133,20 @@
 		<child link="left_hip_rz"/>
 		<limit effort="1000.00000" lower="-0.80000" upper="1.40000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_hip_rzdammy" type="fixed">
 		<parent link="left_hip_rz"/>
 		<child link="left_hip_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_knee_rx" type="revolute">
 		<parent link="left_hip_limb"/>
 		<child link="left_knee_rx"/>
 		<limit effort="1000.00000" lower="-0.10000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.04345 -0.38647 0.00804"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.04345 -0.38647 0.00804"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="left_knee_ry" type="revolute">
@@ -2156,7 +2154,7 @@
 		<child link="left_knee_ry"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="left_knee_rz" type="revolute">
@@ -2164,14 +2162,14 @@
 		<child link="left_knee_rz"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_knee_rzdammy" type="fixed">
 		<parent link="left_knee_rz"/>
 		<child link="left_knee_limb"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_ankle_rx" type="revolute">
@@ -2179,7 +2177,7 @@
 		<child link="left_ankle_rx"/>
 		<limit effort="1000.00000" lower="-0.40000" upper="0.70000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="-0.01479 -0.42687 -0.03743"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="-0.01479 -0.42687 -0.03743"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="left_ankle_ry" type="revolute">
@@ -2187,7 +2185,7 @@
 		<child link="left_ankle_ry"/>
 		<limit effort="1000.00000" lower="-0.50000" upper="0.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="left_ankle_rz" type="revolute">
@@ -2195,22 +2193,20 @@
 		<child link="left_ankle_rz"/>
 		<limit effort="1000.00000" lower="-0.40000" upper="0.40000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_ankle_rzdammy" type="fixed">
 		<parent link="left_ankle_rz"/>
 		<child link="left_ankle_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_foot_rx" type="revolute">
 		<parent link="left_ankle_limb"/>
 		<child link="left_foot_rx"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.04105 -0.06029 0.12204"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.04105 -0.06029 0.12204"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="left_foot_ry" type="revolute">
@@ -2218,7 +2214,7 @@
 		<child link="left_foot_ry"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="left_foot_rz" type="revolute">
@@ -2226,36 +2222,30 @@
 		<child link="left_foot_rz"/>
 		<limit effort="0.00000" lower="0.00000" upper="0.00000" velocity="0.00000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_foot_rzdammy" type="fixed">
 		<parent link="left_foot_rz"/>
 		<child link="left_foot_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_toe" type="fixed">
 		<parent link="left_foot_limb"/>
 		<child link="left_toe"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="1.57080 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="1.57080 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_heel" type="fixed">
 		<parent link="left_toe"/>
 		<child link="left_heel"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_hip_rx" type="revolute">
 		<parent link="pelvis_limb"/>
 		<child link="right_hip_rx"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="1.40000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="-0.06031 -0.09051 -0.01354"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="-0.06031 -0.09051 -0.01354"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="right_hip_ry" type="revolute">
@@ -2263,7 +2253,7 @@
 		<child link="right_hip_ry"/>
 		<limit effort="1000.00000" lower="-0.60000" upper="0.60000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="right_hip_rz" type="revolute">
@@ -2271,22 +2261,20 @@
 		<child link="right_hip_rz"/>
 		<limit effort="1000.00000" lower="-1.40000" upper="0.80000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_hip_rzdammy" type="fixed">
 		<parent link="right_hip_rz"/>
 		<child link="right_hip_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_knee_rx" type="revolute">
 		<parent link="right_hip_limb"/>
 		<child link="right_knee_rx"/>
 		<limit effort="1000.00000" lower="-0.10000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="-0.04326 -0.38369 -0.00484"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="-0.04326 -0.38369 -0.00484"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="right_knee_ry" type="revolute">
@@ -2294,7 +2282,7 @@
 		<child link="right_knee_ry"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="right_knee_rz" type="revolute">
@@ -2302,22 +2290,20 @@
 		<child link="right_knee_rz"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_knee_rzdammy" type="fixed">
 		<parent link="right_knee_rz"/>
 		<child link="right_knee_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_ankle_rx" type="revolute">
 		<parent link="right_knee_limb"/>
 		<child link="right_ankle_rx"/>
 		<limit effort="1000.00000" lower="-0.40000" upper="0.70000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.01906 -0.42005 -0.03456"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.01906 -0.42005 -0.03456"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="right_ankle_ry" type="revolute">
@@ -2325,7 +2311,7 @@
 		<child link="right_ankle_ry"/>
 		<limit effort="1000.00000" lower="-0.50000" upper="0.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="right_ankle_rz" type="revolute">
@@ -2333,22 +2319,20 @@
 		<child link="right_ankle_rz"/>
 		<limit effort="1000.00000" lower="-0.40000" upper="0.40000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_ankle_rzdammy" type="fixed">
 		<parent link="right_ankle_rz"/>
 		<child link="right_ankle_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_foot_rx" type="revolute">
 		<parent link="right_ankle_limb"/>
 		<child link="right_foot_rx"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="-0.03484 -0.06211 0.13032"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="-0.03484 -0.06211 0.13032"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="right_foot_ry" type="revolute">
@@ -2356,7 +2340,7 @@
 		<child link="right_foot_ry"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="right_foot_rz" type="revolute">
@@ -2364,36 +2348,32 @@
 		<child link="right_foot_rz"/>
 		<limit effort="1000.00000" lower="0.00000" upper="0.00000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_foot_rzdammy" type="fixed">
 		<parent link="right_foot_rz"/>
 		<child link="right_foot_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_toe" type="fixed">
 		<parent link="right_foot_limb"/>
 		<child link="right_toe"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="1.57080 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="1.57080 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_heel" type="fixed">
 		<parent link="right_toe"/>
 		<child link="right_heel"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="spine_2_rx" type="revolute">
 		<parent link="pelvis_limb"/>
 		<child link="spine_2_rx"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00444 0.12440 -0.03839"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00444 0.12440 -0.03839"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="spine_2_ry" type="revolute">
@@ -2401,7 +2381,7 @@
 		<child link="spine_2_ry"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="spine_2_rz" type="revolute">
@@ -2409,22 +2389,20 @@
 		<child link="spine_2_rz"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="spine_2_rzdammy" type="fixed">
 		<parent link="spine_2_rz"/>
 		<child link="spine_2_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="spine_3_rx" type="revolute">
 		<parent link="spine_2_limb"/>
 		<child link="spine_3_rx"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00449 0.13796 0.02682"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00449 0.13796 0.02682"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="spine_3_ry" type="revolute">
@@ -2432,7 +2410,7 @@
 		<child link="spine_3_ry"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="spine_3_rz" type="revolute">
@@ -2440,22 +2418,20 @@
 		<child link="spine_3_rz"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="spine_3_rzdammy" type="fixed">
 		<parent link="spine_3_rz"/>
 		<child link="spine_3_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="spine_4_rx" type="revolute">
 		<parent link="spine_3_limb"/>
 		<child link="spine_4_rx"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="-0.00226 0.05603 0.00286"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="-0.00226 0.05603 0.00286"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="spine_4_ry" type="revolute">
@@ -2463,7 +2439,7 @@
 		<child link="spine_4_ry"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="spine_4_rz" type="revolute">
@@ -2471,22 +2447,20 @@
 		<child link="spine_4_rz"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="spine_4_rzdammy" type="fixed">
 		<parent link="spine_4_rz"/>
 		<child link="spine_4_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="neck_rx" type="revolute">
 		<parent link="spine_4_limb"/>
 		<child link="neck_rx"/>
 		<limit effort="1000.00000" lower="-0.60000" upper="0.60000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="-0.01339 0.21164 -0.03347"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="-0.01339 0.21164 -0.03347"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="neck_ry" type="revolute">
@@ -2494,7 +2468,7 @@
 		<child link="neck_ry"/>
 		<limit effort="1000.00000" lower="-0.60000" upper="0.60000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="neck_rz" type="revolute">
@@ -2502,22 +2476,20 @@
 		<child link="neck_rz"/>
 		<limit effort="1000.00000" lower="-0.30000" upper="0.30000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="neck_rzdammy" type="fixed">
 		<parent link="neck_rz"/>
 		<child link="neck_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="head_rx" type="revolute">
 		<parent link="neck_limb"/>
 		<child link="head_rx"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.01011 0.08894 0.05041"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.01011 0.08894 0.05041"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="head_ry" type="revolute">
@@ -2525,7 +2497,7 @@
 		<child link="head_ry"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="head_rz" type="revolute">
@@ -2533,22 +2505,20 @@
 		<child link="head_rz"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="head_rzdammy" type="fixed">
 		<parent link="head_rz"/>
 		<child link="head_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="1.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_clavicle_rx" type="revolute">
 		<parent link="spine_4_limb"/>
 		<child link="left_clavicle_rx"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.07170 0.11400 -0.01890"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.07170 0.11400 -0.01890"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="left_clavicle_ry" type="revolute">
@@ -2556,7 +2526,7 @@
 		<child link="left_clavicle_ry"/>
 		<limit effort="1000.00000" lower="-0.60000" upper="0.40000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="left_clavicle_rz" type="revolute">
@@ -2564,22 +2534,20 @@
 		<child link="left_clavicle_rz"/>
 		<limit effort="1000.00000" lower="-0.40000" upper="0.40000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_clavicle_rzdammy" type="fixed">
 		<parent link="left_clavicle_rz"/>
 		<child link="left_clavicle_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_shoulder_rx" type="revolute">
 		<parent link="left_clavicle_limb"/>
 		<child link="left_shoulder_rx"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.12292 0.04521 -0.01905"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.12292 0.04521 -0.01905"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="left_shoulder_ry" type="revolute">
@@ -2587,7 +2555,7 @@
 		<child link="left_shoulder_ry"/>
 		<limit effort="1000.00000" lower="-2.00000" upper="0.60000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="left_shoulder_rz" type="revolute">
@@ -2595,22 +2563,20 @@
 		<child link="left_shoulder_rz"/>
 		<limit effort="1000.00000" lower="-1.00000" upper="1.00000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_shoulder_rzdammy" type="fixed">
 		<parent link="left_shoulder_rz"/>
 		<child link="left_shoulder_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_elbow_rx" type="revolute">
 		<parent link="left_shoulder_limb"/>
 		<child link="left_elbow_rx"/>
 		<limit effort="1000.00000" lower="-1.40000" upper="0.90000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.25533 -0.01565 -0.02295"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.25533 -0.01565 -0.02295"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="left_elbow_ry" type="revolute">
@@ -2618,7 +2584,7 @@
 		<child link="left_elbow_ry"/>
 		<limit effort="1000.00000" lower="-2.70000" upper="0.00000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="left_elbow_rz" type="revolute">
@@ -2626,22 +2592,20 @@
 		<child link="left_elbow_rz"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_elbow_rzdammy" type="fixed">
 		<parent link="left_elbow_rz"/>
 		<child link="left_elbow_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_lowarm_rx" type="revolute">
 		<parent link="left_elbow_limb"/>
 		<child link="left_lowarm_rx"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.26571 0.01270 -0.00737"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.26571 0.01270 -0.00737"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="left_lowarm_ry" type="revolute">
@@ -2649,7 +2613,7 @@
 		<child link="left_lowarm_ry"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="left_lowarm_rz" type="revolute">
@@ -2657,22 +2621,20 @@
 		<child link="left_lowarm_rz"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_lowarm_rzdammy" type="fixed">
 		<parent link="left_lowarm_rz"/>
 		<child link="left_lowarm_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_hand_rx" type="revolute">
 		<parent link="left_lowarm_limb"/>
 		<child link="left_hand_rx"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.08669 -0.01064 -0.01559"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.08669 -0.01064 -0.01559"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="left_hand_ry" type="revolute">
@@ -2680,7 +2642,7 @@
 		<child link="left_hand_ry"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="left_hand_rz" type="revolute">
@@ -2688,23 +2650,20 @@
 		<child link="left_hand_rz"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
-	<joint name="left_hand_rzdammy" type="revolute">
+	<joint name="left_hand_rzdammy" type="fixed">
 		<parent link="left_hand_rz"/>
 		<child link="left_hand_limb"/>
-		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="1.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_clavicle_rx" type="revolute">
 		<parent link="spine_4_limb"/>
 		<child link="right_clavicle_rx"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="-0.08295 0.11247 -0.02371"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="-0.08295 0.11247 -0.02371"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="right_clavicle_ry" type="revolute">
@@ -2712,7 +2671,7 @@
 		<child link="right_clavicle_ry"/>
 		<limit effort="1000.00000" lower="-0.40000" upper="0.60000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="right_clavicle_rz" type="revolute">
@@ -2720,22 +2679,20 @@
 		<child link="right_clavicle_rz"/>
 		<limit effort="1000.00000" lower="-0.40000" upper="0.40000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_clavicle_rzdammy" type="fixed">
 		<parent link="right_clavicle_rz"/>
 		<child link="right_clavicle_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_shoulder_rx" type="revolute">
 		<parent link="right_clavicle_limb"/>
 		<child link="right_shoulder_rx"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="-0.11323 0.04685 -0.00847"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="-0.11323 0.04685 -0.00847"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="right_shoulder_ry" type="revolute">
@@ -2743,7 +2700,7 @@
 		<child link="right_shoulder_ry"/>
 		<limit effort="1000.00000" lower="-0.60000" upper="2.00000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="right_shoulder_rz" type="revolute">
@@ -2751,22 +2708,20 @@
 		<child link="right_shoulder_rz"/>
 		<limit effort="1000.00000" lower="-1.00000" upper="1.00000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_shoulder_rzdammy" type="fixed">
 		<parent link="right_shoulder_rz"/>
 		<child link="right_shoulder_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_elbow_rx" type="revolute">
 		<parent link="right_shoulder_limb"/>
 		<child link="right_elbow_rx"/>
 		<limit effort="1000.00000" lower="-1.40000" upper="0.90000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="-0.26013 -0.01437 -0.03127"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="-0.26013 -0.01437 -0.03127"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="right_elbow_ry" type="revolute">
@@ -2774,7 +2729,7 @@
 		<child link="right_elbow_ry"/>
 		<limit effort="1000.00000" lower="0.00000" upper="2.70000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="right_elbow_rz" type="revolute">
@@ -2782,22 +2737,20 @@
 		<child link="right_elbow_rz"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_elbow_rzdammy" type="fixed">
 		<parent link="right_elbow_rz"/>
 		<child link="right_elbow_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_lowarm_rx" type="revolute">
 		<parent link="right_elbow_limb"/>
 		<child link="right_lowarm_rx"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="-0.26911 0.00679 -0.00603"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="-0.26911 0.00679 -0.00603"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="right_lowarm_ry" type="revolute">
@@ -2805,7 +2758,7 @@
 		<child link="right_lowarm_ry"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="right_lowarm_rz" type="revolute">
@@ -2813,22 +2766,20 @@
 		<child link="right_lowarm_rz"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_lowarm_rzdammy" type="fixed">
 		<parent link="right_lowarm_rz"/>
 		<child link="right_lowarm_limb"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_hand_rx" type="revolute">
 		<parent link="right_lowarm_limb"/>
 		<child link="right_hand_rx"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="-0.08875 -0.00865 -0.01011"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="-0.08875 -0.00865 -0.01011"/>
 		<axis xyz="0.00000 1.00000 0.00000"/>
 	</joint>
 	<joint name="right_hand_ry" type="revolute">
@@ -2836,7 +2787,7 @@
 		<child link="right_hand_ry"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 0.00000 1.00000"/>
 	</joint>
 	<joint name="right_hand_rz" type="revolute">
@@ -2844,15 +2795,12 @@
 		<child link="right_hand_rz"/>
 		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
-	<joint name="right_hand_rzdammy" type="revolute">
+	<joint name="right_hand_rzdammy" type="fixed">
 		<parent link="right_hand_rz"/>
 		<child link="right_hand_limb"/>
-		<limit effort="1000.00000" lower="-2.50000" upper="2.50000" velocity="0.50000"/>
-		<dynamics damping="1.0" friction="0.0001"/>
-		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
-		<axis xyz="1.00000 0.00000 0.00000"/>
+		<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 </robot>
