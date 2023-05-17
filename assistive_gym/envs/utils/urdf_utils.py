@@ -178,7 +178,7 @@ def reposition_body_part(human_id, physic_client_id, pos_dict):
         last_underscore_idx = j.joint_name.rfind("_")
         name = j.joint_name[:last_underscore_idx]
         last = j.joint_name[last_underscore_idx + 1:]
-        special_joints= ['left_hip_rx', 'right_hip_rx', 'left_clavicle_rx', 'right_clavicle_rx']
+        special_joints= ['left_clavicle_rx', 'right_clavicle_rx']
         if name in human_dict.urdf_to_smpl_dict.keys():
             urdf_name = human_dict.urdf_to_smpl_dict[name]
             pos = pos_dict[urdf_name]
@@ -189,12 +189,15 @@ def reposition_body_part(human_id, physic_client_id, pos_dict):
                 pos_parent = pos_dict[human_dict.urdf_to_smpl_dict[parent]]
                 xyz = pos - pos_parent
             else:
-                pos_child = 0
-                if name in parent_to_child_joint_dict.keys():
-                    child = parent_to_child_joint_dict[name]
-                    pos_child = pos_dict[human_dict.urdf_to_smpl_dict[child]]
+                # pos_child = 0
+                # if name in parent_to_child_joint_dict.keys():
+                #     child = parent_to_child_joint_dict[name]
+                #     pos_child = pos_dict[human_dict.urdf_to_smpl_dict[child]]
+                parent = human_dict.joint_to_parent_joint_dict[name]
+                pos_parent = pos_dict[human_dict.urdf_to_smpl_dict[parent]]
+
                 if last == 'rzdammy':
-                    xyz = pos_child - pos
+                    xyz = pos - pos_parent
                 else:
                     xyz = (0, 0, 0)
             j.joint_origin_xyz = xyz

@@ -2222,7 +2222,7 @@
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="left_toe" type="fixed">
-		<parent link="left_foot_limb"/>
+		<parent link="left_foot_rzdammy"/>
 		<child link="left_toe"/>
 		<dynamics damping="1.0" friction="0.0001"/>
 		<origin rpy="1.57080 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
@@ -2360,7 +2360,7 @@
 		<axis xyz="1.00000 0.00000 0.00000"/>
 	</joint>
 	<joint name="right_toe" type="fixed">
-		<parent link="right_foot_limb"/>
+		<parent link="right_foot_rzdammy"/>
 		<child link="right_toe"/>
 		<dynamics damping="1.0" friction="0.0001"/>
 		<origin rpy="1.57080 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
