@@ -44,3 +44,10 @@ register(
     entry_point='assistive_gym.envs:HumanLyingEnv',
     max_episode_steps=200,
 )
+
+
+register(
+    id='HumanComfort-v1',
+    entry_point='assistive_gym.envs:HumanComfortEnv',
+    max_episode_steps=200,
+)

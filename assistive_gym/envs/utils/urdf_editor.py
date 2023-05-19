@@ -106,7 +106,6 @@ class UrdfEditor(object):
                 urdfVisual.geom_type = v[2]
                 if (v[2] == p.GEOM_BOX):
                     urdfVisual.geom_extents = v[3]
-                    print("box extents=", v[3])
                 if (v[2] == p.GEOM_SPHERE):
                     urdfVisual.geom_radius = v[3][0]
                 if (v[2] == p.GEOM_MESH):
@@ -308,7 +307,7 @@ class UrdfEditor(object):
         file.write("\t\t</collision>\n")
 
     def writeLink(self, file, urdfLink, saveVisuals):
-        print ("writeLink: ", urdfLink.link_name)
+        # print ("writeLink: ", urdfLink.link_name)
         file.write("\t<link name=\"")
         file.write(urdfLink.link_name)
         file.write("\">\n")
@@ -323,7 +322,7 @@ class UrdfEditor(object):
                 self.writeVisualShape(file, v)
 
         for c in urdfLink.urdf_collision_shapes:
-            print("urdfCollision.geom_type=", c.geom_type )
+            # print("urdfCollision.geom_type=", c.geom_type )
             self.writeCollisionShape(file, c)
         file.write("\t</link>\n")
 
@@ -376,7 +375,7 @@ class UrdfEditor(object):
 
     def saveUrdf(self, fileName, saveVisuals=True):
         file = open(fileName, "w")
-        file.write("<?xml version=\"0.0\" ?>\n")
+        file.write("<?xml version=\"1.0\" ?>\n")
         file.write("<robot name=\"")
         file.write(self.robotName)
         file.write("\">\n")
@@ -471,9 +470,6 @@ class UrdfEditor(object):
         if (len(self.urdfLinks) == 0):
             return -1
 
-        for i in range (len(self.urdfLinks)):
-            print("link", i, "=",self.urdfLinks[i].link_name)
-
         base = self.urdfLinks[0]
 
         # v.tmp_collision_shape_ids=[]
@@ -551,7 +547,6 @@ class UrdfEditor(object):
                 visualFramePositions=visualFramePositions,
                 visualFrameOrientations=visualFrameOrientations,
                 physicsClientId=physicsClientId)
-            print ("Done create visual")
 
         linkMasses = []
         linkCollisionShapeIndices = []
@@ -585,11 +580,11 @@ class UrdfEditor(object):
             linkMeshScaleArray = []
             linkPositionsArray = []
             linkOrientationsArray = []
-            print("link.link_name=", link.link_name)
+            # print("link.link_name=", link.link_name)
             for v in link.urdf_collision_shapes:
                 shapeType = v.geom_type
 
-                print("link=", link.link_name, " shapeType=", shapeType)
+                # print("link=", link.link_name, " shapeType=", shapeType)
                 linkShapeTypeArray.append(shapeType)
                 linkHalfExtentsArray.append(
                     [0.5 * v.geom_extents[0], 0.5 * v.geom_extents[1], 0.5 * v.geom_extents[2]])

@@ -17,7 +17,7 @@ from assistive_gym.envs.utils.smpl_dict import SMPLDict
 
 from assistive_gym.envs.smpl.serialization import load_model
 from assistive_gym.envs.utils.smpl_geom import generate_geom
-from assistive_gym.envs.utils.urdf_utils import convert_aa_to_euler_quat, load_smpl, reposition_body_part
+from assistive_gym.envs.utils.urdf_utils import convert_aa_to_euler_quat, load_smpl, generate_urdf
 
 
 class HumanUrdf(Agent):

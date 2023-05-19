@@ -1,0 +1,139 @@
+from assistive_gym.envs.agents.sawyer import Sawyer
+from assistive_gym.envs.agents.stretch import Stretch
+from assistive_gym.envs.env import AssistiveEnv
+from experimental.human_urdf import HumanUrdf
+import numpy as np
+import pybullet as p
+
+class HumanComfortEnv(AssistiveEnv):
+    def __init__(self):
+        self.robot = Stretch('wheel_right')
+        self.human = HumanUrdf()
+        super(HumanComfortEnv, self).__init__(robot=self.robot, human=self.human, task='', obs_robot_len=len(self.robot.controllable_joint_indices),
+                                         obs_human_len=len(self.human.controllable_joint_indices)) #hardcoded
+        self.target_pos = np.array([0, 0, 0])
+    def get_comfort_score(self):
+        return np.random.rand() #TODO: implement this
+    def step(self, action):
+        if self.human.controllable:
+            # print("action", action)
+            action = np.concatenate([action['robot'], action['human']])
+
+        self.take_step(action)
+
+        obs = self._get_obs()
+
+        # Get human preferences
+        end_effector_velocity = np.linalg.norm(self.robot.get_velocity(self.robot.right_end_effector))
+        # preferences_score = self.human_preferences(end_effector_velocity=end_effector_velocity,
+        #                                            total_force_on_human=self.total_force_on_human,
+        #                                            tool_force_at_target=self.spoon_force_on_human,
+        #                                            food_hit_human_reward=food_hit_human_reward,
+        #                                            food_mouth_velocities=food_mouth_velocities)
+
+        comfort_score = self.get_comfort_score()
+        reward = comfort_score
+        if self.gui and comfort_score != 0:
+            print('Task success:', self.task_success, 'Food reward:', comfort_score)
+
+        # info = {'total_force_on_human': self.total_force_on_human,
+        #         'task_success': int(self.task_success >= self.total_food_count * self.config('task_success_threshold')),
+        #         'action_robot_len': self.action_robot_len, 'action_human_len': self.action_human_len,
+        #         'obs_robot_len': self.obs_robot_len, 'obs_human_len': self.obs_human_len}
+        info = {'comfort_score': comfort_score}
+        done = self.iteration >= 200
+        print (done, self.iteration)
+        if not self.human.controllable:
+            return obs, reward, done, info
+        else:
+            # Co-optimization with both human and robot controllable
+            return obs, {'robot': reward, 'human': reward}, {'robot': done, 'human': done, '__all__': done}, {
+                'robot': info, 'human': info}
+
+    def _get_obs(self, agent=None):
+        robot_joint_angles = self.robot.get_joint_angles(self.robot.controllable_joint_indices)
+        # Fix joint angles to be in [-pi, pi]
+        robot_joint_angles = (np.array(robot_joint_angles) + np.pi) % (2 * np.pi) - np.pi
+        if self.robot.mobile:
+            # Don't include joint angles for the wheels
+            robot_joint_angles = robot_joint_angles[len(self.robot.wheel_joint_indices):]
+
+        target_pos_real, _ = self.robot.convert_to_realworld(self.target_pos)
+        self.robot_force_on_human= self.get_total_force()
+        self.total_force_on_human = self.robot_force_on_human
+        robot_obs = np.concatenate(
+            [robot_joint_angles]).ravel()
+        if agent == 'robot':
+            return robot_obs
+        if self.human.controllable:
+            human_joint_angles = self.human.get_joint_angles(self.human.controllable_joint_indices)
+            target_pos_human, _ = self.human.convert_to_realworld(self.target_pos)
+            human_obs = np.concatenate(
+                [human_joint_angles, [self.robot_force_on_human]]).ravel()
+            if agent == 'human':
+                return human_obs
+
+            # self.human.cal_manipulibility()
+            # print ("manipulability", self.human.cal_manipulibility())
+            # Co-optimization with both human and robot controllable
+            return {'robot': robot_obs, 'human': human_obs}
+        return robot_obs
+
+    def get_total_force(self):
+        total_force_on_human = np.sum(self.robot.get_contact_points(self.human)[-1])
+        # tool_force = np.sum(self.tool.get_contact_points()[-1])
+        # tool_force_at_target = 0
+        # target_contact_pos = None
+        # for linkA, linkB, posA, posB, force in zip(*self.tool.get_contact_points(self.human)):
+        #     total_force_on_human += force
+        #     # Enforce that contact is close to the target location
+        #     if linkA in [0, 1] and np.linalg.norm(posB - self.target_pos) < 0.025:
+        #         tool_force_at_target += force
+        #         target_contact_pos = posB
+        # return total_force_on_human, tool_force, tool_force_at_target, None if target_contact_pos is None else np.array(
+        #     target_contact_pos)
+        return total_force_on_human
+    def reset(self):
+        super(HumanComfortEnv, self).reset()
+        self.build_assistive_env('hospital_bed')
+
+        if self.robot.wheelchair_mounted:
+            wheelchair_pos, wheelchair_orient = self.furniture.get_base_pos_orient()
+            self.robot.set_base_pos_orient(wheelchair_pos + np.array(self.robot.toc_base_pos_offset[self.task]),
+                                           [0, 0, -np.pi / 2.0])
+
+        # Update robot and human motor gains
+        self.robot.motor_gains = self.human.motor_gains = 0.025
+
+        # p.resetDebugVisualizerCamera(cameraDistance=1.10, cameraYaw=40, cameraPitch=-45,
+        #                              cameraTargetPosition=[-0.2, 0, 0.75], physicsClientId=self.id)
+
+        # # Initialize the tool in the robot's gripper
+        # self.tool.init(self.robot, self.task, self.directory, self.id, self.np_random, right=True,
+        #                mesh_scale=[0.08] * 3)
+
+        target_ee_pos = np.array([-0.15, -0.65, 1.15]) + self.np_random.uniform(-0.05, 0.05, size=3)
+        # target_ee_orient = self.get_quaternion(self.robot.toc_ee_orient_rpy[self.task])
+        # self.init_robot_pose(target_ee_pos, target_ee_orient,
+        #                      [(target_ee_pos, target_ee_orient), (self.target_pos, None)],
+        #                      [(self.target_pos, target_ee_orient)], arm='right', tools=[self.tool],
+        #                      collision_objects=[self.human, self.table, self.furniture])
+
+        # Open gripper to hold the tool
+        # self.robot.set_gripper_open_position(self.robot.right_gripper_indices, self.robot.gripper_pos[self.task],
+        #                                      set_instantly=True)
+        bed_height, bed_base_height = self.furniture.get_heights(set_on_ground=True)
+        self.human.set_on_ground(bed_height)
+
+        if not self.robot.mobile:
+            self.robot.set_gravity(0, 0, -9.81)
+        self.human.set_gravity(0, 0,  -9.81)
+
+        # p.setPhysicsEngineParameter(numSubSteps=4, numSolverIterations=10, physicsClientId=self.id)
+
+
+        # Enable rendering
+        # p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1, physicsClientId=self.id)
+        self.init_env_variables()
+        return self._get_obs()
+

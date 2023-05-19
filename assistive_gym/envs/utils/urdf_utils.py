@@ -1,12 +1,162 @@
 import pickle
+from typing import List
 
 import numpy as np
 import pybullet as p
 import torch
 from pytorch3d import transforms as t3d
+from trimesh import Trimesh
 
 from assistive_gym.envs.utils.human_pip_dict import HumanPipDict
-from assistive_gym.envs.utils.urdf_editor import UrdfEditor
+from assistive_gym.envs.utils.smpl_geom import HullWrapper
+from assistive_gym.envs.utils.urdf_editor import UrdfEditor, UrdfJoint, UrdfLink
+
+human_dict = HumanPipDict()
+# BM_FRACTION = body_mass/70.45
+BM_FRACTION = 1.0
+
+JOINT_SETTING = {
+    "pelvis": {
+        "joint_limits": [-60, 60] * 3, # deg
+        "joint_damping": 0.0,
+        "joint_stiffness": 0.0,
+    },
+    "left_hip": {
+        "joint_limits": [[-90.0, 17.8], [-33.7, 32.6], [-30.5, 38.6]],
+        "joint_damping": [15*10.0] *3,
+        "joint_stiffness": [10.0] *3
+    },
+    "left_knee": {
+        "joint_limits": [[-1.3, 139.9], [0, 0], [0, 0]], # TODO: check
+        "joint_damping": 0.0,
+        "joint_stiffness": 0.0,
+    },
+    "left_ankle": {
+        "joint_limits": [[-30, 30], [-30, 30], [-30, 30]],
+        "joint_damping": 0.0,
+        "joint_stiffness": 0.0,
+    },
+    "left_foot": {
+        "joint_limits":[[-30, 30], [-30, 30], [-30, 30]], # TODO: no value from Henry, set same as ankle
+        "joint_damping": 0.0,
+        "joint_stiffness": 0.0,
+    },
+    "right_hip":
+        {
+            "joint_limits": [[-90.0, 17.8], [-32.6, 33.7], [-38.6, 30.5]],
+            "joint_damping": [15*10.0] *3,
+            "joint_stiffness": [10.0] *3
+        },
+    "right_knee":
+        {
+            "joint_limits": [[-1.3, 139.9], [0, 0], [0, 0]], # TODO: check
+            "joint_damping": 0.0,
+            "joint_stiffness": 0.0,
+        },
+    "right_ankle":
+        {
+            "joint_limits": [[-30, 30], [-30, 30], [-30, 30]],
+            "joint_damping": 0.0,
+            "joint_stiffness": 0.0,
+        },
+    "right_foot":
+        {
+            "joint_limits":[[-30, 30], [-30, 30], [-30, 30]],
+            "joint_damping": 0.0,
+            "joint_stiffness": 0.0,
+        },
+    "spine_2":
+        {
+            "joint_limits": [[-30, 30], [-30, 30], [-30, 30]],
+            "joint_damping": 0.0,
+            "joint_stiffness": 0.0,
+        },
+    "spine_3":
+        {
+            "joint_limits": [[-30, 30], [-30, 30], [-30, 30]],
+            "joint_damping": 0.0,
+            "joint_stiffness": 0.0,
+        },
+    "spine_4":
+        {
+            "joint_limits": [[-30, 30], [-30, 30], [-30, 30]],
+            "joint_damping": 0.0,
+            "joint_stiffness": 0.0,
+        },
+    "neck":
+        {
+            "joint_limits": [[-30, 30], [-5,5], [-5, 5]],
+            "joint_damping": 0.0,
+            "joint_stiffness": 0.0,
+        },
+    "head":
+        {
+            "joint_limits": [[-30, 30], [-5,5], [-5, 5]],
+            "joint_damping": 0.0,
+            "joint_stiffness": 0.0,
+        },
+    "left_clavicle":
+        {
+            "joint_limits": [[-88.9/3.0, 81.4/3.0], [-140.7/3.0, 43.7/3.0], [-90.0/3.0, 80.4/3.0]],
+            "joint_damping": 0.0,
+            "joint_stiffness": 0.0,
+        },
+    "left_shoulder":
+        {
+            "joint_limits":  [[-88.9*2/3.0, 81.4*2/3.0], [-140.7*2/3.0, 43.7*2/3.0], [-90.0*2/3.0, 80.4*2/3.0]],
+            "joint_damping": 0.0,
+            "joint_stiffness": 0.0,
+
+        },
+    "left_elbow":
+        {
+            "joint_limits": [[-147.3, 2.8], [0, 0], [0, 0]], #TODO: check
+            "joint_damping": 0.0,
+            "joint_stiffness": 0.0,
+        },
+    "left_lowarm":
+        {
+            "joint_limits":  [[-30, 30], [-30, 30], [-30, 30]],
+            "joint_damping": 0.0,
+            "joint_stiffness": 0.0,
+        },
+    "left_hand":
+        {
+            "joint_limits":  [[-30, 30], [-30, 30], [-30, 30]],
+            "joint_damping": 0.0,
+            "joint_stiffness": 0.0,
+        },
+    "right_clavicle":
+        {
+            "joint_limits":  [[-88.9/3.0, 81.4/3.0], [-43.7/3.0, 140.7/3.0], [-90.0/3.0, 80.4/3.0]],
+            "joint_damping": 0.0,
+            "joint_stiffness": 0.0,
+        },
+    "right_shoulder":
+        {
+            "joint_limits": [[-88.9*2/3.0, 81.4*2/3.0], [-43.7*2/3.0, 140.7*2/3.0], [-90.0*2/3.0, 80.4*2/3.0]],
+            "joint_damping": 0.0,
+            "joint_stiffness": 0.0,
+        },
+    "right_elbow":
+        {
+            "joint_limits": [[-2.8, 147.3], [0, 0], [0, 0]],
+            "joint_damping": 0.0,
+            "joint_stiffness": 0.0,
+        },
+    "right_lowarm":
+        {
+            "joint_limits": [[-30, 30], [-30, 30], [-30, 30]],
+            "joint_damping": 0.0,
+            "joint_stiffness": 0.0,
+        },
+    "right_hand":
+        {
+            "joint_limits": [[-30, 30], [-30, 30], [-30, 30]], #TODO: no limits from Henry
+            "joint_damping": 0.0,
+            "joint_stiffness": 0.0,
+        },
+}
 
 
 def load_smpl(filename):
@@ -84,25 +234,17 @@ def get_bodypart_name(urdf_name):
     return name, suffix
 
 
-def reposition_body_part(human_id, physic_client_id, pos_dict):
-    editor = UrdfEditor()
-    editor.initializeFromBulletBody(human_id, physic_client_id)  # load all properties to editor
-    human_dict = HumanPipDict()
+def simple_inertia(inertia):
+    """
+    :param inertia: np array 3x3
+    :return: inertia tensor in tuple (ixx, iyy, izz)
+    """
+    return tuple([inertia[0][0], inertia[1][1], inertia[2][2]])
 
-    for link in editor.urdfLinks:
-        name, suffix = get_bodypart_name(link.link_name)
-        if name in human_dict.urdf_to_smpl_dict.keys():
-            xyz = (0, 0, 0)
-            for v in link.urdf_visual_shapes:
-                v.origin_xyz = xyz
-            for c in link.urdf_collision_shapes:
-                c.origin_xyz = xyz
+def deg_to_rad(deg):
+    return deg * np.pi / 180.0
 
-            # inertia
-            link.urdf_inertial.origin_xyz = xyz
-            if suffix == 'limb':
-                link.urdf_inertial.mass = 2
-
+def config_joints(joints: List[UrdfJoint], pos_dict):
     # smpl joint is spherical.
     # due to the limitation of pybullet (no joint limit for spherical joint),
     # we need to decompose it to 3 revolute joints (rx, ry, rz) and 1 fixed joint (rzdammy) rx -> ry -> rz -> rzdammy
@@ -110,13 +252,13 @@ def reposition_body_part(human_id, physic_client_id, pos_dict):
     # we need to move the joint origin to correct position as follow
     # - set rx joint origin = urdf_joint pos - parent urdf joint pos
     # - set ry, rz, rxdammy origin = 0 (superimpose on the rx joint)
-    for j in editor.urdfJoints:
+
+    for j in joints:
         name, suffix = get_bodypart_name(j.joint_name)
         if name in human_dict.urdf_to_smpl_dict.keys():
-            urdf_name = human_dict.urdf_to_smpl_dict[name]
+            smpl_name = human_dict.urdf_to_smpl_dict[name]
             if suffix == 'rx':
-                pos = pos_dict[urdf_name]
-
+                pos = pos_dict[smpl_name]
                 parent = human_dict.joint_to_parent_joint_dict[name]
                 pos_parent = pos_dict[human_dict.urdf_to_smpl_dict[parent]]
                 xyz = pos - pos_parent
@@ -125,7 +267,50 @@ def reposition_body_part(human_id, physic_client_id, pos_dict):
             j.joint_origin_xyz = xyz
         else:
             j.joint_origin_xyz = (0, 0, 0)
-        j.joint_lower_limit = -3.14
-        j.joint_upper_limit = 3.14
+        # set joint limit
+        if j.joint_type == p.JOINT_REVOLUTE:
+            joint_limit = JOINT_SETTING[name]['joint_limits']
+            if suffix == 'rx':
+                idx = 0
+            elif suffix == 'ry':
+                idx = 1
+            elif suffix == 'rz':
+                idx = 2
+
+            # j.joint_lower_limit = deg_to_rad(joint_limit[idx][0])
+            # j.joint_upper_limit = deg_to_rad(joint_limit[idx][1])
+
+
+def config_links(links: List[UrdfLink], hull_dict):
+    xyz = (0, 0, 0)  # default
+    for link in links:
+        name, suffix = get_bodypart_name(link.link_name)
+        if name in human_dict.urdf_to_smpl_dict.keys():
+            for v in link.urdf_visual_shapes:
+                v.origin_xyz = xyz
+            for c in link.urdf_collision_shapes:
+                c.origin_xyz = xyz
+
+            smpl_name = human_dict.urdf_to_smpl_dict[name]
+            hull: Trimesh = hull_dict[smpl_name].hull
+            # inertia
+            inertia = link.urdf_inertial
+            inertia.origin_xyz = xyz
+            if suffix == 'limb':
+                inertia.mass = hull.mass
+                # due to limitation of pybullet urdfeditor, we can only set ixx, iyy, izz
+                inertia.inertia_xxyyzz = simple_inertia(hull.moment_inertia)
+            else:
+                # fake link
+                inertia.mass = 0.0
+            link.urdf_inertial = inertia
+
+
+def generate_urdf(human_id, physic_client_id, hull_dict, pos_dict):
+    editor = UrdfEditor()
+    editor.initializeFromBulletBody(human_id, physic_client_id)  # load all properties to editor
+
+    config_links(editor.urdfLinks, hull_dict)
+    config_joints(editor.urdfJoints, pos_dict)
 
     editor.saveUrdf("test_mesh.urdf", True)

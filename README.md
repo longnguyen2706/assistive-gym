@@ -176,7 +176,7 @@ pip3 install opencv-python
 pip3 install matplotlib
 
 pip3 install chumpy
-
+pip3 install open3d # for trimesh decimation
 ```
 Added lib for geom 
 ```

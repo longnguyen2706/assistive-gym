@@ -26,7 +26,7 @@ def viewer(env_name):
         # else:
         #     print('Observation size:', np.shape(observation), 'Action size:', np.shape(action))
 
-        while not done:
+        while 1:
             observation, reward, done, info = env.step(sample_action(env, coop))
             # if coop:
             #     done = done['__all__']

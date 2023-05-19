@@ -7,6 +7,7 @@ from screeninfo import get_monitors
 import pybullet as p
 from keras.models import load_model
 
+from .human_creation import HumanCreation
 from .util import Util
 from .human_creation2 import HumanCreation2
 from .agents import agent, human, robot, panda, tool, furniture
@@ -35,7 +36,7 @@ class AssistiveEnv(gym.Env):
             self.util = Util(self.id, self.np_random)
 
         self.directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'assets')
-        self.human_creation = HumanCreation2(self.id, np_random=self.np_random, cloth=('dressing' in task))
+        self.human_creation = HumanCreation(self.id, np_random=self.np_random, cloth=('dressing' in task))
         self.human_limits_model = load_model(os.path.join(self.directory, 'realistic_arm_limits_model.h5'))
         self.action_robot_len = len(robot.controllable_joint_indices) if robot is not None else 0
         self.action_human_len = len(human.controllable_joint_indices) if human is not None and human.controllable else 0
@@ -44,7 +45,7 @@ class AssistiveEnv(gym.Env):
         self.obs_human_len = obs_human_len if human is not None and human.controllable else 0
         self.observation_space = spaces.Box(low=np.array([-1000000000.0]*(self.obs_robot_len+self.obs_human_len), dtype=np.float32), high=np.array([1000000000.0]*(self.obs_robot_len+self.obs_human_len), dtype=np.float32), dtype=np.float32)
         self.action_space_robot = spaces.Box(low=np.array([-1.0]*self.action_robot_len, dtype=np.float32), high=np.array([1.0]*self.action_robot_len, dtype=np.float32), dtype=np.float32)
-        self.action_space_human = spaces.Box(low=np.array([-1.0]*self.action_human_len, dtype=np.float32), high=np.array([1.0]*self.action_human_len, dtype=np.float32), dtype=np.float32)
+        self.action_space_human = spaces.Box(low=np.array([-10000.0]*self.action_human_len, dtype=np.float32), high=np.array([10000.0]*self.action_human_len, dtype=np.float32), dtype=np.float32)
         self.observation_space_robot = spaces.Box(low=np.array([-1000000000.0]*self.obs_robot_len, dtype=np.float32), high=np.array([1000000000.0]*self.obs_robot_len, dtype=np.float32), dtype=np.float32)
         self.observation_space_human = spaces.Box(low=np.array([-1000000000.0]*self.obs_human_len, dtype=np.float32), high=np.array([1000000000.0]*self.obs_human_len, dtype=np.float32), dtype=np.float32)
 
@@ -125,10 +126,16 @@ class AssistiveEnv(gym.Env):
             self.robot.init(self.directory, self.id, self.np_random, fixed_base=not self.robot.mobile)
             self.agents.append(self.robot)
         # Create human
-        if self.human is not None and isinstance(self.human, Human):
-            self.human.init(self.human_creation, self.human_limits_model, fixed_human_base, human_impairment, gender, self.config, self.id, self.np_random)
-            if self.human.controllable or self.human.impairment == 'tremor':
+        if self.human is not None:
+            if  isinstance(self.human, Human):
+                self.human.init(self.human_creation, self.human_limits_model, fixed_human_base, human_impairment, gender, self.config, self.id, self.np_random)
+                if self.human.controllable or self.human.impairment == 'tremor':
+                    self.agents.append(self.human)
+            else: # human urdf
+                self.human.init(self.id, self.np_random)
                 self.agents.append(self.human)
+                self.update_action_space()
+
         # Create furniture (wheelchair, bed, or table)
         if furniture_type is not None:
             self.furniture.init(furniture_type, self.directory, self.id, self.np_random, wheelchair_mounted=self.robot.wheelchair_mounted if self.robot is not None else False)
@@ -187,6 +194,7 @@ class AssistiveEnv(gym.Env):
         actions = np.clip(actions, a_min=self.action_space.low, a_max=self.action_space.high)
         actions *= action_multiplier
         action_index = 0
+        print ("agents: ", self.agents)
         for i, agent in enumerate(self.agents):
             needs_action = not isinstance(agent, Human) or agent.controllable
             if needs_action:

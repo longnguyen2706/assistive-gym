@@ -1,6 +1,6 @@
 class HumanPipDict:
     def __init__(self):
-        #TODO: dynamically generate this based on the URDF
+        # TODO: dynamically generate this based on the URDF
         self.joint_dict = {
             "left_hip": 1,
             "left_knee": 5,
@@ -26,12 +26,12 @@ class HumanPipDict:
             "left_hand": 73,
             "right_clavicle": 77,
             "right_shoulder": 81,
-            "right_elbow":  85,
+            "right_elbow": 85,
             "right_lowarm": 89,
             "right_hand": 93,
         }
 
-        self.urdf_to_smpl_dict  = {
+        self.urdf_to_smpl_dict = {
             "pelvis": "Pelvis",
             "left_hip": "L_Hip",
             "left_knee": "L_Knee",
@@ -85,7 +85,13 @@ class HumanPipDict:
             "right_hand": "right_lowarm"
         }
 
+
+
+
     def get_joint_ids(self, joint_name):
         joint_id = self.joint_dict[joint_name]
         return [joint_id, joint_id + 1, joint_id + 2]
 
+    def get_dammy_joint_id(self, joint_name):
+        joint_id = self.joint_dict[joint_name]
+        return joint_id + 3

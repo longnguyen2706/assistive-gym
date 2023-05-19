@@ -19,7 +19,7 @@ class Agent:
         self.id = id
         self.np_random = np_random
         self.all_joint_indices = list(range(p.getNumJoints(body, physicsClientId=id)))
-        print ("all_joint_indices", self.all_joint_indices)
+        # print ("all_joint_indices", self.all_joint_indices)
         if indices != -1:
             self.update_joint_limits()
             self.enforce_joint_limits(indices)
@@ -38,7 +38,7 @@ class Agent:
             indices = self.all_joint_indices
         elif not indices:
             return []
-        print("indices: ", indices)
+        # print(self.body, " indices: ", indices)
         robot_joint_states = p.getJointStates(self.body, jointIndices=indices, physicsClientId=self.id)
         return np.array([x[0] for x in robot_joint_states])
 

@@ -5,7 +5,7 @@ from screeninfo import get_monitors
 import pybullet as p
 from keras.models import load_model
 from gym.utils import seeding
-from .human_creation2 import HumanCreation2
+from .human_creation import HumanCreation
 from .agents import agent, human
 from .agents.agent import Agent
 from .agents.human import Human
@@ -30,7 +30,7 @@ class BaseEnv:
 
         self.np_random, seed = seeding.np_random(seed)
         self.directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'assets')
-        self.human_creation = HumanCreation2(self.id, np_random=self.np_random, cloth=False)
+        self.human_creation = HumanCreation(self.id, np_random=self.np_random, cloth=False)
         self.human_limits_model = load_model(os.path.join(self.directory, 'realistic_arm_limits_model.h5'))
 
         self.agents = []
