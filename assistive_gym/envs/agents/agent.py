@@ -19,7 +19,7 @@ class Agent:
         self.id = id
         self.np_random = np_random
         self.all_joint_indices = list(range(p.getNumJoints(body, physicsClientId=id)))
-        # print ("all_joint_indices", self.all_joint_indices)
+        # print ("body: ", body,  " all_joint_indices: ", self.all_joint_indices)
         if indices != -1:
             self.update_joint_limits()
             self.enforce_joint_limits(indices)

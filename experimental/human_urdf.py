@@ -11,7 +11,7 @@ from assistive_gym.envs.utils.human_pip_dict import HumanPipDict
 from assistive_gym.envs.utils.smpl_dict import SMPLDict
 
 from assistive_gym.envs.utils.smpl_geom import generate_geom
-from assistive_gym.envs.utils.urdf_utils import convert_aa_to_euler_quat, load_smpl, generate_urdf
+from assistive_gym.envs.utils.urdf_utils import convert_aa_to_euler_quat, load_smpl, generate_urdf, set_self_collisions
 
 
 class HumanUrdf(Agent):
@@ -27,7 +27,7 @@ class HumanUrdf(Agent):
         self.controllable = True
         self.motor_forces= 2000.0
         self.motor_gains = 0.05
-        self.end_effectors = ['right_hand', 'left_hand', 'right_foot', 'left_foot']
+        self.end_effectors = ['right_hand', 'left_hand', 'right_foot', 'left_foot', 'head']
     def change_color(self, color):
         r"""
         Change the color of a robot.
@@ -41,41 +41,37 @@ class HumanUrdf(Agent):
         print ("global_orient", smpl_data["global_orient"])
         print ("pelvis", smpl_data["body_pose"][0:3])
         pose = smpl_data["body_pose"]
-        # global_orient = smpl_data["global_orient"]
-        # global_orient = convert_aa_to_euler(global_orient)
-        # quat = np.array(p.getQuaternionFromEuler(np.array(global_orient), physic_client_idId=id))
-        # p.resetBasePositionAndOrientation(id, [0, 0, 0], quat)
-        # set_global_angle(id, pose)
 
-        # self.set_joint_angle(self.id, pose, "R_Hip", "right_hip")
-        # self.set_joint_angle(self.id, pose, "Spine1", "spine_2")
-        # self.set_joint_angle(self.id, pose, "Spine2", "spine_3")
-        # self.set_joint_angle(self.id, pose, "Spine3", "spine_4")
-        #
-        # self.set_joint_angle(self.id, pose, "L_Hip", "left_hip")
-        # self.set_joint_angle(self.id, pose, "L_Knee", "left_knee")
-        # self.set_joint_angle(self.id, pose, "L_Ankle", "left_ankle")
-        # self.set_joint_angle(self.id, pose, "L_Foot", "left_foot")
-        #
-        # self.set_joint_angle(self.id, pose, "R_Hip", "right_hip")
-        # self.set_joint_angle(self.id, pose, "R_Knee", "right_knee")
-        # self.set_joint_angle(self.id, pose, "R_Ankle", "right_ankle")
-        # self.set_joint_angle(self.id, pose, "R_Foot", "right_foot")
-        #
-        # self.set_joint_angle(self.id, pose, "R_Collar", "right_clavicle")
-        # self.set_joint_angle(self.id, pose, "R_Shoulder", "right_shoulder")
-        # self.set_joint_angle(self.id, pose, "R_Elbow", "right_elbow")
-        # self.set_joint_angle(self.id, pose, "R_Wrist", "right_lowarm")
-        # self.set_joint_angle(self.id, pose, "R_Hand", "right_hand")
-        #
-        # self.set_joint_angle(self.id, pose, "L_Collar", "left_clavicle")
-        # self.set_joint_angle(self.id, pose, "L_Shoulder", "left_shoulder")
-        # self.set_joint_angle(self.id, pose, "L_Elbow", "left_elbow")
-        # self.set_joint_angle(self.id, pose, "L_Wrist", "left_lowarm")
-        # self.set_joint_angle(self.id, pose, "L_Hand", "left_hand")
-        #
-        # self.set_joint_angle(self.id, pose, "Neck", "neck")
-        # self.set_joint_angle(self.id, pose, "Head", "head")
+        self.set_global_angle(self.body, pose)
+
+        self._set_joint_angle(self.body, pose, "Spine1", "spine_2")
+        self._set_joint_angle(self.body, pose, "Spine2", "spine_3")
+        self._set_joint_angle(self.body, pose, "Spine3", "spine_4")
+
+        self._set_joint_angle(self.body, pose, "L_Hip", "left_hip")
+        self._set_joint_angle(self.body, pose, "L_Knee", "left_knee")
+        self._set_joint_angle(self.body, pose, "L_Ankle", "left_ankle")
+        self._set_joint_angle(self.body, pose, "L_Foot", "left_foot")
+
+        self._set_joint_angle(self.body, pose, "R_Hip", "right_hip")
+        self._set_joint_angle(self.body, pose, "R_Knee", "right_knee")
+        self._set_joint_angle(self.body, pose, "R_Ankle", "right_ankle")
+        self._set_joint_angle(self.body, pose, "R_Foot", "right_foot")
+
+        self._set_joint_angle(self.body, pose, "R_Collar", "right_clavicle")
+        self._set_joint_angle(self.body, pose, "R_Shoulder", "right_shoulder")
+        self._set_joint_angle(self.body, pose, "R_Elbow", "right_elbow")
+        self._set_joint_angle(self.body, pose, "R_Wrist", "right_lowarm")
+        self._set_joint_angle(self.body, pose, "R_Hand", "right_hand")
+
+        self._set_joint_angle(self.body, pose, "L_Collar", "left_clavicle")
+        self._set_joint_angle(self.body, pose, "L_Shoulder", "left_shoulder")
+        self._set_joint_angle(self.body, pose, "L_Elbow", "left_elbow")
+        self._set_joint_angle(self.body, pose, "L_Wrist", "left_lowarm")
+        self._set_joint_angle(self.body, pose, "L_Hand", "left_hand")
+
+        self._set_joint_angle(self.body, pose, "Neck", "neck")
+        self._set_joint_angle(self.body, pose, "Head", "head")
 
     def get_skin_color(self):
         hsv = list(colorsys.rgb_to_hsv(0.8, 0.6, 0.4))
@@ -83,19 +79,18 @@ class HumanUrdf(Agent):
         skin_color = list(colorsys.hsv_to_rgb(*hsv)) + [1]
         return skin_color
 
-    def set_global_angle(self, id, pose):
-        euler, quat = convert_aa_to_euler_quat(pose[self.smpl_dict.get_pose_ids("pelvis")])
-        # euler = euler_convert_np(euler, from_seq='XYZ', to_seq='ZYX')
-        # quat = np.array(p.getQuaternionFromEuler(np.array(euler), physic_client_idId=id))
-        p.resetBasePositionAndOrientation(id, [0, 0, 0], quat)
+    def set_global_angle(self, human_id, pose):
+        _, quat = convert_aa_to_euler_quat(pose[self.smpl_dict.get_pose_ids("Pelvis")])
+        # quat = np.array(p.getQuaternionFromEuler(np.array(euler)))
+        p.resetBasePositionAndOrientation(human_id, [0, 0, 1], quat)
 
-    def set_joint_angle(self, id, pose, smpl_joint_name, robot_joint_name):
-        smpl_angles = convert_aa_to_euler_quat(pose[self.smpl_dict.get_pose_ids(smpl_joint_name)])
+    def _set_joint_angle(self, human_id, pose, smpl_joint_name, robot_joint_name):
+        smpl_angles, _ = convert_aa_to_euler_quat(pose[self.smpl_dict.get_pose_ids(smpl_joint_name)])
 
         # smpl_angles = pose[smpl_dict.get_pose_ids(smpl_joint_name)]
         robot_joints = self.human_pip_dict.get_joint_ids(robot_joint_name)
         for i in range(0, 3):
-            p.resetJointState(id, robot_joints[i], smpl_angles[i])
+            p.resetJointState(human_id, robot_joints[i], smpl_angles[i])
 
     def generate_human_mesh(self, id, physic_id, model_path):
         hull_dict, joint_pos_dict, _ = generate_geom(model_path)
@@ -106,7 +101,9 @@ class HumanUrdf(Agent):
     def init(self, physics_id, np_random):
         # TODO: no hard coding
         # self.id = p.loadURDF("assistive_gym/envs/assets/human/human_pip.urdf")
-        self.body = p.loadURDF("ref_mesh.urdf", flags=p.URDF_USE_SELF_COLLISION, useFixedBase=True) # enable self collision
+        # self.body = p.loadURDF("ref_mesh.urdf", useFixedBase=False) # enable self collision
+        self.body = p.loadURDF("test_mesh.urdf", [0, 0, 0.1], flags=p.URDF_USE_SELF_COLLISION, useFixedBase=False)
+        set_self_collisions(self.body, physics_id)
         super(HumanUrdf, self).init(self.body, physics_id, np_random)
 
     def get_movable_joints(self): # ignore all joints that are fixed
@@ -137,9 +134,9 @@ class HumanUrdf(Agent):
 
         cos_positions = []
         for ee in ee_idxs:
-            center_of_mass_pos = p.getLinkState(self.body, ee, computeLinkVelocity=False, computeForwardKinematics=False,
+            center_of_mass_pos = p.getLinkState(self.body, ee, computeLinkVelocity=True, computeForwardKinematics=True,
                                             physicsClientId=self.id)[2]
-            cos_positions.append(center_of_mass_pos)
+            cos_positions.append(center_of_mass_pos) #TODO: check if motor_positions change after computeForwardKinematics
         self.set_joint_angles(self.controllable_joint_indices, original_angles) # reset to original angles
         return cos_positions, motor_positions
 

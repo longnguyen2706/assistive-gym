@@ -17,7 +17,7 @@ from assistive_gym.envs.utils.smpl_dict import SMPLDict
 
 from assistive_gym.envs.smpl.serialization import load_model
 from assistive_gym.envs.utils.smpl_geom import generate_geom
-from assistive_gym.envs.utils.urdf_utils import convert_aa_to_euler_quat, load_smpl, generate_urdf
+from assistive_gym.envs.utils.urdf_utils import convert_aa_to_euler_quat, load_smpl, generate_urdf, set_self_collisions
 
 
 class HumanUrdf(Agent):
@@ -94,7 +94,8 @@ class HumanUrdf(Agent):
     def init(self, id, np_random):
         # TODO: no hard coding
         # self.human_id = p.loadURDF("assistive_gym/envs/assets/human/human_pip.urdf")
-        self.human_id = p.loadURDF("test_mesh.urdf", [0, 0, 1])
+        self.human_id = p.loadURDF("test_mesh.urdf", [0, 0, 0.1], flags=p.URDF_USE_SELF_COLLISION, useFixedBase=False)
+        set_self_collisions(self.human_id, id)
         super(HumanUrdf, self).init(self.human_id, id, np_random)
 
 if __name__ == "__main__":

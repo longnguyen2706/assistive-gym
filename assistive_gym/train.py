@@ -1,15 +1,10 @@
 import os, sys, multiprocessing, gym, ray, shutil, argparse, importlib, glob
+import pickle
+
 import numpy as np
 from cma import CMA
-# from ray.rllib.agents.ppo import PPOTrainer, DEFAULT_CONFIG
-# from ray.rllib.agents import ppo
-# from ray.rllib.algorithms import ppo, sac
-from ray.rllib.algorithms.ppo import PPO
-from ray.rllib.algorithms.sac import SAC
-from ray.tune.logger import pretty_print
 from numpngw import write_apng
-
-
+import pybullet as p
 
 def setup_config(env, algo, coop=False, seed=0, extra_configs={}):
     pass
@@ -28,41 +23,60 @@ def make_env(env_name, coop=False, seed=1001):
     return env
 
 def cost_function(env, solution):
-    # env.reset()  # TODO: fix
     # c_joints = env.human.get_controllable_joints()
     # print ("c_joints: ", c_joints)
     # env.human.set_joint_angles(c_joints, solution)
-    return 1/env.human.cal_manipulibility(solution)
-
+    return 1000.0/env.human.cal_manipulibility(solution)
 
 def train(env_name, algo, timesteps_total=10, save_dir='./trained_models/', load_policy_path='', coop=False, seed=0, extra_configs={}):
     env = make_env(env_name, coop=True)
     # agent, checkpoint_path = load_policy(env, algo, env_name, load_policy_path, coop, seed, extra_configs)
     # env.disconnect()
     env.reset()
+    actions = []
     x0 = np.zeros(len(env.human.controllable_joint_indices)) #no of joints
-    sigma = 0.01
+    sigma = 0.1
     optimizer = init_optimizer(x0, sigma)
     timestep = 0
+
     while timestep<timesteps_total:
         timestep += 1
 
         # Train until we have performed the desired number of timesteps
         # env.render()
-        solutions = optimizer.ask(number=100) # TODO: change this?
-        # print ("solutions: ", len(solutions))
+        solutions = optimizer.ask() # TODO: change this?
+        print ("solutions: ", len(solutions))
         optimizer.tell(solutions, [cost_function(env, s) for s in solutions])
 
         # step forward
         action = {'robot': env.action_space_robot.sample(), 'human': np.mean(solutions, axis=0)}
-
+        actions.append(action)
         env.step(action)
 
-    optimizer.disp()
-    return None
+        optimizer.disp()
+    optimizer.result_pretty()
+
+    env.disconnect()
+    #save action to replay
+    print ("actions: ", len(actions))
+    pickle.dump(actions, open("actions.pkl", "wb"))
+
+    return env, actions
 
 def init_optimizer(x0, sigma):
     return CMA(x0, sigma)
+
+def render(env, actions):
+    print("actions: ", actions)
+    env.render() # need to call reset after render
+    env.reset()
+    # p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1, physicsClientId=env.id)
+    for a in actions:
+        env.step(a)
+    # while 1:
+    #     env.step({'robot': env.action_space_robot.sample(), 'human': env.action_space_human.sample()})
+
+
 def render_policy(env, env_name, algo, policy_path, coop=False, colab=False, seed=0, n_episodes=1, extra_configs={}):
     ray.init(num_cpus=multiprocessing.cpu_count(), ignore_reinit_error=True, log_to_driver=False)
     if env is None:
@@ -135,9 +149,13 @@ if __name__ == '__main__':
     checkpoint_path = None
 
     if args.train:
-        checkpoint_path = train(args.env, args.algo, timesteps_total=args.train_timesteps, save_dir=args.save_dir, load_policy_path=args.load_policy_path, coop=coop, seed=args.seed)
+        _, actions = train(args.env, args.algo, timesteps_total=args.train_timesteps, save_dir=args.save_dir, load_policy_path=args.load_policy_path, coop=coop, seed=args.seed)
+
     if args.render:
-        render_policy(None, args.env, args.algo, checkpoint_path if checkpoint_path is not None else args.load_policy_path, coop=coop, colab=args.colab, seed=args.seed, n_episodes=args.render_episodes)
+        actions = pickle.load(open("actions.pkl", "rb"))
+        env = make_env(args.env, coop=True)
+        render(env, actions)
+        # render_policy(None, args.env, args.algo, checkpoint_path if checkpoint_path is not None else args.load_policy_path, coop=coop, colab=args.colab, seed=args.seed, n_episodes=args.render_episodes)
     # if args.evaluate:
     #     evaluate_policy(args.env, args.algo, checkpoint_path if checkpoint_path is not None else args.load_policy_path, n_episodes=args.eval_episodes, coop=coop, seed=args.seed, verbose=args.verbose)
 

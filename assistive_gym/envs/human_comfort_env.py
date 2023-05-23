@@ -1,6 +1,9 @@
+import os
+
 from assistive_gym.envs.agents.sawyer import Sawyer
 from assistive_gym.envs.agents.stretch import Stretch
 from assistive_gym.envs.env import AssistiveEnv
+from assistive_gym.envs.utils.urdf_utils import load_smpl
 from experimental.human_urdf import HumanUrdf
 import numpy as np
 import pybullet as p
@@ -14,6 +17,7 @@ class HumanComfortEnv(AssistiveEnv):
         self.target_pos = np.array([0, 0, 0])
     def get_comfort_score(self):
         return np.random.rand() #TODO: implement this
+    # TODO: refactor train to move the score return to env.step
     def step(self, action):
         if self.human.controllable:
             # print("action", action)
@@ -51,18 +55,19 @@ class HumanComfortEnv(AssistiveEnv):
                 'robot': info, 'human': info}
 
     def _get_obs(self, agent=None):
-        robot_joint_angles = self.robot.get_joint_angles(self.robot.controllable_joint_indices)
+        # robot_joint_angles = self.robot.get_joint_angles(self.robot.controllable_joint_indices)
         # Fix joint angles to be in [-pi, pi]
-        robot_joint_angles = (np.array(robot_joint_angles) + np.pi) % (2 * np.pi) - np.pi
-        if self.robot.mobile:
-            # Don't include joint angles for the wheels
-            robot_joint_angles = robot_joint_angles[len(self.robot.wheel_joint_indices):]
+        # robot_joint_angles = (np.array(robot_joint_angles) + np.pi) % (2 * np.pi) - np.pi
+        # if self.robot.mobile:
+        #     # Don't include joint angles for the wheels
+        #     robot_joint_angles = robot_joint_angles[len(self.robot.wheel_joint_indices):]
 
         target_pos_real, _ = self.robot.convert_to_realworld(self.target_pos)
         self.robot_force_on_human= self.get_total_force()
         self.total_force_on_human = self.robot_force_on_human
-        robot_obs = np.concatenate(
-            [robot_joint_angles]).ravel()
+        # robot_obs = np.concatenate(
+        #     [robot_joint_angles]).ravel()
+        robot_obs = np.array([self.robot_force_on_human])
         if agent == 'robot':
             return robot_obs
         if self.human.controllable:
@@ -95,6 +100,7 @@ class HumanComfortEnv(AssistiveEnv):
         return total_force_on_human
     def reset(self):
         super(HumanComfortEnv, self).reset()
+
         self.build_assistive_env('hospital_bed')
 
         if self.robot.wheelchair_mounted:
@@ -127,13 +133,19 @@ class HumanComfortEnv(AssistiveEnv):
 
         if not self.robot.mobile:
             self.robot.set_gravity(0, 0, -9.81)
-        self.human.set_gravity(0, 0,  -9.81)
+        self.human.set_gravity(0, 0, -9.81)
+
+        smpl_path = os.path.join(os.getcwd(), "examples/data/smpl_bp_ros_smpl_8.pkl")
+        smpl_data = load_smpl(smpl_path)
+        self.human.set_joint_angles_with_smpl(smpl_data)
+        # drop human on bed
+        for _ in range(100):
+            p.stepSimulation(physicsClientId=self.id)
 
         # p.setPhysicsEngineParameter(numSubSteps=4, numSolverIterations=10, physicsClientId=self.id)
 
-
         # Enable rendering
-        # p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1, physicsClientId=self.id)
+        p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1, physicsClientId=self.id)
         self.init_env_variables()
         return self._get_obs()
 

@@ -194,7 +194,7 @@ class AssistiveEnv(gym.Env):
         actions = np.clip(actions, a_min=self.action_space.low, a_max=self.action_space.high)
         actions *= action_multiplier
         action_index = 0
-        print ("agents: ", self.agents)
+
         for i, agent in enumerate(self.agents):
             needs_action = not isinstance(agent, Human) or agent.controllable
             if needs_action:

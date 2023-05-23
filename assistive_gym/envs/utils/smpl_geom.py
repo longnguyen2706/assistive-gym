@@ -2,18 +2,18 @@ import os
 import numpy as np
 import smplx
 import trimesh
-
-from vtk import (
-    vtkQuadricDecimation,
-    vtkPolyData,
-    vtkSTLReader,
-    vtkSTLWriter,
-)
 import torch
 from assistive_gym.envs.utils.smpl_parser import SMPL_Parser
+import open3d as o3d
+
+class HullWrapper:
+    def __init__(self, hull: trimesh.Trimesh, filename: str):
+        self.hull = hull
+        self.filename = filename
 
 # BETAS = torch.Tensor(np.random.uniform(-1, 5, (1, 10))) # random betas
-BETAS = torch.Tensor(np.zeros((1, 10))) # random betas
+BETAS = torch.Tensor(np.zeros((1, 10))) # default beta
+DENSITY = 1000
 # show human mesh for debugging
 def show_human_mesh(model_path):
     model = smplx.create(model_path, model_type='smpl', gender='neutral')
@@ -33,6 +33,10 @@ def generate_body_hull(jname, vert, outdir, joint_pos = (0, 0, 0)):
 
     p_cloud = trimesh.PointCloud(vert)
     p_hull = p_cloud.convex_hull
+    # p_hull = simplify_mesh(p_hull, 10)
+    # p_hull = smooth_mesh(p_hull)
+    # p_hull.show()
+    p_hull.density = DENSITY
     centroid = p_hull.centroid
     # the original hull will render at exactly where the body part should be.
     # we move the body part to origin so that we could put it to the right place with joint position later
@@ -72,7 +76,7 @@ def generate_geom(model_path):
     geom_dir = "/home/louis/Documents/Projects/assistive-gym/assistive_gym/envs/assets/human/meshes/"
     os.makedirs(geom_dir, exist_ok=True)
     joint_pos_dict = {}
-
+    total_mass = 0
     for jind, jname in enumerate(joint_names):
         vind = np.where(vert_to_joint == jind)[0]
         if len(vind) == 0:
@@ -83,39 +87,41 @@ def generate_geom(model_path):
         r = generate_body_hull(jname, vert, geom_dir, joint_pos=smpl_jts[jind])
         joint_pos_dict[jname] = smpl_jts[jind]
 
-        hull_dict[jname] = {
-            "verts": vert,
-            "hull": r["hull"],
-            "filename": r["filename"],
-        }
-
+        hull_dict[jname] = HullWrapper(r["hull"], r["filename"])
+        total_mass += r["hull"].mass
+    print ("total mass: ", total_mass)
     return hull_dict, joint_pos_dict, joint_offsets
 
-# TODO: Clear this out
-def quadric_mesh_decimation(fname, reduction_rate, verbose=False):
-    reader = vtkSTLReader()
-    reader.SetFileName(fname)
-    reader.Update()
-    inputPoly = reader.GetOutput()
+def simplify_mesh(mesh, reduce_factor=2):
+    """
+    Simplify the mesh by quadratic decimation
+    :param mesh:
+    :param reduce_factor:
+    :return:
+    """
+    target_face_count = len(mesh.faces) // reduce_factor  # Reduce face count by 50%
+    new_mesh = mesh.simplify_quadratic_decimation(target_face_count)
+    return new_mesh
 
-    decimate = vtkQuadricDecimation()
-    decimate.SetInputData(inputPoly)
-    decimate.SetTargetReduction(reduction_rate)
-    decimate.Update()
-    decimatedPoly = vtkPolyData()
-    decimatedPoly.ShallowCopy(decimate.GetOutput())
+def smooth_mesh(mesh: trimesh.Trimesh):
+    """
+    Smooth the mesh by laplacian smoothing
+    :param mesh:
+    :return:
+    """
+    mesh = trimesh.smoothing.filter_laplacian(mesh, iterations=10)
+    return mesh
 
-    if verbose:
-        print(
-            f"Mesh Decimation: (points, faces) goes from ({inputPoly.GetNumberOfPoints(), inputPoly.GetNumberOfPolys()}) "
-            f"to ({decimatedPoly.GetNumberOfPoints(), decimatedPoly.GetNumberOfPolys()})"
-        )
+def visualize_pointcloud(vert):
+    """
+    visualize a point cloud
+    :param vert: vertices of a mesh
+    :return:
+    """
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(vert)
+    o3d.visualization.draw_geometries([pcd])
 
-    stlWriter = vtkSTLWriter()
-    stlWriter.SetFileName(fname)
-    stlWriter.SetFileTypeToBinary()
-    stlWriter.SetInputData(decimatedPoly)
-    stlWriter.Write()
 
 if __name__ == "__main__":
     model_path = os.path.join(os.getcwd(), "examples/data/SMPL_NEUTRAL.pkl")
