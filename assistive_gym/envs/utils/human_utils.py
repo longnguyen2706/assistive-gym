@@ -90,7 +90,22 @@ def change_dynamic_properties(human_id, link_ids):
                          contactStiffness=1e6,
                          contactDamping=1e3)
 
-def set_self_collision(human_id, physic_client_id, num_joints, joint_names, is_collision):
+
+def check_collision(body_id, other_body_id):
+    """
+    Check if two bodies are in collision and print out the link ids of the colliding links
+    Can be used to check self collision if body_id == other_body_id
+    :param body_id:
+    :param other_body_id:
+    :return:
+    """
+    contact_points = p.getContactPoints(bodyA=body_id, bodyB=other_body_id)
+    for contact in contact_points:
+        link_id_A = contact[3]
+        link_id_B = contact[4]
+        print(f"Link {link_id_A} of body {body_id} collided with link {link_id_B} of body {other_body_id}.")
+
+def set_self_collision(human_id, physic_client_id, num_joints, joint_names, is_collision, joint_to_ignore=[]):
     """
     Set self collision for joints in joint_names with the rest of the body
     :param human_id:
@@ -103,16 +118,28 @@ def set_self_collision(human_id, physic_client_id, num_joints, joint_names, is_c
     # right arm vs the rest
     fake_limb_ids = []
     real_limb_ids = []
+    joint_to_ignore_ids = []
     for name in joint_names:
         fake_limb_ids.extend(human_pip_dict.get_joint_ids(name))
         real_limb_ids.append(human_pip_dict.get_dammy_joint_id(name))
-    for i in fake_limb_ids:
-        for j in range(0, num_joints):
-            if j not in fake_limb_ids and j not in real_limb_ids:
-                p.setCollisionFilterPair(human_id, human_id, i, j, is_collision, physicsClientId=physic_client_id)
+    for name in joint_to_ignore:
+        if name == "pelvis":
+            joint_to_ignore_ids.append(human_pip_dict.get_joint_id(name))
+        else:
+            joint_to_ignore_ids.extend(human_pip_dict.get_joint_ids(name))
+            joint_to_ignore_ids.append(human_pip_dict.get_dammy_joint_id(name))
+
+    # merge 3 lists
+    joint_chain= fake_limb_ids + real_limb_ids + joint_to_ignore_ids
+    # enable collision between the fake limbs and the rest of the body (except link in fake limbs and real limbs list)
+    # for i in fake_limb_ids:
+    #     for j in range(0, num_joints):
+    #         if j not in joint_chain:
+    #             p.setCollisionFilterPair(human_id, human_id, i, j, is_collision, physicsClientId=physic_client_id)
+    # enable collision between the real limbs and the rest of the body (except link in fake limbs and real limbs list)
     for i in real_limb_ids:
         for j in range(0, num_joints):
-            if j not in fake_limb_ids and j not in real_limb_ids:
+            if j not in joint_chain:
                 p.setCollisionFilterPair(human_id, human_id, i, j, is_collision, physicsClientId=physic_client_id)
 
 def set_self_collisions(human_id, physic_client_id):
@@ -120,19 +147,20 @@ def set_self_collisions(human_id, physic_client_id):
     num_joints = p.getNumJoints(human_id, physicsClientId=physic_client_id)
 
     # disable all self collision
-    # for i in range(0, num_joints):
-    #     for j in range(0, num_joints):
-    #         p.setCollisionFilterPair(human_id, human_id, i, j, 0, physicsClientId=physic_client_id)
+    for i in range(0, num_joints):
+        for j in range(0, num_joints):
+            p.setCollisionFilterPair(human_id, human_id, i, j, 0, physicsClientId=physic_client_id)
 
     # only enable self collision for arms and legs with the rest of the body
     right_arms = ["right_shoulder", "right_elbow", "right_lowarm", "right_hand"]
-    left_arms = ["left_shoulder", "left_elbow", "left_lowarm", "left_hand"]
-    right_legs = ["right_hip", "right_knee", "right_ankle", "right_foot", "right_toe", "right_heel"]
-    # left_legs = ["left_hip", "left_knee", "left_ankle", "left_foot", "left_toe", "left_heel"]
-    # set_self_collision(human_id, physic_client_id, num_joints, right_arms, 1)
-    # set_self_collision(human_id, physic_client_id, num_joints, left_arms, 1)
-    # set_self_collision(human_id, physic_client_id, num_joints, right_legs, 1)
-    # set_self_collision(human_id, physic_client_id, num_joints, left_legs, 1)
+    left_arms = [ "left_shoulder", "left_elbow", "left_lowarm", "left_hand"]
+    right_legs = ["right_hip", "right_knee", "right_ankle", "right_foot"]
+    left_legs = ["left_hip", "left_knee", "left_ankle", "left_foot"]
+
+    set_self_collision(human_id, physic_client_id, num_joints, right_arms, 1, ["right_clavicle", "spine_4"])
+    set_self_collision(human_id, physic_client_id, num_joints, left_arms, 1, ["left_clavicle", "spine_4"])
+    set_self_collision(human_id, physic_client_id, num_joints, right_legs, 1, ["pelvis"])
+    set_self_collision(human_id, physic_client_id, num_joints, left_legs, 1, ["pelvis"])
 
 # def position_robot_toc(self, task, arms, start_pos_orient, target_pos_orients, human, base_euler_orient=np.zeros(3),
 #                        max_ik_iterations=200, max_ik_random_restarts=1, randomize_limits=False, attempts=100,

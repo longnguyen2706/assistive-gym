@@ -13,7 +13,8 @@ from smplx import lbs
 from assistive_gym.envs.agents.agent import Agent
 from assistive_gym.envs.agents.furniture import Furniture
 from assistive_gym.envs.utils.human_pip_dict import HumanPipDict
-from assistive_gym.envs.utils.human_utils import set_joint_angles, set_self_collisions, change_dynamic_properties
+from assistive_gym.envs.utils.human_utils import set_joint_angles, set_self_collisions, change_dynamic_properties, \
+    check_collision
 from assistive_gym.envs.utils.smpl_dict import SMPLDict
 
 from assistive_gym.envs.smpl.serialization import load_model
@@ -26,13 +27,13 @@ class HumanUrdfTest(Agent):
         super(HumanUrdfTest, self).__init__()
         self.smpl_dict = SMPLDict()
         self.human_pip_dict = HumanPipDict()
-        self.controllable_joint_indices = list(range(0, 93)) #94 joints
+        self.controllable_joint_indices = list(range(0, 97)) #94 joints
 
 
     def init(self, id, np_random):
         # TODO: no hard coding
         # self.human_id = p.loadURDF("assistive_gym/envs/assets/human/human_pip.urdf")
-        self.human_id = p.loadURDF("test_mesh.urdf", [0, 0, 0.1], flags=p.URDF_USE_SELF_COLLISION | p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS, useFixedBase=False)
+        self.human_id = p.loadURDF("test_mesh.urdf", [0, 0, 0], flags=p.URDF_USE_SELF_COLLISION, useFixedBase=False)
         set_self_collisions(self.human_id, id)
         change_dynamic_properties(human.human_id, list(range(0, 97)))
 
@@ -70,8 +71,6 @@ if __name__ == "__main__":
     smpl_data = load_smpl(smpl_path)
     set_joint_angles(human.human_id, smpl_data)
 
-
-
     # Set the camera view
     cameraDistance = 3
     cameraYaw = 0
@@ -96,6 +95,6 @@ if __name__ == "__main__":
 
     while True:
         p.stepSimulation()
-
+        check_collision(human.human_id, human.human_id)
     # Disconnect from the simulation
     p.disconnect()

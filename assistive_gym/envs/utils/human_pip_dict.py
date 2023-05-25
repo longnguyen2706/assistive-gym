@@ -2,6 +2,7 @@ class HumanPipDict:
     def __init__(self):
         # TODO: dynamically generate this based on the URDF
         self.joint_dict = {
+            "pelvis": 0,
             "left_hip": 1,
             "left_knee": 5,
             "left_ankle": 9,
@@ -85,13 +86,29 @@ class HumanPipDict:
             "right_hand": "right_lowarm"
         }
 
-
-
-
+    # TODO: solve the issue with fixed joint in URDF
     def get_joint_ids(self, joint_name):
+        """
+        Obtain the joint ids (x, y, z) for the given joint name (revolute joint only)
+        :param joint_name:
+        :return:
+        """
         joint_id = self.joint_dict[joint_name]
         return [joint_id, joint_id + 1, joint_id + 2]
 
     def get_dammy_joint_id(self, joint_name):
+        """
+        Obtain the dammy joint id for the given joint name (revolute joint only)
+        :param joint_name:
+        :return:
+        """
         joint_id = self.joint_dict[joint_name]
         return joint_id + 3
+
+    def get_joint_id(self, joint_name):
+        """
+        Obtain the joint id for the given joint name (fixed joint)
+        :param joint_name:
+        :return:
+        """
+        return self.joint_dict[joint_name]

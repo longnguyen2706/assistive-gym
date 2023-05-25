@@ -105,7 +105,7 @@ class HumanUrdf(Agent):
         # self.id = p.loadURDF("assistive_gym/envs/assets/human/human_pip.urdf")
         # self.body = p.loadURDF("pelvisdammy.urdf", useFixedBase=False) # enable self collision
         self.body = p.loadURDF("test_mesh.urdf", [0, 0, 0.1],
-                                   flags=p.URDF_USE_SELF_COLLISION | p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS,
+                                   flags=p.URDF_USE_SELF_COLLISION,
                                    useFixedBase=False)
         set_self_collisions(self.body, physics_id)
         num_joints= p.getNumJoints(self.body, physicsClientId=physics_id)
