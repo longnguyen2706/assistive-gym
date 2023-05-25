@@ -11,6 +11,10 @@ from assistive_gym.envs.utils.human_pip_dict import HumanPipDict
 from assistive_gym.envs.utils.smpl_geom import HullWrapper
 from assistive_gym.envs.utils.urdf_editor import UrdfEditor, UrdfJoint, UrdfLink
 
+"""
+Collection of helper functions to generate human URDF file from SMPL model
+"""
+
 human_dict = HumanPipDict()
 # BM_FRACTION = body_mass/70.45
 BM_FRACTION = 1.0
@@ -244,41 +248,7 @@ def simple_inertia(inertia):
 def deg_to_rad(deg):
     return deg * np.pi / 180.0
 
-def set_self_collision(human_id, physic_client_id, num_joints, joint_names, is_collision):
-    """
-    Set self collision for joints in joint_names with the rest of the body
-    :param human_id:
-    :param physic_client_id:
-    :param num_joints: number of joints
-    :param joint_names: list of joint names
-    :param is_collision: 0 means disable, 1 means enable
-    :return:
-    """
-    # right arm vs the rest
-    right_arm_ids = []
-    for name in joint_names:
-        right_arm_ids.extend(human_dict.get_joint_ids(name))
-    for i in right_arm_ids:
-        for j in range(0, num_joints):
-            if j not in right_arm_ids:
-                p.setCollisionFilterPair(human_id, human_id, i, j, is_collision, physicsClientId=physic_client_id)
-def set_self_collisions(human_id, physic_client_id):
-    num_joints = p.getNumJoints(human_id, physicsClientId=physic_client_id)
-    # disable all self collision
-    for i in range(0, num_joints):
-        for j in range(0, num_joints):
-            p.setCollisionFilterPair(human_id, human_id, i, j, 0, physicsClientId=physic_client_id)
 
-    # only enable self collision for arms and legs with the rest of the body
-    right_arms = ["right_shoulder", "right_elbow", "right_lowarm", "right_hand"]
-    left_arms = ["left_shoulder", "left_elbow", "left_lowarm", "left_hand"]
-    right_legs = ["right_hip", "right_knee", "right_ankle", "right_foot"]
-    left_legs = ["left_hip", "left_knee", "left_ankle", "left_foot"]
-
-    set_self_collision(human_id, physic_client_id, num_joints, right_arms, 1)
-    set_self_collision(human_id, physic_client_id, num_joints, left_arms, 1)
-    set_self_collision(human_id, physic_client_id, num_joints, right_legs, 1)
-    set_self_collision(human_id, physic_client_id, num_joints, left_legs, 1)
 
 def config_joints(joints: List[UrdfJoint], pos_dict):
     # smpl joint is spherical.

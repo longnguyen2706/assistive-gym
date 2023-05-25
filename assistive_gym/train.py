@@ -1,5 +1,6 @@
 import os, sys, multiprocessing, gym, ray, shutil, argparse, importlib, glob
 import pickle
+from time import sleep
 
 import numpy as np
 from cma import CMA
@@ -11,6 +12,39 @@ def setup_config(env, algo, coop=False, seed=0, extra_configs={}):
 
 def load_policy(env, algo, env_name, policy_path=None, coop=False, seed=0, extra_configs={}):
     pass
+def uniform_sample(pos, radius, num_samples):
+    """
+    Sample points uniformly from the given space
+    :param pos: (x, y, z)
+    :return:
+    """
+    # pos = np.array(pos)
+    # points = np.random.uniform(low=pos-radius, high=pos + radius, size=(num_samples, 3))
+    points = []
+    for i in range(num_samples):
+
+        r = np.random.uniform(radius/2, radius)
+        theta = np.random.uniform(0, np.pi/2)
+        phi = np.random.uniform(0, np.pi / 2)  # Only sample from 0 to pi/2
+
+        # Convert from spherical to cartesian coordinates
+        dx = r * np.sin(phi) * np.cos(theta)
+        dy = r * np.sin(phi) * np.sin(theta)
+        dz = r * np.cos(phi)
+
+        # Add to original point
+        x_new = pos[0] + dx
+        y_new = pos[1] + dy
+        z_new = pos[2] + dz
+        points.append([x_new, y_new, z_new])
+    return points
+
+def draw_point(point, size=0.01):
+    sphere = p.createCollisionShape(p.GEOM_SPHERE, radius=size)
+    multiBody = p.createMultiBody(baseMass=0,
+                                  baseCollisionShapeIndex=sphere,
+                                  basePosition=np.array(point))
+    p.setGravity(0, 0, 0, multiBody)
 
 def make_env(env_name, coop=False, seed=1001):
     if not coop:
@@ -22,11 +56,29 @@ def make_env(env_name, coop=False, seed=1001):
     env.seed(seed)
     return env
 
-def cost_function(env, solution):
-    # c_joints = env.human.get_controllable_joints()
-    # print ("c_joints: ", c_joints)
-    # env.human.set_joint_angles(c_joints, solution)
-    return 1000.0/env.human.cal_manipulibility(solution)
+def cost_function(env, solution, target):
+    human = env.human
+    m = human.cal_manipulibility(solution)
+
+    right_hand_ee = human.human_pip_dict.get_dammy_joint_id("right_hand")
+    ee_poses, _= human.forward_kinematic([right_hand_ee], solution)
+    dist = eulidean_distance(ee_poses[0], target)
+    print("manipubility: ", m, "distance: ", dist)
+    return 25.0/m + dist
+
+def eulidean_distance(point1, point2):
+    print ("point1: ", point1, "point2: ", point2)
+    # convert tuple to np array
+    point1 = np.array(point1)
+    return np.sqrt(np.sum(np.square(point1 - point2)))
+
+def generate_target_points(env):
+    # init points
+    # human_pos = p.getBasePositionAndOrientation(env.human.body, env.human.id)[0]
+    # points = uniform_sample(human_pos, 0.5, 20)
+    right_hand_pos = p.getLinkState(env.human.body, env.human.human_pip_dict.get_dammy_joint_id("right_hand"))[0]
+    points = uniform_sample(right_hand_pos, 0.5, 10)
+    return points
 
 def train(env_name, algo, timesteps_total=10, save_dir='./trained_models/', load_policy_path='', coop=False, seed=0, extra_configs={}):
     env = make_env(env_name, coop=True)
@@ -39,27 +91,39 @@ def train(env_name, algo, timesteps_total=10, save_dir='./trained_models/', load
     optimizer = init_optimizer(x0, sigma)
     timestep = 0
 
-    while timestep<timesteps_total:
-        timestep += 1
+    # init points
+    points = generate_target_points(env)
+    pickle.dump(points, open("points.pkl", "wb"))
 
-        # Train until we have performed the desired number of timesteps
-        # env.render()
-        solutions = optimizer.ask() # TODO: change this?
-        print ("solutions: ", len(solutions))
-        optimizer.tell(solutions, [cost_function(env, s) for s in solutions])
+    actions = {}
+    best_action_idx = 0
+    best_cost = 10^9
+    for (idx, target) in enumerate(points):
+        timestep = 0
+        env.reset()
+        actions[idx] = []
+        while timestep<timesteps_total:
+            timestep += 1
+            # Train until we have performed the desired number of timesteps
+            solutions = optimizer.ask() # TODO: change this?
+            optimizer.tell(solutions, [cost_function(env, s, target) for s in solutions])
 
-        # step forward
-        action = {'robot': env.action_space_robot.sample(), 'human': np.mean(solutions, axis=0)}
-        actions.append(action)
-        env.step(action)
-
-        optimizer.disp()
-    optimizer.result_pretty()
+            # step forward
+            action = {'robot': env.action_space_robot.sample(), 'human': np.mean(solutions, axis=0)}
+            actions[idx].append(action)
+            env.step(action)
+            cost = cost_function(env, action['human'], target)
+            if cost< best_cost:
+                best_cost = cost
+                best_action_idx = idx
+            optimizer.disp()
+        optimizer.result_pretty()
 
     env.disconnect()
     #save action to replay
     print ("actions: ", len(actions))
     pickle.dump(actions, open("actions.pkl", "wb"))
+    pickle.dump(best_action_idx, open("best_action_idx.pkl", "wb"))
 
     return env, actions
 
@@ -67,14 +131,25 @@ def init_optimizer(x0, sigma):
     return CMA(x0, sigma)
 
 def render(env, actions):
-    print("actions: ", actions)
+    # print("actions: ", actions)
     env.render() # need to call reset after render
     env.reset()
-    # p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1, physicsClientId=env.id)
-    for a in actions:
+
+    # init points
+    points = pickle.load(open("points.pkl", "rb"))
+    best_idx = pickle.load(open("best_action_idx.pkl", "rb"))
+    for (idx, point) in enumerate(points):
+        print (idx, point)
+
+        # p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1, physicsClientId=env.id)
+        if idx == best_idx:
+            draw_point(point, size=0.05)
+        else:
+            draw_point(point)
+    for a in actions[best_idx]:
         env.step(a)
-    # while 1:
-    #     env.step({'robot': env.action_space_robot.sample(), 'human': env.action_space_human.sample()})
+        # while 1:
+        #     env.step({'robot': env.action_space_robot.sample(), 'human': env.action_space_human.sample()})
 
 
 def render_policy(env, env_name, algo, policy_path, coop=False, colab=False, seed=0, n_episodes=1, extra_configs={}):

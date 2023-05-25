@@ -13,90 +13,35 @@ from smplx import lbs
 from assistive_gym.envs.agents.agent import Agent
 from assistive_gym.envs.agents.furniture import Furniture
 from assistive_gym.envs.utils.human_pip_dict import HumanPipDict
+from assistive_gym.envs.utils.human_utils import set_joint_angles, set_self_collisions, change_dynamic_properties
 from assistive_gym.envs.utils.smpl_dict import SMPLDict
 
 from assistive_gym.envs.smpl.serialization import load_model
 from assistive_gym.envs.utils.smpl_geom import generate_geom
-from assistive_gym.envs.utils.urdf_utils import convert_aa_to_euler_quat, load_smpl, generate_urdf, set_self_collisions
+from assistive_gym.envs.utils.urdf_utils import convert_aa_to_euler_quat, load_smpl, generate_urdf
 
 
-class HumanUrdf(Agent):
+class HumanUrdfTest(Agent):
     def __init__(self):
-        super(HumanUrdf, self).__init__()
+        super(HumanUrdfTest, self).__init__()
         self.smpl_dict = SMPLDict()
         self.human_pip_dict = HumanPipDict()
         self.controllable_joint_indices = list(range(0, 93)) #94 joints
 
-    def change_color(self, color):
-        r"""
-        Change the color of a robot.
-        :param color: Vector4 for rgba.
-        """
-        for j in range(p.getNumJoints(self.human_id)):
-            p.changeVisualShape(self.human_id, j, rgbaColor=color, specularColor=[0.1, 0.1, 0.1])
-
-    def set_joint_angles(self, smpl_data):
-
-        print ("global_orient", smpl_data["global_orient"])
-        print ("pelvis", smpl_data["body_pose"][0:3])
-        pose = smpl_data["body_pose"]
-
-        self.set_global_angle(self.human_id, pose)
-
-        self.set_joint_angle(self.human_id, pose, "Spine1", "spine_2")
-        self.set_joint_angle(self.human_id, pose, "Spine2", "spine_3")
-        self.set_joint_angle(self.human_id, pose, "Spine3", "spine_4")
-
-        self.set_joint_angle(self.human_id, pose, "L_Hip", "left_hip")
-        self.set_joint_angle(self.human_id, pose, "L_Knee", "left_knee")
-        self.set_joint_angle(self.human_id, pose, "L_Ankle", "left_ankle")
-        self.set_joint_angle(self.human_id, pose, "L_Foot", "left_foot")
-
-        self.set_joint_angle(self.human_id, pose, "R_Hip", "right_hip")
-        self.set_joint_angle(self.human_id, pose, "R_Knee", "right_knee")
-        self.set_joint_angle(self.human_id, pose, "R_Ankle", "right_ankle")
-        self.set_joint_angle(self.human_id, pose, "R_Foot", "right_foot")
-
-        self.set_joint_angle(self.human_id, pose, "R_Collar", "right_clavicle")
-        self.set_joint_angle(self.human_id, pose, "R_Shoulder", "right_shoulder")
-        self.set_joint_angle(self.human_id, pose, "R_Elbow", "right_elbow")
-        self.set_joint_angle(self.human_id, pose, "R_Wrist", "right_lowarm")
-        self.set_joint_angle(self.human_id, pose, "R_Hand", "right_hand")
-
-        self.set_joint_angle(self.human_id, pose, "L_Collar", "left_clavicle")
-        self.set_joint_angle(self.human_id, pose, "L_Shoulder", "left_shoulder")
-        self.set_joint_angle(self.human_id, pose, "L_Elbow", "left_elbow")
-        self.set_joint_angle(self.human_id, pose, "L_Wrist", "left_lowarm")
-        self.set_joint_angle(self.human_id, pose, "L_Hand", "left_hand")
-
-        self.set_joint_angle(self.human_id, pose, "Neck", "neck")
-        self.set_joint_angle(self.human_id, pose, "Head", "head")
-
-    def get_skin_color(self):
-        hsv = list(colorsys.rgb_to_hsv(0.8, 0.6, 0.4))
-        hsv[-1] = np.random.uniform(0.4, 0.8)
-        skin_color = list(colorsys.hsv_to_rgb(*hsv)) + [1]
-        return skin_color
-
-    def set_global_angle(self, human_id, pose):
-        _, quat = convert_aa_to_euler_quat(pose[self.smpl_dict.get_pose_ids("Pelvis")])
-        # quat = np.array(p.getQuaternionFromEuler(np.array(euler)))
-        p.resetBasePositionAndOrientation(human_id, [0, 0, 1], quat)
-
-    def set_joint_angle(self, human_id, pose, smpl_joint_name, robot_joint_name):
-        smpl_angles, _ = convert_aa_to_euler_quat(pose[self.smpl_dict.get_pose_ids(smpl_joint_name)])
-
-        # smpl_angles = pose[smpl_dict.get_pose_ids(smpl_joint_name)]
-        robot_joints = self.human_pip_dict.get_joint_ids(robot_joint_name)
-        for i in range(0, 3):
-            p.resetJointState(human_id, robot_joints[i], smpl_angles[i])
 
     def init(self, id, np_random):
         # TODO: no hard coding
         # self.human_id = p.loadURDF("assistive_gym/envs/assets/human/human_pip.urdf")
-        self.human_id = p.loadURDF("test_mesh.urdf", [0, 0, 0.1], flags=p.URDF_USE_SELF_COLLISION, useFixedBase=False)
+        self.human_id = p.loadURDF("test_mesh.urdf", [0, 0, 0.1], flags=p.URDF_USE_SELF_COLLISION | p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS, useFixedBase=False)
         set_self_collisions(self.human_id, id)
-        super(HumanUrdf, self).init(self.human_id, id, np_random)
+        change_dynamic_properties(human.human_id, list(range(0, 97)))
+
+        # for j in list(range(0, 97)):
+        #     joint_info = p.getJointInfo(self.human_id, j, physicsClientId=id)
+        #     if joint_info[2] != p.JOINT_FIXED:
+        #         print("joint_info", joint_info)
+        #         p.setJointMotorControl2(bodyUniqueId=self.human_id, jointIndex=j, controlMode=p.VELOCITY_CONTROL, force=0)
+        super(HumanUrdfTest, self).init(self.human_id, id, np_random)
 
 if __name__ == "__main__":
     # Start the simulation engine
@@ -109,7 +54,7 @@ if __name__ == "__main__":
     planeId = p.loadURDF("assistive_gym/envs/assets/plane/plane.urdf", [0,0,0])
 
     # human
-    human = HumanUrdf()
+    human = HumanUrdfTest()
     human.init(physic_client_id, np_random)
 
     # print all the joints
@@ -123,7 +68,9 @@ if __name__ == "__main__":
     # bed_height, bed_base_height = bed.get_heights(set_on_ground=True)
     smpl_path = os.path.join(os.getcwd(), "examples/data/smpl_bp_ros_smpl_8.pkl")
     smpl_data = load_smpl(smpl_path)
-    human.set_joint_angles(smpl_data)
+    set_joint_angles(human.human_id, smpl_data)
+
+
 
     # Set the camera view
     cameraDistance = 3

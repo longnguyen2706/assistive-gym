@@ -18,6 +18,7 @@ class HumanComfortEnv(AssistiveEnv):
     def get_comfort_score(self):
         return np.random.rand() #TODO: implement this
     # TODO: refactor train to move the score return to env.step
+
     def step(self, action):
         if self.human.controllable:
             # print("action", action)
@@ -38,7 +39,8 @@ class HumanComfortEnv(AssistiveEnv):
         comfort_score = self.get_comfort_score()
         reward = comfort_score
         if self.gui and comfort_score != 0:
-            print('Task success:', self.task_success, 'Food reward:', comfort_score)
+            # print('Task success:', self.task_success, 'Food reward:', comfort_score)
+            pass
 
         # info = {'total_force_on_human': self.total_force_on_human,
         #         'task_success': int(self.task_success >= self.total_food_count * self.config('task_success_threshold')),
@@ -109,7 +111,7 @@ class HumanComfortEnv(AssistiveEnv):
                                            [0, 0, -np.pi / 2.0])
 
         # Update robot and human motor gains
-        self.robot.motor_gains = self.human.motor_gains = 0.025
+        self.robot.motor_gains = self.human.motor_gains = 0.005
 
         # p.resetDebugVisualizerCamera(cameraDistance=1.10, cameraYaw=40, cameraPitch=-45,
         #                              cameraTargetPosition=[-0.2, 0, 0.75], physicsClientId=self.id)
@@ -118,7 +120,7 @@ class HumanComfortEnv(AssistiveEnv):
         # self.tool.init(self.robot, self.task, self.directory, self.id, self.np_random, right=True,
         #                mesh_scale=[0.08] * 3)
 
-        target_ee_pos = np.array([-0.15, -0.65, 1.15]) + self.np_random.uniform(-0.05, 0.05, size=3)
+        # target_ee_pos = np.array([-0.15, -0.65, 1.15]) + self.np_random.uniform(-0.05, 0.05, size=3)
         # target_ee_orient = self.get_quaternion(self.robot.toc_ee_orient_rpy[self.task])
         # self.init_robot_pose(target_ee_pos, target_ee_orient,
         #                      [(target_ee_pos, target_ee_orient), (self.target_pos, None)],
@@ -135,9 +137,12 @@ class HumanComfortEnv(AssistiveEnv):
             self.robot.set_gravity(0, 0, -9.81)
         self.human.set_gravity(0, 0, -9.81)
 
+        # reset human pose
         smpl_path = os.path.join(os.getcwd(), "examples/data/smpl_bp_ros_smpl_8.pkl")
         smpl_data = load_smpl(smpl_path)
         self.human.set_joint_angles_with_smpl(smpl_data)
+
+
         # drop human on bed
         for _ in range(100):
             p.stepSimulation(physicsClientId=self.id)
@@ -146,6 +151,7 @@ class HumanComfortEnv(AssistiveEnv):
 
         # Enable rendering
         p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1, physicsClientId=self.id)
+        p.setTimeStep(1/240., physicsClientId=self.id)
         self.init_env_variables()
         return self._get_obs()
 

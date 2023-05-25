@@ -8,10 +8,12 @@ from gym.utils import seeding
 
 from assistive_gym.envs.agents.agent import Agent
 from assistive_gym.envs.utils.human_pip_dict import HumanPipDict
+from assistive_gym.envs.utils.human_utils import set_self_collisions, change_dynamic_properties
 from assistive_gym.envs.utils.smpl_dict import SMPLDict
 
 from assistive_gym.envs.utils.smpl_geom import generate_geom
-from assistive_gym.envs.utils.urdf_utils import convert_aa_to_euler_quat, load_smpl, generate_urdf, set_self_collisions
+from assistive_gym.envs.utils.urdf_utils import convert_aa_to_euler_quat, load_smpl, generate_urdf
+
 
 
 class HumanUrdf(Agent):
@@ -25,8 +27,8 @@ class HumanUrdf(Agent):
         #                                     83, 85, 86, 87, 89, 90, 91, 93, 94, 95] # TODO: remove hardcoded
         self.controllable_joint_indices = list (range(0, 97))
         self.controllable = True
-        self.motor_forces= 2000.0
-        self.motor_gains = 0.05
+        self.motor_forces= 100.0
+        self.motor_gains = 0.0005
         self.end_effectors = ['right_hand', 'left_hand', 'right_foot', 'left_foot', 'head']
     def change_color(self, color):
         r"""
@@ -101,9 +103,19 @@ class HumanUrdf(Agent):
     def init(self, physics_id, np_random):
         # TODO: no hard coding
         # self.id = p.loadURDF("assistive_gym/envs/assets/human/human_pip.urdf")
-        # self.body = p.loadURDF("ref_mesh.urdf", useFixedBase=False) # enable self collision
-        self.body = p.loadURDF("test_mesh.urdf", [0, 0, 0.1], flags=p.URDF_USE_SELF_COLLISION, useFixedBase=False)
+        # self.body = p.loadURDF("pelvisdammy.urdf", useFixedBase=False) # enable self collision
+        self.body = p.loadURDF("test_mesh.urdf", [0, 0, 0.1],
+                                   flags=p.URDF_USE_SELF_COLLISION | p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS,
+                                   useFixedBase=False)
         set_self_collisions(self.body, physics_id)
+        num_joints= p.getNumJoints(self.body, physicsClientId=physics_id)
+        change_dynamic_properties(self.body, list(range(0, num_joints)))
+        # By default, all joints have motors enabled by default that prevent free motion. Disable these motors.
+        # for j in list(range(0, 97)):
+        #     joint_info = p.getJointInfo(self.body, j, physicsClientId=physics_id)
+        #     if joint_info[2] != p.JOINT_FIXED:
+        #         print ("joint_info", joint_info)
+        #         p.setJointMotorControl2(bodyUniqueId= self.body, jointIndex=j, controlMode=p.VELOCITY_CONTROL, force=0)
         super(HumanUrdf, self).init(self.body, physics_id, np_random)
 
     def get_movable_joints(self): # ignore all joints that are fixed
@@ -113,6 +125,7 @@ class HumanUrdf(Agent):
         for ee in self.end_effectors:
             ee_idxs.append(self.human_pip_dict.get_dammy_joint_id(ee)) # TODO: check if this is correct
         return ee_idxs
+
     def get_controllable_joints(self, joints=None):
         joint_states = p.getJointStates(self.body, self.all_joint_indices if joints is None else joints,
                                         physicsClientId=self.id)
@@ -135,7 +148,7 @@ class HumanUrdf(Agent):
         cos_positions = []
         for ee in ee_idxs:
             center_of_mass_pos = p.getLinkState(self.body, ee, computeLinkVelocity=True, computeForwardKinematics=True,
-                                            physicsClientId=self.id)[2]
+                                            physicsClientId=self.id)[0]
             cos_positions.append(center_of_mass_pos) #TODO: check if motor_positions change after computeForwardKinematics
         self.set_joint_angles(self.controllable_joint_indices, original_angles) # reset to original angles
         return cos_positions, motor_positions
@@ -189,7 +202,7 @@ class HumanUrdf(Agent):
             m_arr.append(m)
             # print ("End effector idx: ", ee, "Jacobian_l: ", J_linear.shape, "Jacobian_r: ", J_angular.shape, "Manipulibility: ", m)
         avg_manipubility = np.mean(m_arr)
-        print ("manipubility: ", avg_manipubility)
+
         return avg_manipubility
 
 

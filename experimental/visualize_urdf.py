@@ -37,17 +37,17 @@ for j in range(1, num_joints):
     joint_pos = p.getJointInfo(robotId, j)[14]
     link_index = int(joint_state[1])
     link_info = p.getLinkState(robotId, link_index)
-
-    link_pos = link_info[0]
-    debug_joints = [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35, 39, 42, 45, 48, 51, 54, 57, 60, 63, 66,
-                    69, 72, 75, 78, 81, 84, 87, 90, 93]
-    # debug_joints = [2, 3,4, 5]
-    if int(joint_info[0]) in debug_joints:
-        # p.addUserDebugLine(link_pos, joint_pos, [1, 0, 0], 2)
-        # random color
-        color = np.random.rand(3)
-        p.addUserDebugText(str(joint_info[1]), mul_tuple(joint_pos, -1), color, 2)
-        # p.addUserDebugText(str(joint_info[1]), mul_tuple(joint_pos, -1), [0, 1, 0], 2)
+    #
+    # link_pos = link_info[0]
+    # debug_joints = [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35, 39, 42, 45, 48, 51, 54, 57, 60, 63, 66,
+    #                 69, 72, 75, 78, 81, 84, 87, 90, 93]
+    # # debug_joints = [2, 3,4, 5]
+    # if int(joint_info[0]) in debug_joints:
+    #     # p.addUserDebugLine(link_pos, joint_pos, [1, 0, 0], 2)
+    #     # random color
+    #     color = np.random.rand(3)
+    #     p.addUserDebugText(str(joint_info[1]), mul_tuple(joint_pos, -1), color, 2)
+    #     # p.addUserDebugText(str(joint_info[1]), mul_tuple(joint_pos, -1), [0, 1, 0], 2)
 # Set the simulation parameters
 p.setGravity(0,0,-9.81)
 p.setTimeStep(1./240.)
