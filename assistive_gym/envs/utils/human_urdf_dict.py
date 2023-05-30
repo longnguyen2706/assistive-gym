@@ -1,35 +1,32 @@
-class HumanPipDict:
+class HumanUrdfDict:
     def __init__(self):
         # TODO: dynamically generate this based on the URDF
+        # currently, manually generate this based on the URDF
         self.joint_dict = {
             "pelvis": 0,
             "left_hip": 1,
             "left_knee": 5,
             "left_ankle": 9,
             "left_foot": 13,
-            "left_toe": 17,
-            "left_heel": 18,
-            "right_hip": 19,
-            "right_knee": 23,
-            "right_ankle": 27,
-            "right_foot": 31,
-            "right_toe": 35,
-            "right_heel": 36,
-            "spine_2": 37,
-            "spine_3": 41,
-            "spine_4": 45,
-            "neck": 49,
-            "head": 53,
-            "left_clavicle": 57,
-            "left_shoulder": 61,
-            "left_elbow": 65,
-            "left_lowarm": 69,
-            "left_hand": 73,
-            "right_clavicle": 77,
-            "right_shoulder": 81,
-            "right_elbow": 85,
-            "right_lowarm": 89,
-            "right_hand": 93,
+            "right_hip": 17,
+            "right_knee": 21,
+            "right_ankle": 25,
+            "right_foot": 29,
+            "spine_2": 33,
+            "spine_3": 37,
+            "spine_4": 41,
+            "neck": 45,
+            "head":  49,
+            "left_clavicle": 53,
+            "left_shoulder": 57,
+            "left_elbow":  61,
+            "left_lowarm": 65,
+            "left_hand": 69,
+            "right_clavicle": 73,
+            "right_shoulder": 77,
+            "right_elbow": 81,
+            "right_lowarm": 85,
+            "right_hand": 89,
         }
 
         self.urdf_to_smpl_dict = {
@@ -86,6 +83,23 @@ class HumanPipDict:
             "right_hand": "right_lowarm"
         }
 
+        self.joint_chain_dict = {
+            "body": ["pelvis", "spine_2", "spine_3", "spine_4"],
+            "head": ["neck", "head"],
+            "right_arm": ["right_shoulder", "right_elbow", "right_lowarm", "right_hand"],
+            "left_arm":  ["left_shoulder", "left_elbow", "left_lowarm", "left_hand"],
+            "right_leg": ["right_hip", "right_knee", "right_ankle", "right_foot"],
+            "left_leg": ["left_hip", "left_knee", "left_ankle", "left_foot"]
+        }
+
+        self.joint_collision_ignore_dict = {
+            "right_arm": ["right_clavicle", "spine_4"],
+            "left_arm": ["left_clavicle", "spine_4"],
+            "right_leg": ["pelvis"],
+            "left_leg": ["pelvis"]
+        }
+
+
     # TODO: solve the issue with fixed joint in URDF
     def get_joint_ids(self, joint_name):
         """
@@ -105,7 +119,7 @@ class HumanPipDict:
         joint_id = self.joint_dict[joint_name]
         return joint_id + 3
 
-    def get_joint_id(self, joint_name):
+    def get_joint_id(self, joint_name): # TODO: rename of refactor. The function name is confusing
         """
         Obtain the joint id for the given joint name (fixed joint)
         :param joint_name:

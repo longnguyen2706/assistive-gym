@@ -11,18 +11,13 @@ class HullWrapper:
         self.hull = hull
         self.filename = filename
 
-# BETAS = torch.Tensor(np.random.uniform(-1, 5, (1, 10))) # random betas
-BETAS = torch.Tensor(np.zeros((1, 10))) # default beta
-DENSITY = 1000
-# show human mesh for debugging
-def show_human_mesh(model_path):
-    model = smplx.create(model_path, model_type='smpl', gender='neutral')
-    output = model(betas=BETAS, body_pose=torch.Tensor(np.zeros((1, model.NUM_BODY_JOINTS*3))), return_verts=True)
-    vertices = output.vertices.detach().cpu().numpy().squeeze()
-    out_mesh = trimesh.Trimesh(vertices, model.faces)
-    out_mesh.show()
 
-def generate_body_hull(jname, vert, outdir, joint_pos = (0, 0, 0)):
+# BETAS = torch.Tensor(np.random.uniform(-1, 5, (1, 10))) # random betas
+BETAS = torch.Tensor(np.zeros((1, 10)))  # default beta
+DENSITY = 1000
+
+
+def generate_body_hull(jname, vert, outdir, joint_pos=(0, 0, 0)):
     """
     Generate a convex hull for each joint
     Save the convex hull as an obj file with vert name
@@ -33,16 +28,18 @@ def generate_body_hull(jname, vert, outdir, joint_pos = (0, 0, 0)):
 
     p_cloud = trimesh.PointCloud(vert)
     p_hull = p_cloud.convex_hull
-    # p_hull = simplify_mesh(p_hull, 10)
+    p_hull = simplify_mesh(p_hull, 4)
     # p_hull = smooth_mesh(p_hull)
     # p_hull.show()
     p_hull.density = DENSITY
     centroid = p_hull.centroid
+
     # the original hull will render at exactly where the body part should be.
     # we move the body part to origin so that we could put it to the right place with joint position later
     p_hull.vertices = p_hull.vertices - joint_pos
 
-    print (jname, "pos: ", joint_pos, " centroid: ", centroid, " volume: ", p_hull.volume, " area: ", p_hull.area, " inertia: ", p_hull.moment_inertia, )
+    print(jname, "pos: ", joint_pos, " centroid: ", centroid, " volume: ", p_hull.volume, " area: ", p_hull.area,
+          " inertia: ", p_hull.moment_inertia, )
     # Export the mesh to an OBJ file
     outfile = f"{outdir}/{jname}.obj"
     p_hull.export(outfile)
@@ -51,10 +48,15 @@ def generate_body_hull(jname, vert, outdir, joint_pos = (0, 0, 0)):
         "hull": p_hull,
     }
 
-def generate_geom(model_path):
+
+def generate_geom(model_path, smpl_data = None):
     smpl_parser = SMPL_Parser(model_path)
-    pose = torch.zeros((1, 72))
-    # betas = torch.zeros((1, 10)).float()
+    pose = torch.zeros((1, 72)) # reset the model to default pose
+
+    if smpl_data is not None:
+        betas = torch.Tensor(np.array(smpl_data.betas).reshape(1, 10))
+    else:
+        betas = BETAS
     (
         smpl_verts,
         smpl_jts,
@@ -67,7 +69,7 @@ def generate_geom(model_path):
         joint_range,
         contype,
         conaffinity,
-    ) = smpl_parser.get_mesh_offsets(pose, betas=BETAS)
+    ) = smpl_parser.get_mesh_offsets(pose, betas=betas)
 
     vert_to_joint = skin_weights.argmax(axis=1)
     hull_dict = {}
@@ -83,14 +85,15 @@ def generate_geom(model_path):
             print(f"{jname} has no vertices!")
             continue
         # vert = (smpl_verts[vind] - smpl_jts[jind]) * scale_dict.get(jname, 1) + smpl_jts[jind]
-        vert = (smpl_verts[vind] - smpl_jts[jind]) +  smpl_jts[jind]
+        vert = (smpl_verts[vind] - smpl_jts[jind]) + smpl_jts[jind]
         r = generate_body_hull(jname, vert, geom_dir, joint_pos=smpl_jts[jind])
         joint_pos_dict[jname] = smpl_jts[jind]
 
         hull_dict[jname] = HullWrapper(r["hull"], r["filename"])
         total_mass += r["hull"].mass
-    print ("total mass: ", total_mass)
+    print("total mass: ", total_mass)
     return hull_dict, joint_pos_dict, joint_offsets
+
 
 def simplify_mesh(mesh, reduce_factor=2):
     """
@@ -103,6 +106,7 @@ def simplify_mesh(mesh, reduce_factor=2):
     new_mesh = mesh.simplify_quadratic_decimation(target_face_count)
     return new_mesh
 
+
 def smooth_mesh(mesh: trimesh.Trimesh):
     """
     Smooth the mesh by laplacian smoothing
@@ -112,15 +116,30 @@ def smooth_mesh(mesh: trimesh.Trimesh):
     mesh = trimesh.smoothing.filter_laplacian(mesh, iterations=10)
     return mesh
 
+
 def visualize_pointcloud(vert):
     """
-    visualize a point cloud
+    visualize a point cloud from vertices of a body part for debugging
     :param vert: vertices of a mesh
     :return:
     """
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(vert)
     o3d.visualization.draw_geometries([pcd])
+
+
+def show_human_mesh(model_path):
+    """
+    Show the human mesh for debugging
+    :param model_path:
+    :return:
+    """
+    model = smplx.create(model_path, model_type='smpl', gender='neutral')
+    output = model(betas=BETAS, body_pose=torch.Tensor(np.zeros((1, model.NUM_BODY_JOINTS * 3))), return_verts=True)
+    vertices = output.vertices.detach().cpu().numpy().squeeze()
+    out_mesh = trimesh.Trimesh(vertices, model.faces)
+    print ("volume: ", out_mesh.volume, " area: ", out_mesh.area, " inertia: ", out_mesh.moment_inertia,)
+    out_mesh.show()
 
 
 if __name__ == "__main__":

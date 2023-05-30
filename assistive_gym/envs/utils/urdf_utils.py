@@ -7,7 +7,7 @@ import torch
 from pytorch3d import transforms as t3d
 from trimesh import Trimesh
 
-from assistive_gym.envs.utils.human_pip_dict import HumanPipDict
+from assistive_gym.envs.utils.human_urdf_dict import HumanUrdfDict
 from assistive_gym.envs.utils.smpl_geom import HullWrapper
 from assistive_gym.envs.utils.urdf_editor import UrdfEditor, UrdfJoint, UrdfLink
 
@@ -15,7 +15,15 @@ from assistive_gym.envs.utils.urdf_editor import UrdfEditor, UrdfJoint, UrdfLink
 Collection of helper functions to generate human URDF file from SMPL model
 """
 
-human_dict = HumanPipDict()
+
+class SMPLData:
+    def __init__(self, body_pose, betas, global_orient): #TODO: add static typing
+        self.body_pose = body_pose
+        self.betas = betas
+        self.global_orient = global_orient
+
+
+human_dict = HumanUrdfDict()
 # BM_FRACTION = body_mass/70.45
 BM_FRACTION = 1.0
 
@@ -163,15 +171,13 @@ JOINT_SETTING = {
 }
 
 
-def load_smpl(filename):
-    with open(filename, "rb") as handle:
+def load_smpl(filepath) -> SMPLData:
+    with open(filepath, "rb") as handle:
         data = pickle.load(handle)
-    print("body_pose: ", data["body_pose"].shape, "betas: ", data["betas"].shape, "global_orient: ",
-          data["global_orient"].shape)
-    return data
+    smpl_data: SMPLData = SMPLData(data["body_pose"], data["betas"], data["global_orient"])
+    return smpl_data
 
-
-def convert_aa_to_euler_quat(aa, seq="YZX"):
+def convert_aa_to_euler_quat(aa, seq="XYZ"):
     aa = np.array(aa)
     mat = t3d.axis_angle_to_matrix(torch.from_numpy(aa))
     # print ("mat", mat)
@@ -248,8 +254,6 @@ def simple_inertia(inertia):
 def deg_to_rad(deg):
     return deg * np.pi / 180.0
 
-
-
 def config_joints(joints: List[UrdfJoint], pos_dict):
     # smpl joint is spherical.
     # due to the limitation of pybullet (no joint limit for spherical joint),
@@ -282,9 +286,9 @@ def config_joints(joints: List[UrdfJoint], pos_dict):
                 idx = 1
             elif suffix == 'rz':
                 idx = 2
-
-            j.joint_lower_limit = deg_to_rad(joint_limit[idx][0])
-            j.joint_upper_limit = deg_to_rad(joint_limit[idx][1])
+            #
+            # j.joint_lower_limit = deg_to_rad(joint_limit[idx][0])
+            # j.joint_upper_limit = deg_to_rad(joint_limit[idx][1])
 
 
 def config_links(links: List[UrdfLink], hull_dict):

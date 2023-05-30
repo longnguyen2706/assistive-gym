@@ -8,7 +8,7 @@ import pybullet_data
 from pytorch3d import transforms as t3d
 import torch
 
-from assistive_gym.envs.utils.human_pip_dict import HumanPipDict
+from assistive_gym.envs.utils.human_urdf_dict import HumanUrdfDict
 from assistive_gym.envs.utils.smpl_dict import SMPLDict
 
 def mul_tuple(t, multiplier):

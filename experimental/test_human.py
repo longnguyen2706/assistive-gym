@@ -12,7 +12,7 @@ from smplx import lbs
 
 from assistive_gym.envs.agents.agent import Agent
 from assistive_gym.envs.agents.furniture import Furniture
-from assistive_gym.envs.utils.human_pip_dict import HumanPipDict
+from assistive_gym.envs.utils.human_urdf_dict import HumanUrdfDict
 from assistive_gym.envs.utils.human_utils import set_joint_angles, set_self_collisions, change_dynamic_properties, \
     check_collision
 from assistive_gym.envs.utils.smpl_dict import SMPLDict
@@ -26,8 +26,8 @@ class HumanUrdfTest(Agent):
     def __init__(self):
         super(HumanUrdfTest, self).__init__()
         self.smpl_dict = SMPLDict()
-        self.human_pip_dict = HumanPipDict()
-        self.controllable_joint_indices = list(range(0, 97)) #94 joints
+        self.human_pip_dict = HumanUrdfDict()
+        self.controllable_joint_indices = list(range(0, 93)) #94 joints
 
 
     def init(self, id, np_random):
@@ -35,13 +35,7 @@ class HumanUrdfTest(Agent):
         # self.human_id = p.loadURDF("assistive_gym/envs/assets/human/human_pip.urdf")
         self.human_id = p.loadURDF("test_mesh.urdf", [0, 0, 0], flags=p.URDF_USE_SELF_COLLISION, useFixedBase=False)
         set_self_collisions(self.human_id, id)
-        change_dynamic_properties(human.human_id, list(range(0, 97)))
-
-        # for j in list(range(0, 97)):
-        #     joint_info = p.getJointInfo(self.human_id, j, physicsClientId=id)
-        #     if joint_info[2] != p.JOINT_FIXED:
-        #         print("joint_info", joint_info)
-        #         p.setJointMotorControl2(bodyUniqueId=self.human_id, jointIndex=j, controlMode=p.VELOCITY_CONTROL, force=0)
+        change_dynamic_properties(human.human_id, list(range(0, 93)))
         super(HumanUrdfTest, self).init(self.human_id, id, np_random)
 
 if __name__ == "__main__":

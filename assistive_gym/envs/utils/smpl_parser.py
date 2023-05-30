@@ -123,14 +123,6 @@ class SMPL_Parser(_SMPL):
             if th_betas.shape[-1] == 16:
                 th_betas = th_betas[:, :10]
 
-        batch_size = pose.shape[0]
-        glob_or = pose[:, :3]
-        # glob_or[0][0] = glob_or[0][0] + np.pi
-
-        # print("th_trans from smpl_parser: ", th_trans)
-        # th_trans = np.zeros(6890)
-        # th_trans = torch.from_numpy(th_trans)
-
         smpl_output = self.forward(
             betas=th_betas,
             transl=th_trans,

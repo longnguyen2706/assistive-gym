@@ -3,16 +3,17 @@ import colorsys
 import numpy as np
 import pybullet as p
 
-from assistive_gym.envs.utils.human_pip_dict import HumanPipDict
+from assistive_gym.envs.utils.human_urdf_dict import HumanUrdfDict
 from assistive_gym.envs.utils.smpl_dict import SMPLDict
-from assistive_gym.envs.utils.urdf_utils import convert_aa_to_euler_quat
+from assistive_gym.envs.utils.urdf_utils import convert_aa_to_euler_quat, SMPLData
 
 """
 Collection of helper functions to change human properties by PyBullet API 
 """
 
 smpl_dict = SMPLDict()
-human_pip_dict = HumanPipDict()
+human_dict = HumanUrdfDict()
+
 
 def change_color(human_id, color):
     """
@@ -22,29 +23,33 @@ def change_color(human_id, color):
     for j in range(p.getNumJoints(human_id)):
         p.changeVisualShape(human_id, j, rgbaColor=color, specularColor=[0.1, 0.1, 0.1])
 
+
 def get_skin_color(self):
     hsv = list(colorsys.rgb_to_hsv(0.8, 0.6, 0.4))
     hsv[-1] = np.random.uniform(0.4, 0.8)
     skin_color = list(colorsys.hsv_to_rgb(*hsv)) + [1]
     return skin_color
 
+
 def set_global_angle(human_id, pose):
     _, quat = convert_aa_to_euler_quat(pose[smpl_dict.get_pose_ids("Pelvis")])
     # quat = np.array(p.getQuaternionFromEuler(np.array(euler)))
     p.resetBasePositionAndOrientation(human_id, [0, 0, 1], quat)
 
+
 def set_joint_angle(human_id, pose, smpl_joint_name, robot_joint_name):
     smpl_angles, _ = convert_aa_to_euler_quat(pose[smpl_dict.get_pose_ids(smpl_joint_name)])
 
     # smpl_angles = pose[smpl_dict.get_pose_ids(smpl_joint_name)]
-    robot_joints = human_pip_dict.get_joint_ids(robot_joint_name)
+    robot_joints = human_dict.get_joint_ids(robot_joint_name)
     for i in range(0, 3):
         p.resetJointState(human_id, robot_joints[i], smpl_angles[i])
 
-def set_joint_angles(human_id, smpl_data):
-    print ("global_orient", smpl_data["global_orient"])
-    print ("pelvis", smpl_data["body_pose"][0:3])
-    pose = smpl_data["body_pose"]
+
+def set_joint_angles(human_id, smpl_data: SMPLData):
+    print("global_orient", smpl_data.global_orient)
+    print("pelvis", smpl_data.body_pose[0:3])
+    pose = smpl_data.body_pose
 
     set_global_angle(human_id, pose)
 
@@ -77,18 +82,30 @@ def set_joint_angles(human_id, smpl_data):
     set_joint_angle(human_id, pose, "Neck", "neck")
     set_joint_angle(human_id, pose, "Head", "head")
 
+
 # TODO: review the parameters
 def change_dynamic_properties(human_id, link_ids):
     for link_id in link_ids:
-        p.changeDynamics(human_id, link_id,
-                         lateralFriction=1.0,
-                         spinningFriction=0.1,
-                         rollingFriction=0.1,
-                         restitution=0.9,
-                         linearDamping=0.01,
-                         angularDamping=0.01,
-                         contactStiffness=1e6,
-                         contactDamping=1e3)
+        pass
+        # p.changeDynamics(human_id, link_id,
+        #                  lateralFriction=1.0,
+        #                  spinningFriction=0.1,
+        #                  rollingFriction=0.1,
+        #                  restitution=0.9,
+        #                  linearDamping=0.01,
+        #                  angularDamping=0.01,
+        #                  contactStiffness=1e6,
+        #                  contactDamping=1e3)
+
+        # p.changeDynamics(human_id, link_id,
+        #                  lateralFriction=0.2,
+        #                  spinningFriction=0.2,
+        #                  rollingFriction=0.2,
+        #                  restitution=0.8,
+        #                  linearDamping=0.01,
+        #                  angularDamping=0.01,
+        #                  contactStiffness=1e6,
+        #                  contactDamping=1e3)
 
 
 def check_collision(body_id, other_body_id):
@@ -105,14 +122,15 @@ def check_collision(body_id, other_body_id):
         link_id_B = contact[4]
         print(f"Link {link_id_A} of body {body_id} collided with link {link_id_B} of body {other_body_id}.")
 
-def set_self_collision(human_id, physic_client_id, num_joints, joint_names, is_collision, joint_to_ignore=[]):
+
+def set_self_collision(human_id, physic_client_id, num_joints, joint_names, joint_to_ignore=[]):
     """
     Set self collision for joints in joint_names with the rest of the body
+    Ignore collision with the joints in joint_to_ignore
     :param human_id:
     :param physic_client_id:
     :param num_joints: number of joints
     :param joint_names: list of joint names
-    :param is_collision: 0 means disable, 1 means enable
     :return:
     """
     # right arm vs the rest
@@ -120,17 +138,17 @@ def set_self_collision(human_id, physic_client_id, num_joints, joint_names, is_c
     real_limb_ids = []
     joint_to_ignore_ids = []
     for name in joint_names:
-        fake_limb_ids.extend(human_pip_dict.get_joint_ids(name))
-        real_limb_ids.append(human_pip_dict.get_dammy_joint_id(name))
+        fake_limb_ids.extend(human_dict.get_joint_ids(name))
+        real_limb_ids.append(human_dict.get_dammy_joint_id(name))
     for name in joint_to_ignore:
         if name == "pelvis":
-            joint_to_ignore_ids.append(human_pip_dict.get_joint_id(name))
+            joint_to_ignore_ids.append(human_dict.get_joint_id(name))
         else:
-            joint_to_ignore_ids.extend(human_pip_dict.get_joint_ids(name))
-            joint_to_ignore_ids.append(human_pip_dict.get_dammy_joint_id(name))
+            joint_to_ignore_ids.extend(human_dict.get_joint_ids(name))
+            joint_to_ignore_ids.append(human_dict.get_dammy_joint_id(name))
 
     # merge 3 lists
-    joint_chain= fake_limb_ids + real_limb_ids + joint_to_ignore_ids
+    joint_chain = fake_limb_ids + real_limb_ids + joint_to_ignore_ids
     # enable collision between the fake limbs and the rest of the body (except link in fake limbs and real limbs list)
     # for i in fake_limb_ids:
     #     for j in range(0, num_joints):
@@ -140,10 +158,10 @@ def set_self_collision(human_id, physic_client_id, num_joints, joint_names, is_c
     for i in real_limb_ids:
         for j in range(0, num_joints):
             if j not in joint_chain:
-                p.setCollisionFilterPair(human_id, human_id, i, j, is_collision, physicsClientId=physic_client_id)
+                p.setCollisionFilterPair(human_id, human_id, i, j, 1, physicsClientId=physic_client_id)
+
 
 def set_self_collisions(human_id, physic_client_id):
-
     num_joints = p.getNumJoints(human_id, physicsClientId=physic_client_id)
 
     # disable all self collision
@@ -151,16 +169,15 @@ def set_self_collisions(human_id, physic_client_id):
         for j in range(0, num_joints):
             p.setCollisionFilterPair(human_id, human_id, i, j, 0, physicsClientId=physic_client_id)
 
-    # only enable self collision for arms and legs with the rest of the body
-    right_arms = ["right_shoulder", "right_elbow", "right_lowarm", "right_hand"]
-    left_arms = [ "left_shoulder", "left_elbow", "left_lowarm", "left_hand"]
-    right_legs = ["right_hip", "right_knee", "right_ankle", "right_foot"]
-    left_legs = ["left_hip", "left_knee", "left_ankle", "left_foot"]
-
-    set_self_collision(human_id, physic_client_id, num_joints, right_arms, 1, ["right_clavicle", "spine_4"])
-    set_self_collision(human_id, physic_client_id, num_joints, left_arms, 1, ["left_clavicle", "spine_4"])
-    set_self_collision(human_id, physic_client_id, num_joints, right_legs, 1, ["pelvis"])
-    set_self_collision(human_id, physic_client_id, num_joints, left_legs, 1, ["pelvis"])
+    # # only enable self collision for arms and legs with the rest of the body
+    set_self_collision(human_id, physic_client_id, num_joints, human_dict.joint_chain_dict["right_arm"],
+                       human_dict.joint_collision_ignore_dict["right_arm"])
+    set_self_collision(human_id, physic_client_id, num_joints, human_dict.joint_chain_dict["left_arm"],
+                       human_dict.joint_collision_ignore_dict["left_arm"])
+    set_self_collision(human_id, physic_client_id, num_joints, human_dict.joint_chain_dict["right_leg"],
+                       human_dict.joint_collision_ignore_dict["right_leg"])
+    set_self_collision(human_id, physic_client_id, num_joints, human_dict.joint_chain_dict["left_leg"],
+                       human_dict.joint_collision_ignore_dict["left_leg"])
 
 # def position_robot_toc(self, task, arms, start_pos_orient, target_pos_orients, human, base_euler_orient=np.zeros(3),
 #                        max_ik_iterations=200, max_ik_random_restarts=1, randomize_limits=False, attempts=100,
