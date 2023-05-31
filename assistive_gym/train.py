@@ -108,9 +108,9 @@ def generate_target_points(env):
     right_hand_pos = p.getLinkState(human.body, human.human_dict.get_dammy_joint_id("right_hand"))[0]
     # points = uniform_sample(right_hand_pos, 0.3, 1)
     point = np.array(list(right_hand_pos))
-    point[1] += 0.0
+    point[1] -= 0.2
     point[0] += 0.2
-    point[2] += 0.4
+    point[2] += 0.2
     points = [point]
     return points
 
@@ -145,6 +145,7 @@ def plot_mean_evolution(mean_evolution):
     plt.title("Mean Vector Evolution")
     plt.legend()
     plt.show()
+
 def train(env_name, algo, timesteps_total=10, save_dir='./trained_models/', load_policy_path='', coop=False, seed=0,
           extra_configs={}):
     env = make_env(env_name, coop=True)
@@ -164,14 +165,27 @@ def train(env_name, algo, timesteps_total=10, save_dir='./trained_models/', load
     for (idx, target) in enumerate(points):
         draw_point(target, size=0.05)
         # x0 = np.zeros(len(env.human.controllable_joint_indices))  # no of joints
-        x0 = solve_ik(env, target, end_effector="right_hand")
-        # print("x0: ", x0.shape)
+        # x0 = solve_ik(env, target, end_effector="right_hand")
+        x0 = env.human.ik_chain(target)
+        print("x0: ", x0)
         # env.step({'robot': env.action_space_robot.sample(), 'human': x0})
         # for _ in range(5):
         #     p.stepSimulation()
-        ee_pos, _= env.human.fk(["right_hand_limb"], x0)
-        print("ik error 2: ", eulidean_distance(ee_pos[0], target))
+        # ee_pos, _, _= env.human.fk(["right_hand_limb"], x0)
+        # ee_pos = env.human.fk_chain(x0)
+        # print("ik error 2: ", eulidean_distance(ee_pos, target))
 
+        # p.setJointMotorControlArray(env.human.body, jointIndices=env.human.controllable_joint_indices, controlMode=p.POSITION_CONTROL,
+        #                             forces=[10000] * len(env.human.controllable_joint_indices),
+        #                             positionGains = [0.01] * len(env.human.controllable_joint_indices),
+        #                             targetPositions=x0,
+        #                             physicsClientId=env.human.id)
+        env.human.set_joint_angles(env.human.controllable_joint_indices, x0)
+        # for _ in range(5):
+        #     p.stepSimulation(physicsClientId=env.human.id)
+        # p.setRealTimeSimulation(1)
+
+        time.sleep(100)
         # right_hand_ee = env.human.human_dict.get_dammy_joint_id("right_hand")
         # ee_positions, _ = env.human.forward_kinematic([right_hand_ee], x0)
         # print("ik error: ", eulidean_distance(ee_positions[0], target))
@@ -179,50 +193,50 @@ def train(env_name, algo, timesteps_total=10, save_dir='./trained_models/', load
         # for _ in range(1000):
         #     p.stepSimulation()
         # time.sleep(100)
-        optimizer = init_optimizer(x0, sigma=0.1)
-
-        timestep = 0
-        actions[idx] = []
-        mean_evolution = []
-        dists = []
-        manipus = []
-        mean_cost = []
-        mean_dist = []
-        mean_m = []
+        # optimizer = init_optimizer(x0, sigma=0.1)
         #
-        while not optimizer.stop():
-            timestep += 1
-            solutions = optimizer.ask()  # TODO: change this?
-            # print("solutions: ", solutions)
-            fitness_values = []
-            for s in solutions:
-                cost, m, dist = cost_function(env, s, target)
-                fitness_values.append(cost)
-                dists.append(dist)
-                manipus.append(m)
-            optimizer.tell(solutions, fitness_values)
-            # env.reset_human()
-            # step forward
-            action = {'robot': env.action_space_robot.sample(), 'human': np.mean(solutions, axis=0)}
-            actions[idx].append(action)
-            mean_evolution.append(action['human'])
-
-            # env.step(action)
-            # cost = cost_function(env, action['human'], target)
-            print("timestep: ", timestep, "cost: ", cost)
-            # optimizer.disp()
-            cost = optimizer.best.f
-            optimizer.result_pretty()
-            mean_cost.append(np.mean(fitness_values))
-            mean_dist.append(np.mean(dists))
-            mean_m.append(np.mean(manipus))
-
-        plot_CMAES_metrics(mean_cost, mean_dist, mean_m)
-        plot_mean_evolution(mean_evolution)
-
-        if cost < best_cost:
-            best_cost = cost
-            best_action_idx = idx
+        # timestep = 0
+        # actions[idx] = []
+        # mean_evolution = []
+        # dists = []
+        # manipus = []
+        # mean_cost = []
+        # mean_dist = []
+        # mean_m = []
+        # #
+        # while not optimizer.stop():
+        #     timestep += 1
+        #     solutions = optimizer.ask()  # TODO: change this?
+        #     # print("solutions: ", solutions)
+        #     fitness_values = []
+        #     for s in solutions:
+        #         cost, m, dist = cost_function(env, s, target)
+        #         fitness_values.append(cost)
+        #         dists.append(dist)
+        #         manipus.append(m)
+        #     optimizer.tell(solutions, fitness_values)
+        #     # env.reset_human()
+        #     # step forward
+        #     action = {'robot': env.action_space_robot.sample(), 'human': np.mean(solutions, axis=0)}
+        #     actions[idx].append(action)
+        #     mean_evolution.append(action['human'])
+        #
+        #     # env.step(action)
+        #     # cost = cost_function(env, action['human'], target)
+        #     print("timestep: ", timestep, "cost: ", cost)
+        #     # optimizer.disp()
+        #     cost = optimizer.best.f
+        #     optimizer.result_pretty()
+        #     mean_cost.append(np.mean(fitness_values))
+        #     mean_dist.append(np.mean(dists))
+        #     mean_m.append(np.mean(manipus))
+        #
+        # plot_CMAES_metrics(mean_cost, mean_dist, mean_m)
+        # plot_mean_evolution(mean_evolution)
+        #
+        # if cost < best_cost:
+        #     best_cost = cost
+        #     best_action_idx = idx
 
     env.disconnect()
     # save action to replay

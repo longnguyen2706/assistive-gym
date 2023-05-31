@@ -117,10 +117,13 @@ def check_collision(body_id, other_body_id):
     :return:
     """
     contact_points = p.getContactPoints(bodyA=body_id, bodyB=other_body_id)
+    contact_pais = set()
     for contact in contact_points:
         link_id_A = contact[3]
         link_id_B = contact[4]
         print(f"Link {link_id_A} of body {body_id} collided with link {link_id_B} of body {other_body_id}.")
+        contact_pais.add((link_id_A, link_id_B))
+    return contact_pais
 
 
 def set_self_collision(human_id, physic_client_id, num_joints, joint_names, joint_to_ignore=[]):

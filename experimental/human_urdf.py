@@ -9,7 +9,7 @@ from kinpy import Transform
 
 from assistive_gym.envs.agents.agent import Agent
 from assistive_gym.envs.utils.human_urdf_dict import HumanUrdfDict
-from assistive_gym.envs.utils.human_utils import set_self_collisions, change_dynamic_properties
+from assistive_gym.envs.utils.human_utils import set_self_collisions, change_dynamic_properties, check_collision
 from assistive_gym.envs.utils.smpl_dict import SMPLDict
 
 from assistive_gym.envs.utils.smpl_geom import generate_geom, show_human_mesh
@@ -25,21 +25,26 @@ all_controllable_joint_indices = [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15, 17, 1
 left_leg_joint_indices = [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15]
 right_leg_joint_indices = [17, 18, 19, 21, 22, 23, 25, 26, 27, 29, 30, 31]
 # left_arm_joint_indices = [53, 54, 55, 57, 58, 59, 61, 62, 63, 65, 66, 67, 69, 70, 71]
-# right_arm_joint_indices =  [73, 74, 75, 77, 78, 79, 81, 82, 83, 85, 86, 87, 89, 90, 91]
+right_arm_joint_indices =  [73, 74, 75, 77, 78, 79, 81, 82, 83, 85, 86, 87, 89, 90, 91]
 left_arm_joint_indices = [57, 58, 59, 61, 62, 63, 65, 66, 67, 69, 70, 71]
-right_arm_joint_indices =  [77, 78, 79, 81, 82, 83, 85, 86, 87, 89, 90, 91]
-all_joint_indices = list(range(0, 92))
+body_joint_indices = [33, 34, 35, 37, 38, 39, 41, 42, 43]
+# right_arm_joint_indices =  [77, 78, 79, 81, 82, 83, 85, 86, 87, 89, 90, 91]
+all_joint_indices = list(range(0, 93))
 class HumanUrdf(Agent):
     def __init__(self):
         super(HumanUrdf, self).__init__()
         self.smpl_dict = SMPLDict()
         self.human_dict = HumanUrdfDict()
-        self.controllable_joint_indices = all_controllable_joint_indices
+        self.controllable_joint_indices = right_arm_joint_indices + body_joint_indices
+        print("controllable_joint_indices: ", len(self.controllable_joint_indices))
         self.controllable = True
         self.motor_forces = 1.0
         self.motor_gains = 0.005
         self.end_effectors = ['right_hand', 'left_hand', 'right_foot', 'left_foot', 'head']
-        self.chain=  kp.build_chain_from_urdf(open("test_mesh.urdf").read())
+        # self.chain=  kp.build_serial_chain_from_urdf(open("test_mesh.urdf").read(), end_link_name="right_hand_limb")
+        self.chain = kp.build_chain_from_urdf(open("test_mesh.urdf").read())
+        self.right_hand_chain = kp.build_serial_chain_from_urdf(open("test_mesh.urdf").read(), end_link_name="right_hand_limb", root_link_name="spine_2_limb")
+        self.initial_collisions = set() # collision due to initial pose
 
 
     def find_ik_joint_indices(self):
@@ -99,6 +104,8 @@ class HumanUrdf(Agent):
         self._set_joint_angle(self.body, pose, "Neck", "neck")
         self._set_joint_angle(self.body, pose, "Head", "head")
 
+        self.initial_collisions = self.check_self_collision() # collision due to initial pose
+
     def get_skin_color(self):
         hsv = list(colorsys.rgb_to_hsv(0.8, 0.6, 0.4))
         hsv[-1] = np.random.uniform(0.4, 0.8)
@@ -129,9 +136,9 @@ class HumanUrdf(Agent):
         # self.id = p.loadURDF("assistive_gym/envs/assets/human/human_pip.urdf")
         # self.body = p.loadURDF("pelvisdammy.urdf", useFixedBase=False) # enable self collision
         self.body = p.loadURDF("test_mesh.urdf", [0, 0, 1],
-                               flags=p.URDF_USE_SELF_COLLISION,
+                               # flags=p.URDF_USE_SELF_COLLISION,
                                useFixedBase=False)
-        set_self_collisions(self.body, physics_id)
+        # set_self_collisions(self.body, physics_id)
         # set contact damping
         num_joints = p.getNumJoints(self.body, physicsClientId=physics_id)
         change_dynamic_properties(self.body, list(range(0, num_joints)))
@@ -173,21 +180,34 @@ class HumanUrdf(Agent):
         self.step_simulation()
         return ee_positions, motor_positions
 
+    # inverse kinematic using kinpy
+    def ik_chain(self, ee_pos, ee_quat = [1, 0, 0, 0]):
+        t = Transform(ee_quat, ee_pos)
+        print (self.right_hand_chain.get_joint_parameter_names())
+        return self.right_hand_chain.inverse_kinematics(t)
+
+    def fk_chain(self, target_angles):
+        th = {}
+        for idx, joint in enumerate(self.right_hand_chain.get_joint_parameter_names()):
+            th[joint]=  target_angles[idx]
+        print(th)
+        ret = self.right_hand_chain.forward_kinematics(th)
+        return ret.pos
+
+    # forward kinematics using kinpy
     def fk(self, ee_names, target_angles):
         th = {}
         for idx, joint in enumerate(self.chain.get_joint_parameter_names()):
             th[joint]=  target_angles[idx]
         # print(th)
         g_pos, g_orient = p.getBasePositionAndOrientation(self.body, physicsClientId=self.id)
-        # x y z w to w x y z
+        # [x y z w] to [w x y z] format
         g_quat =  [g_orient[3]] + list(g_orient[:3])
-        print (g_pos, g_orient, g_quat)
+        # print (g_pos, g_orient, g_quat)
         ret = self.chain.forward_kinematics(th, world = Transform(g_quat, list(g_pos)))
         # ret = chain.forward_kinematics(th)
         print(ret)
-        # viz = kp.Visualizer()
-        # viz.add_robot(ret, chain.visuals_map(), axes=True)
-        # viz.spin()
+
         j_angles = []
         for key in ret:
             q_rot = ret[key].rot
@@ -197,7 +217,10 @@ class HumanUrdf(Agent):
         ee_pos = []
         for ee_name in ee_names:
             ee_pos.append(ret[ee_name].pos)
-        return ee_pos, j_angles
+        # J= self.chain.jacobian(target_angles)
+        J = None
+        return ee_pos, j_angles, J
+
     def step_simulation(self):
         for _ in range(5):
             p.stepSimulation(physicsClientId=self.id)
@@ -210,29 +233,35 @@ class HumanUrdf(Agent):
             manipulibity_ee_names = self.end_effectors
         ee_idxes = self.get_end_effector_indexes(manipulibity_ee_names)
         # ee_positions, motor_positions = self.forward_kinematic(ee_idxes, joint_angles)
-        ee_positions, motor_positions = self.fk(["right_hand_limb"], joint_angles)
+        ee_positions, motor_positions, J = self.fk(["right_hand_limb"], joint_angles)
         # print ("ee positions: ", ee_positions, "motor positions: ", motor_positions)
-        joint_velocities = [0.0] * len(motor_positions)
-        joint_accelerations = [0.0] * len(motor_positions)
-
+        joint_velocities = [0.0] * len(joint_angles)
+        joint_accelerations = [0.0] * len(joint_angles)
         for i in range(0, len(ee_idxes)):
-            ee = ee_idxes[i]
-            ee_pos = ee_positions[i]
-            print ("ee_pos: ", ee_pos)
-            J_linear, J_angular = p.calculateJacobian(self.body, ee, localPosition=ee_pos,
-                                                      objPositions=motor_positions, objVelocities=joint_velocities,
-                                                      objAccelerations=joint_accelerations, physicsClientId=self.id)
-            # print("J linear: ", J_linear)
-            J_linear = np.array(J_linear)
-            J_angular = np.array(J_angular)  # TODO: check if we only need part of it (right now it is 3* 75)
-            J = np.concatenate([J_linear, J_angular], axis=0)
             m = np.sqrt(np.linalg.det(J @ J.T))
-            J_arr.append(J)
-            m_arr.append(m)
-            # print ("End effector idx: ", ee, "Jacobian_l: ", J_linear.shape, "Jacobian_r: ", J_angular.shape, "Manipulibility: ", m)
-        avg_manipubility = np.mean(m_arr)
+        return m
 
-        return avg_manipubility
+        # for i in range(0, len(ee_idxes)):
+        #     ee = ee_idxes[i]
+        #     ee_pos = ee_positions[i]
+        #     print ("ee_pos: ", ee_pos)
+        #     J_linear, J_angular = p.calculateJacobian(self.body, ee, localPosition=ee_pos,
+        #                                               objPositions=joint_angles, objVelocities=joint_velocities,
+        #                                               objAccelerations=joint_accelerations, physicsClientId=self.id)
+        #     # print("J linear: ", J_linear)
+        #     J_linear = np.array(J_linear)
+        #     J_angular = np.array(J_angular)  # TODO: check if we only need part of it (right now it is 3* 75)
+        #     J = np.concatenate([J_linear, J_angular], axis=0)
+        #     m = np.sqrt(np.linalg.det(J @ J.T))
+        #     J_arr.append(J)
+        #     m_arr.append(m)
+            # print ("End effector idx: ", ee, "Jacobian_l: ", J_linear.shape, "Jacobian_r: ", J_angular.shape, "Manipulibility: ", m)
+        # avg_manipubility = np.mean(m_arr)
+        #
+        # return avg_manipubility
+
+    def check_self_collision(self):
+        return check_collision( self.body, self.body) # TODO: Check with initial collision
 
     def print_joint_indices(self):
         """

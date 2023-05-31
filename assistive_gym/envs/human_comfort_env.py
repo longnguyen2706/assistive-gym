@@ -146,18 +146,18 @@ class HumanComfortEnv(AssistiveEnv):
 
         if not self.robot.mobile:
             self.robot.set_gravity(0, 0, -9.81)
-        self.human.set_gravity(0, 0, -9.81)
-        # self.human.set_gravity(0, 0, 0)
+        # self.human.set_gravity(0, 0, -9.81)
+        self.human.set_gravity(0, 0, 0)
 
         # drop human on bed
         for _ in range(100):
             p.stepSimulation(physicsClientId=self.id)
 
-        # p.setPhysicsEngineParameter(numSubSteps=4, numSolverIterations=10, physicsClientId=self.id)
+        p.setPhysicsEngineParameter(numSubSteps=4, numSolverIterations=10, physicsClientId=self.id)
 
         # Enable rendering
         p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1, physicsClientId=self.id)
-        p.setTimeStep(1/240., physicsClientId=self.id)
+        # p.setTimeStep(1/240., physicsClientId=self.id)
         self.init_env_variables()
         return self._get_obs()
 
