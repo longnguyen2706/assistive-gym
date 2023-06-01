@@ -4,18 +4,10 @@ import time
 
 import numpy as np
 from cma import CMA, CMAEvolutionStrategy
+from cmaes import cma
 from numpngw import write_apng
 import pybullet as p
 from matplotlib import pyplot as plt
-
-
-def setup_config(env, algo, coop=False, seed=0, extra_configs={}):
-    pass
-
-
-def load_policy(env, algo, env_name, policy_path=None, coop=False, seed=0, extra_configs={}):
-    pass
-
 
 def uniform_sample(pos, radius, num_samples):
     """
@@ -67,29 +59,35 @@ def solve_ik(env, target_pos, end_effector="right_hand"):
     human = env.human
     ee_idx = human.human_dict.get_dammy_joint_id(end_effector)
     ik_joint_indices = human.find_ik_joint_indices()
-
     print ("ik_joint_indices: ", ik_joint_indices)
     solution = human.ik(ee_idx, target_pos, None, ik_joint_indices,  max_iterations=1000)  # TODO: Fix index
     # print ("ik solution: ", solution)
     return solution
-    # ik_joint_poses = np.array(p.calculateInverseKinematics(human.body, ee_idx, targetPosition=target_pos,
-    #                                                        maxNumIterations=10000, physicsClientId=human.id))
-    # print('IK:', ik_joint_poses)
-    # return ik_joint_poses[ik_joint_indices]
 
 
-def cost_function(env, solution, target_pos, end_effector="right_hand"):
+def cost_fn(env, solution, target_pos, end_effector="right_hand"):
     human = env.human
-    m = human.cal_manipulibility(solution, [end_effector])
+    # m = human.cal_manipulibility(solution, [end_effector])
+    #
+    # right_hand_ee = human.human_dict.get_dammy_joint_id(end_effector)
+    # # ee_positions, _ = human.forward_kinematic([right_hand_ee], solution)
+    #
+    # pos, _ = human.fk([end_effector], solution)
+    # dist = eulidean_distance(pos[0], target_pos)
+    # # cost = 10 / m + dist
+    # cost = dist
+    # print("manipubility: ", m, "distance: ", dist, "cost: ", cost)
+    original_joint_angles = human.get_joint_angles(human.controllable_joint_indices)
+    human.set_joint_angles(human.controllable_joint_indices, solution) # force set joint angle
 
-    right_hand_ee = human.human_dict.get_dammy_joint_id(end_effector)
-    # ee_positions, _ = human.forward_kinematic([right_hand_ee], solution)
+    real_pos = p.getLinkState(human.body, human.human_dict.get_dammy_joint_id(end_effector))[0]
+    dist = eulidean_distance(real_pos, target_pos)
+    m = human.cal_manipulibility_chain(solution)
+    cost = dist + 1/m
 
-    pos, _ = human.fk([end_effector], solution)
-    dist = eulidean_distance(pos[0], target_pos)
-    # cost = 10 / m + dist
-    cost = dist
-    print("manipubility: ", m, "distance: ", dist, "cost: ", cost)
+    human.set_joint_angles(human.controllable_joint_indices, original_joint_angles) # restore joint angle
+    print("euclidean distance: ", dist, "manipubility: ", m, "cost: ", cost)
+
     return cost, m, dist
 
 
@@ -134,6 +132,7 @@ def plot_CMAES_metrics(mean_cost, mean_dist, mean_m):
     # Plot the manipubility values
     plot(mean_m, "Manipubility Values", "Iteration", "Manipubility Value")
 
+
 def plot_mean_evolution(mean_evolution):
     # Plot the mean vector evolution
     mean_evolution = np.array(mean_evolution)
@@ -146,11 +145,21 @@ def plot_mean_evolution(mean_evolution):
     plt.legend()
     plt.show()
 
+
+def step_forward(env, x0):
+    p.setJointMotorControlArray(env.human.body, jointIndices=env.human.controllable_joint_indices, controlMode=p.POSITION_CONTROL,
+                                forces=[10000] * len(env.human.controllable_joint_indices),
+                                positionGains = [0.01] * len(env.human.controllable_joint_indices),
+                                targetPositions=x0,
+                                physicsClientId=env.human.id)
+    # for _ in range(5):
+    #     p.stepSimulation(physicsClientId=env.human.id)
+    p.setRealTimeSimulation(1)
+
+
 def train(env_name, algo, timesteps_total=10, save_dir='./trained_models/', load_policy_path='', coop=False, seed=0,
           extra_configs={}):
     env = make_env(env_name, coop=True)
-    # agent, checkpoint_path = load_policy(env, algo, env_name, load_policy_path, coop, seed, extra_configs)
-    # env.disconnect()
     env.render()
     env.reset()
 
@@ -162,81 +171,73 @@ def train(env_name, algo, timesteps_total=10, save_dir='./trained_models/', load
     best_action_idx = 0
     best_cost = 10 ^ 9
     cost = 0
+
     for (idx, target) in enumerate(points):
-        draw_point(target, size=0.05)
-        # x0 = np.zeros(len(env.human.controllable_joint_indices))  # no of joints
+        draw_point(target, size=0.01)
+        x0 = np.zeros(len(env.human.controllable_joint_indices))  # no of joints
+        # x0 = env.human.ik_chain(target)
         # x0 = solve_ik(env, target, end_effector="right_hand")
-        x0 = env.human.ik_chain(target)
         print("x0: ", x0)
         # env.step({'robot': env.action_space_robot.sample(), 'human': x0})
-        # for _ in range(5):
-        #     p.stepSimulation()
+
         # ee_pos, _, _= env.human.fk(["right_hand_limb"], x0)
         # ee_pos = env.human.fk_chain(x0)
         # print("ik error 2: ", eulidean_distance(ee_pos, target))
+        # env.human.set_joint_angles(env.human.controllable_joint_indices, x0)
 
-        # p.setJointMotorControlArray(env.human.body, jointIndices=env.human.controllable_joint_indices, controlMode=p.POSITION_CONTROL,
-        #                             forces=[10000] * len(env.human.controllable_joint_indices),
-        #                             positionGains = [0.01] * len(env.human.controllable_joint_indices),
-        #                             targetPositions=x0,
-        #                             physicsClientId=env.human.id)
-        env.human.set_joint_angles(env.human.controllable_joint_indices, x0)
-        # for _ in range(5):
-        #     p.stepSimulation(physicsClientId=env.human.id)
-        # p.setRealTimeSimulation(1)
-
-        time.sleep(100)
         # right_hand_ee = env.human.human_dict.get_dammy_joint_id("right_hand")
         # ee_positions, _ = env.human.forward_kinematic([right_hand_ee], x0)
         # print("ik error: ", eulidean_distance(ee_positions[0], target))
-
+        #
         # for _ in range(1000):
         #     p.stepSimulation()
         # time.sleep(100)
-        # optimizer = init_optimizer(x0, sigma=0.1)
-        #
-        # timestep = 0
-        # actions[idx] = []
-        # mean_evolution = []
-        # dists = []
-        # manipus = []
-        # mean_cost = []
-        # mean_dist = []
-        # mean_m = []
-        # #
-        # while not optimizer.stop():
-        #     timestep += 1
-        #     solutions = optimizer.ask()  # TODO: change this?
-        #     # print("solutions: ", solutions)
-        #     fitness_values = []
-        #     for s in solutions:
-        #         cost, m, dist = cost_function(env, s, target)
-        #         fitness_values.append(cost)
-        #         dists.append(dist)
-        #         manipus.append(m)
-        #     optimizer.tell(solutions, fitness_values)
-        #     # env.reset_human()
-        #     # step forward
-        #     action = {'robot': env.action_space_robot.sample(), 'human': np.mean(solutions, axis=0)}
-        #     actions[idx].append(action)
-        #     mean_evolution.append(action['human'])
-        #
-        #     # env.step(action)
-        #     # cost = cost_function(env, action['human'], target)
-        #     print("timestep: ", timestep, "cost: ", cost)
-        #     # optimizer.disp()
-        #     cost = optimizer.best.f
-        #     optimizer.result_pretty()
-        #     mean_cost.append(np.mean(fitness_values))
-        #     mean_dist.append(np.mean(dists))
-        #     mean_m.append(np.mean(manipus))
-        #
-        # plot_CMAES_metrics(mean_cost, mean_dist, mean_m)
-        # plot_mean_evolution(mean_evolution)
-        #
-        # if cost < best_cost:
-        #     best_cost = cost
-        #     best_action_idx = idx
+        optimizer = init_optimizer(x0, sigma=0.1)
+
+        timestep = 0
+        actions[idx] = []
+        mean_evolution = []
+        dists = []
+        manipus = []
+        mean_cost = []
+        mean_dist = []
+        mean_m = []
+
+        while not optimizer.stop():
+            timestep += 1
+            solutions = optimizer.ask()  # TODO: change this?
+            # print("solutions: ", solutions)
+            fitness_values = []
+            for s in solutions:
+                cost, m, dist = cost_fn(env, s, target)
+                fitness_values.append(cost)
+                dists.append(dist)
+                manipus.append(m)
+            optimizer.tell(solutions, fitness_values)
+            # env.reset_human()
+            # step forward
+            action = {'robot': env.action_space_robot.sample(), 'human': np.mean(solutions, axis=0)}
+            actions[idx].append(action)
+            mean_evolution.append(action['human'])
+
+            # env.step(action)
+            # cost = cost_function(env, action['human'], target)
+            print("timestep: ", timestep, "cost: ", cost)
+            # optimizer.disp()
+
+
+            optimizer.result_pretty()
+            mean_cost.append(np.mean(fitness_values))
+            mean_dist.append(np.mean(dists))
+            mean_m.append(np.mean(manipus))
+        env.human.set_joint_angles(env.human.controllable_joint_indices, optimizer.best.x)
+
+        plot_CMAES_metrics(mean_cost, mean_dist, mean_m)
+        plot_mean_evolution(mean_evolution)
+
+        if cost < best_cost:
+            best_cost = cost
+            best_action_idx = idx
 
     env.disconnect()
     # save action to replay
@@ -248,8 +249,10 @@ def train(env_name, algo, timesteps_total=10, save_dir='./trained_models/', load
 
 
 def init_optimizer(x0, sigma):
-    es = CMAEvolutionStrategy(x0, sigma)
-    # es.stop(termination_callback=cma.stoppers.VarianceStopping(tolx=1e-5, tolfun=1e-5))
+    opts = {}
+    opts['tolfun']=  1e-3
+    opts['tolx'] = 1e-3
+    es = CMAEvolutionStrategy(x0, sigma, opts)
     return es
 
 

@@ -116,7 +116,7 @@ class HumanComfortEnv(AssistiveEnv):
     def reset(self):
         super(HumanComfortEnv, self).reset()
 
-        self.build_assistive_env()
+        self.build_assistive_env("hospital_bed")
 
         # Update robot and human motor gains
         self.robot.motor_gains = self.human.motor_gains = 0.005
@@ -140,14 +140,14 @@ class HumanComfortEnv(AssistiveEnv):
         # smpl_data = load_smpl(SMPL_PATH)
         # self.human.set_joint_angles_with_smpl(smpl_data)
 
-        # bed_height, bed_base_height = self.furniture.get_heights(set_on_ground=True)
-        # self.human.set_on_ground(bed_height)
+        bed_height, bed_base_height = self.furniture.get_heights(set_on_ground=True)
+        self.human.set_on_ground(bed_height)
         # p.resetBasePositionAndOrientation(self.human.body, [0.0, 0.0, 2.0], [0.0, 0.0, 0.0, 1.0], physicsClientId=self.id)
 
         if not self.robot.mobile:
             self.robot.set_gravity(0, 0, -9.81)
         # self.human.set_gravity(0, 0, -9.81)
-        self.human.set_gravity(0, 0, 0)
+        self.human.set_gravity(0, 0, -9.81)
 
         # drop human on bed
         for _ in range(100):

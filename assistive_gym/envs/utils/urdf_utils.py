@@ -286,9 +286,9 @@ def config_joints(joints: List[UrdfJoint], pos_dict):
                 idx = 1
             elif suffix == 'rz':
                 idx = 2
-            #
-            # j.joint_lower_limit = deg_to_rad(joint_limit[idx][0])
-            # j.joint_upper_limit = deg_to_rad(joint_limit[idx][1])
+
+            j.joint_lower_limit = deg_to_rad(joint_limit[idx][0])
+            j.joint_upper_limit = deg_to_rad(joint_limit[idx][1])
 
 
 def config_links(links: List[UrdfLink], hull_dict):
