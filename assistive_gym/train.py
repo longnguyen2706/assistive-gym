@@ -4,7 +4,6 @@ import time
 
 import numpy as np
 from cma import CMA, CMAEvolutionStrategy
-from cmaes import cma
 from numpngw import write_apng
 import pybullet as p
 from matplotlib import pyplot as plt
@@ -59,7 +58,7 @@ def solve_ik(env, target_pos, end_effector="right_hand"):
     human = env.human
     ee_idx = human.human_dict.get_dammy_joint_id(end_effector)
     ik_joint_indices = human.find_ik_joint_indices()
-    print ("ik_joint_indices: ", ik_joint_indices)
+    # print ("ik_joint_indices: ", ik_joint_indices)
     solution = human.ik(ee_idx, target_pos, None, ik_joint_indices,  max_iterations=1000)  # TODO: Fix index
     # print ("ik solution: ", solution)
     return solution
@@ -67,16 +66,6 @@ def solve_ik(env, target_pos, end_effector="right_hand"):
 
 def cost_fn(env, solution, target_pos, end_effector="right_hand"):
     human = env.human
-    # m = human.cal_manipulibility(solution, [end_effector])
-    #
-    # right_hand_ee = human.human_dict.get_dammy_joint_id(end_effector)
-    # # ee_positions, _ = human.forward_kinematic([right_hand_ee], solution)
-    #
-    # pos, _ = human.fk([end_effector], solution)
-    # dist = eulidean_distance(pos[0], target_pos)
-    # # cost = 10 / m + dist
-    # cost = dist
-    # print("manipubility: ", m, "distance: ", dist, "cost: ", cost)
     original_joint_angles = human.get_joint_angles(human.controllable_joint_indices)
     human.set_joint_angles(human.controllable_joint_indices, solution) # force set joint angle
 
@@ -84,8 +73,8 @@ def cost_fn(env, solution, target_pos, end_effector="right_hand"):
     dist = eulidean_distance(real_pos, target_pos)
     m = human.cal_manipulibility_chain(solution)
     cost = dist + 1/m
-
-    human.set_joint_angles(human.controllable_joint_indices, original_joint_angles) # restore joint angle
+    # restore joint angle
+    human.set_joint_angles(human.controllable_joint_indices, original_joint_angles)
     print("euclidean distance: ", dist, "manipubility: ", m, "cost: ", cost)
 
     return cost, m, dist
@@ -97,21 +86,50 @@ def eulidean_distance(cur, target):
     cur = np.array(cur)
     return np.sqrt(np.sum(np.square(cur - target)))
 
+# for debugging
+def get_single_target(ee_pos):
+    point = np.array(list(ee_pos))
+    point[1] -= 0.2
+    point[0] += 0.2
+    point[2] += 0.2
+    return point
 
-def generate_target_points(env):
+
+def generate_target_points(env, num_points=10):
     # init points
     # human_pos = p.getBasePositionAndOrientation(env.human.body, env.human.id)[0]
     # points = uniform_sample(human_pos, 0.5, 20)
     human = env.human
     right_hand_pos = p.getLinkState(human.body, human.human_dict.get_dammy_joint_id("right_hand"))[0]
-    # points = uniform_sample(right_hand_pos, 0.3, 1)
-    point = np.array(list(right_hand_pos))
-    point[1] -= 0.2
-    point[0] += 0.2
-    point[2] += 0.2
-    points = [point]
+    points = uniform_sample(right_hand_pos, 0.3, num_points)
     return points
 
+
+def get_initial_guess(env, target=None):
+    if target is None:
+        return np.zeros(len(env.human.controllable_joint_indices))  # no of joints
+    else:
+        # x0 = env.human.ik_chain(target)
+        x0 = solve_ik(env, target, end_effector="right_hand")
+        # print("x0: ", x0)
+    return x0
+
+
+def debug_solution():
+    # ee_pos, _, _= env.human.fk(["right_hand_limb"], x0)
+    # ee_pos = env.human.fk_chain(x0)
+    # print("ik error 2: ", eulidean_distance(ee_pos, target))
+    # env.human.set_joint_angles(env.human.controllable_joint_indices, x0)
+
+    # right_hand_ee = env.human.human_dict.get_dammy_joint_id("right_hand")
+    # ee_positions, _ = env.human.forward_kinematic([right_hand_ee], x0)
+    # print("ik error: ", eulidean_distance(ee_positions[0], target))
+    #
+    # for _ in range(1000):
+    #     p.stepSimulation()
+    # time.sleep(100)
+
+    pass
 
 def plot(vals, title, xlabel, ylabel):
     plt.figure()
@@ -174,28 +192,11 @@ def train(env_name, algo, timesteps_total=10, save_dir='./trained_models/', load
 
     for (idx, target) in enumerate(points):
         draw_point(target, size=0.01)
-        x0 = np.zeros(len(env.human.controllable_joint_indices))  # no of joints
-        # x0 = env.human.ik_chain(target)
-        # x0 = solve_ik(env, target, end_effector="right_hand")
-        print("x0: ", x0)
-        # env.step({'robot': env.action_space_robot.sample(), 'human': x0})
 
-        # ee_pos, _, _= env.human.fk(["right_hand_limb"], x0)
-        # ee_pos = env.human.fk_chain(x0)
-        # print("ik error 2: ", eulidean_distance(ee_pos, target))
-        # env.human.set_joint_angles(env.human.controllable_joint_indices, x0)
-
-        # right_hand_ee = env.human.human_dict.get_dammy_joint_id("right_hand")
-        # ee_positions, _ = env.human.forward_kinematic([right_hand_ee], x0)
-        # print("ik error: ", eulidean_distance(ee_positions[0], target))
-        #
-        # for _ in range(1000):
-        #     p.stepSimulation()
-        # time.sleep(100)
+        x0 = get_initial_guess(env, None)
         optimizer = init_optimizer(x0, sigma=0.1)
 
         timestep = 0
-        actions[idx] = []
         mean_evolution = []
         dists = []
         manipus = []
@@ -214,23 +215,23 @@ def train(env_name, algo, timesteps_total=10, save_dir='./trained_models/', load
                 dists.append(dist)
                 manipus.append(m)
             optimizer.tell(solutions, fitness_values)
-            # env.reset_human()
+
             # step forward
-            action = {'robot': env.action_space_robot.sample(), 'human': np.mean(solutions, axis=0)}
-            actions[idx].append(action)
-            mean_evolution.append(action['human'])
+            # action = {'robot': env.action_space_robot.sample(), 'human': np.mean(solutions, axis=0)}
+            # actions[idx].append(action)
+            mean_evolution.append(np.mean(solutions, axis=0))
 
             # env.step(action)
             # cost = cost_function(env, action['human'], target)
             print("timestep: ", timestep, "cost: ", cost)
             # optimizer.disp()
 
-
             optimizer.result_pretty()
             mean_cost.append(np.mean(fitness_values))
             mean_dist.append(np.mean(dists))
             mean_m.append(np.mean(manipus))
         env.human.set_joint_angles(env.human.controllable_joint_indices, optimizer.best.x)
+        actions[idx] = optimizer.best.x
 
         plot_CMAES_metrics(mean_cost, mean_dist, mean_m)
         plot_mean_evolution(mean_evolution)
@@ -241,9 +242,9 @@ def train(env_name, algo, timesteps_total=10, save_dir='./trained_models/', load
 
     env.disconnect()
     # save action to replay
-    print("actions: ", len(actions))
-    pickle.dump(actions, open("actions.pkl", "wb"))
-    pickle.dump(best_action_idx, open("best_action_idx.pkl", "wb"))
+    # print("actions: ", len(actions))
+    # pickle.dump(actions, open("actions.pkl", "wb"))
+    # pickle.dump(best_action_idx, open("best_action_idx.pkl", "wb"))
 
     return env, actions
 
@@ -273,45 +274,6 @@ def render(env, actions):
             draw_point(point)
     for a in actions[best_idx]:
         env.step(a)
-
-
-def render_policy(env, env_name, algo, policy_path, coop=False, colab=False, seed=0, n_episodes=1, extra_configs={}):
-    ray.init(num_cpus=multiprocessing.cpu_count(), ignore_reinit_error=True, log_to_driver=False)
-    if env is None:
-        env = make_env(env_name, coop, seed=seed)
-        if colab:
-            env.setup_camera(camera_eye=[0.5, -0.75, 1.5], camera_target=[-0.2, 0, 0.75], fov=60,
-                             camera_width=1920 // 4, camera_height=1080 // 4)
-    test_agent, _ = load_policy(env, algo, env_name, policy_path, coop, seed, extra_configs)
-
-    if not colab:
-        env.render()
-    frames = []
-    for episode in range(n_episodes):
-        obs = env.reset()
-        done = False
-        while not done:
-            if coop:
-                # Compute the next action for the robot/human using the trained policies
-                action_robot = test_agent.compute_action(obs['robot'], policy_id='robot')
-                action_human = test_agent.compute_action(obs['human'], policy_id='human')
-                # Step the simulation forward using the actions from our trained policies
-                obs, reward, done, info = env.step({'robot': action_robot, 'human': action_human})
-                done = done['__all__']
-            else:
-                # Compute the next action using the trained policy
-                action = test_agent.compute_action(obs)
-                # Step the simulation forward using the action from our trained policy
-                obs, reward, done, info = env.step(action)
-            if colab:
-                # Capture (render) an image from the camera
-                img, depth = env.get_camera_image_depth()
-                frames.append(img)
-    env.disconnect()
-    if colab:
-        filename = 'output_%s.png' % env_name
-        write_apng(filename, frames, delay=100)
-        return filename
 
 
 if __name__ == '__main__':
@@ -355,6 +317,3 @@ if __name__ == '__main__':
         actions = pickle.load(open("actions.pkl", "rb"))
         env = make_env(args.env, coop=True)
         render(env, actions)
-        # render_policy(None, args.env, args.algo, checkpoint_path if checkpoint_path is not None else args.load_policy_path, coop=coop, colab=args.colab, seed=args.seed, n_episodes=args.render_episodes)
-    # if args.evaluate:
-    #     evaluate_policy(args.env, args.algo, checkpoint_path if checkpoint_path is not None else args.load_policy_path, n_episodes=args.eval_episodes, coop=coop, seed=args.seed, verbose=args.verbose)

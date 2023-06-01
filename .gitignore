@@ -112,3 +112,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# meshes 
+assistive_gym/envs/assets/human/meshes/

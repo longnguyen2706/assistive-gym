@@ -29,14 +29,6 @@ class HumanComfortEnv(AssistiveEnv):
 
         obs = self._get_obs()
 
-        # Get human preferences
-        end_effector_velocity = np.linalg.norm(self.robot.get_velocity(self.robot.right_end_effector))
-        # preferences_score = self.human_preferences(end_effector_velocity=end_effector_velocity,
-        #                                            total_force_on_human=self.total_force_on_human,
-        #                                            tool_force_at_target=self.spoon_force_on_human,
-        #                                            food_hit_human_reward=food_hit_human_reward,
-        #                                            food_mouth_velocities=food_mouth_velocities)
-
         comfort_score = self.get_comfort_score()
         reward = comfort_score
         if self.gui and comfort_score != 0:
@@ -120,21 +112,6 @@ class HumanComfortEnv(AssistiveEnv):
 
         # Update robot and human motor gains
         self.robot.motor_gains = self.human.motor_gains = 0.005
-
-        # p.resetDebugVisualizerCamera(cameraDistance=1.10, cameraYaw=40, cameraPitch=-45,
-        #                              cameraTargetPosition=[-0.2, 0, 0.75], physicsClientId=self.id)
-
-        # # Initialize the tool in the robot's gripper
-        # self.tool.init(self.robot, self.task, self.directory, self.id, self.np_random, right=True,
-        #                mesh_scale=[0.08] * 3)
-
-        # target_ee_pos = np.array([-0.15, -0.65, 1.15]) + self.np_random.uniform(-0.05, 0.05, size=3)
-        # target_ee_orient = self.get_quaternion(self.robot.toc_ee_orient_rpy[self.task])
-        # self.init_robot_pose(target_ee_pos, target_ee_orient,
-        #                      [(target_ee_pos, target_ee_orient), (self.target_pos, None)],
-        #                      [(self.target_pos, target_ee_orient)], arm='right', tools=[self.tool],
-        #                      collision_objects=[self.human, self.table, self.furniture])
-
 
         # reset human pose
         # smpl_data = load_smpl(SMPL_PATH)
