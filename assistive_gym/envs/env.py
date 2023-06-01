@@ -9,7 +9,6 @@ from keras.models import load_model
 
 from .human_creation import HumanCreation
 from .util import Util
-from .human_creation2 import HumanCreation2
 from .agents import agent, human, robot, panda, tool, furniture
 from .agents.agent import Agent
 from .agents.human import Human
