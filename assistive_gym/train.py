@@ -66,15 +66,12 @@ def solve_ik(env, target_pos, end_effector="right_hand"):
 
 def cost_fn(env, solution, target_pos, end_effector="right_hand"):
     human = env.human
-    original_joint_angles = human.get_joint_angles(human.controllable_joint_indices)
-    human.set_joint_angles(human.controllable_joint_indices, solution) # force set joint angle
 
     real_pos = p.getLinkState(human.body, human.human_dict.get_dammy_joint_id(end_effector))[0]
     dist = eulidean_distance(real_pos, target_pos)
     m = human.cal_manipulibility_chain(solution)
+    # torque = human.cal_torque()
     cost = dist + 1/m
-    # restore joint angle
-    human.set_joint_angles(human.controllable_joint_indices, original_joint_angles)
     print("euclidean distance: ", dist, "manipubility: ", m, "cost: ", cost)
 
     return cost, m, dist
@@ -190,7 +187,9 @@ def train(env_name, algo, timesteps_total=10, save_dir='./trained_models/', load
     best_cost = 10 ^ 9
     cost = 0
 
+    human = env.human
     for (idx, target) in enumerate(points):
+        original_joint_angles = human.get_joint_angles(human.controllable_joint_indices)
         draw_point(target, size=0.01)
 
         x0 = get_initial_guess(env, None)
@@ -206,11 +205,16 @@ def train(env_name, algo, timesteps_total=10, save_dir='./trained_models/', load
 
         while not optimizer.stop():
             timestep += 1
-            solutions = optimizer.ask()  # TODO: change this?
+            solutions = optimizer.ask()
             # print("solutions: ", solutions)
             fitness_values = []
             for s in solutions:
+                human.set_joint_angles(human.controllable_joint_indices, s)  # force set joint angle
+
                 cost, m, dist = cost_fn(env, s, target)
+                # restore joint angle
+                human.set_joint_angles(human.controllable_joint_indices, original_joint_angles)
+
                 fitness_values.append(cost)
                 dists.append(dist)
                 manipus.append(m)

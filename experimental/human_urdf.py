@@ -141,6 +141,9 @@ class HumanUrdf(Agent):
         set_self_collisions(self.body, physics_id)
         # set contact damping
         num_joints = p.getNumJoints(self.body, physicsClientId=physics_id)
+
+        for i in self.controllable_joint_indices:
+            p.enableJointForceTorqueSensor(self.body, i, enableSensor=True, physicsClientId=physics_id)
         change_dynamic_properties(self.body, list(range(0, num_joints)))
         super(HumanUrdf, self).init(self.body, physics_id, np_random)
 
@@ -193,9 +196,10 @@ class HumanUrdf(Agent):
 
     def cal_torque(self):
         torque = []
-        for i in human.controllable_joint_indices:
-            torque.append(p.getJointState(human.body, i)[3])
+        for i in self.controllable_joint_indices:
+            torque.append(p.getJointState(self.body, i)[3])
         print("torque: ", torque)
+        return torque
 
     # fk for a chain using kinpy
     def fk_chain(self, target_angles):
@@ -243,7 +247,7 @@ class HumanUrdf(Agent):
     def cal_manipulibility_chain(self, joint_angles):
         J = self.right_hand_chain.jacobian(joint_angles, end_only=True)
         J = np.array(J)
-        print("J: ", J.shape)
+        # print("J: ", J.shape)
         # J = J[:, 6:]
         m = np.linalg.det(np.dot(J, J.T))
         return m
