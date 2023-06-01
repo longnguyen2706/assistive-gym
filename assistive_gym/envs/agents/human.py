@@ -109,7 +109,7 @@ class Human(Agent):
                 # Make all non controllable joints on the person static by setting mass of each link (joint) to 0
                 p.changeDynamics(self.body, j, mass=0, physicsClientId=self.id)
                 # Set velocities to 0
-                self.set_joint_angles([j], [joint_angles[j]], use_limits=False)
+                self.set_joint_angles([j], [joint_angles[j]])
 
         # Set starting joint positions
         self.set_joint_angles([j for j, _ in joints_positions], [np.deg2rad(j_angle) for _, j_angle in joints_positions])
