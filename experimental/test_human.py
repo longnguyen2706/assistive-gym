@@ -21,7 +21,7 @@ from assistive_gym.envs.utils.smpl_dict import SMPLDict
 from assistive_gym.envs.utils.smpl_geom import generate_geom
 from assistive_gym.envs.utils.urdf_utils import convert_aa_to_euler_quat, load_smpl, generate_urdf
 
-SMPL_PATH = os.path.join(os.getcwd(), "examples/data/smpl_bp_ros_smpl_2.pkl")
+SMPL_PATH = os.path.join(os.getcwd(), "examples/data/smpl_bp_ros_smpl_9.pkl")
 class HumanUrdfTest(Agent):
     def __init__(self):
         super(HumanUrdfTest, self).__init__()
@@ -65,10 +65,10 @@ if __name__ == "__main__":
     planeId = p.loadURDF("assistive_gym/envs/assets/plane/plane.urdf", [0,0,0])
 
     #bed
-    # bed_id = p.loadURDF("assistive_gym/envs/assets/bed/bed.urdf", [0,0,0], useFixedBase=False)
+    # bed_id = p.loadURDF("assistive_gym/envs/assets/bed/hospital_bed.urdf", [0,0,0], useFixedBase=False)
 
     # robot
-    robotId = p.loadURDF("assistive_gym/envs/assets/stretch/stretch_uncalibrated.urdf", [1,0,0], useFixedBase=True)
+    # robotId = p.loadURDF("assistive_gym/envs/assets/stretch/stretch_uncalibrated.urdf", [1,0,0], useFixedBase=True)
 
     # human
     human = HumanUrdfTest()
@@ -87,11 +87,10 @@ if __name__ == "__main__":
 
 
     # Set the simulation parameters
-    # smpl_path = os.path.join(os.getcwd(), SMPL_PATH)
-    # smpl_data = load_smpl(smpl_path)
-    # set_joint_angles(human.human_id, smpl_data.body_pose)
-    # set_global_orientation(human.human_id, smpl_data.global_orient, [0, 0, 0.2])
-    set_self_collisions(human.human_id,  physic_client_id)
+    smpl_path = os.path.join(os.getcwd(), SMPL_PATH)
+    smpl_data = load_smpl(smpl_path)
+    set_joint_angles(human.human_id, smpl_data.body_pose)
+    set_global_orientation(human.human_id, smpl_data.global_orient, [0, 0, 0.2])
 
     # Set the camera view
     cameraDistance = 3
@@ -99,7 +98,7 @@ if __name__ == "__main__":
     cameraPitch = -30
     cameraTargetPosition = [0,0,1]
     p.resetDebugVisualizerCamera(cameraDistance, cameraYaw, cameraPitch, cameraTargetPosition)
-    # print all the joints
+    ########################   print all joints and draw lines at the joint locations ##########################
     # for j in range(1, num_joints):
     #     joint_info = p.getJointInfo(robotId, j)
     #
@@ -115,17 +114,16 @@ if __name__ == "__main__":
     #     p.addUserDebugLine(joint_pos, joint_d_pos, [1, 0, 0], 2)
     #     p.addUserDebugLine(link_pos, link_d_pos, [0, 0, 1], 2)
 
+    #####################################  set joint angles for debugging ########################################
     # human.set_joint_angles([81,82,83], [0, np.pi/2, 0], use_limits=False) # right ankle
     # human.set_joint_angles([61, 62, 63], [0, -np.pi / 2, 0], use_limits=False)  # left ankle
-    human.set_joint_angles([77, 78, 79], [np.pi/2, 0, 0], use_limits=False)  # right shoulder
-
-    human.set_joint_angles([21,22,23], [np.pi/2, 0, 0], use_limits=False) # right knee
-
-
+    # human.set_joint_angles([77, 78, 79], [np.pi/2, 0, 0], use_limits=False)  # right shoulder
+    # human.set_joint_angles([21,22,23], [np.pi/2, 0, 0], use_limits=False) # right knee
     # human.set_joint_angles([81,82,83], [np.pi/2, 0, 0])
+
+
     while True:
         p.stepSimulation()
-        time.sleep(100)
         # check_collision(human.human_id, human.human_id)
         # human.step_forward()
     # Disconnect from the simulation

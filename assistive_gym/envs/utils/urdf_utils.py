@@ -37,7 +37,7 @@ BM_FRACTION = 1.0
 
 JOINT_SETTING = {
     "pelvis": {
-        "joint_limits": [-60, 60] * 3,  # deg
+        "joint_limits":[[-60, 60], [-60, 60], [-60, 60]],  # deg
         "joint_damping": 0.0,
         "joint_stiffness": 0.0,
     },
@@ -53,7 +53,6 @@ JOINT_SETTING = {
     },
     "left_ankle": {
         "joint_limits": [[-30, 30], [-30, 30], [-30, 30]],
-        "joint_damping": 0.0,
         "joint_stiffness": 0.0,
     },
     "left_foot": {
@@ -131,7 +130,7 @@ JOINT_SETTING = {
         },
     "left_elbow":
         {
-            "joint_limits": [[0, 0], [-147.3, 2.8], [0, 0]],  # TODO: check
+            "joint_limits": [[0, 0], [-147.3, 2.8], [0, 0]],
             "joint_damping": 0.0,
             "joint_stiffness": 0.0,
         },

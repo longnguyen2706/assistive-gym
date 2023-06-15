@@ -9,58 +9,7 @@ from numpngw import write_apng
 import pybullet as p
 from matplotlib import pyplot as plt
 
-def fibonacci_quarter_sphere(center, radius, samples=10):
-    '''
-    Reference: https://chiellini.github.io/2020/10/06/fibonacci_spiral_sphere/
-    :param center:
-    :param r:
-    :param samples:
-    :return:
-    '''
-    points = []
-    phi = (np.pi / 2.) * (3. - np.sqrt(5.))  # golden angle in radians, but only in quarter sphere
-
-    for r in radius:
-        for i in range(samples):
-            lat = math.asin(-1.0 + 2.0 * float(i / (samples + 1)))
-            # lat = lat % (-math.pi) if lat < 0 else lat % math.pi
-            # lat = lat % (2*math.pi)
-            lon = phi * i
-
-            x = math.cos(lon) * math.cos(lat) * r + center[0]
-            y = math.sin(lon) * math.cos(lat) * r + center[1]
-            z = math.sin(lat) * r + center[2]
-
-            # Only keep the points that are in the first quadrant
-            if x >= center[0] and z >=center[2]:
-                points.append([x, y, z])
-    return points
-
-def uniform_sample(pos, radius, num_samples):
-    """
-    Sample points uniformly from the given space
-    :param pos: (x, y, z)
-    :return:
-    """
-    # pos = np.array(pos)
-    # points = np.random.uniform(low=pos-radius, high=pos + radius, size=(num_samples, 3))
-    points = []
-    for i in range(num_samples):
-        r = np.random.uniform(radius / 2, radius)
-        theta = np.random.uniform(0, np.pi / 2)
-        phi = np.random.uniform(0, np.pi / 2)  # Only sample from 0 to pi/2
-
-        # Convert from spherical to cartesian coordinates
-        dx = r * np.sin(phi) * np.cos(theta)
-        dy = r * np.sin(phi) * np.sin(theta)
-        dz = r * np.cos(phi)
-
-        # Add to original point
-        x_new = pos[0] + dx
-        y_new = pos[1] + dy
-        z_new = pos[2] + dz
-        points.append([x_new, y_new, z_new])
-    return points
+from assistive_gym.envs.utils.point_utils import fibonacci_evenly_sampling_range_sphere, eulidean_distance
 
 
 def inverse_dynamic(human):
@@ -162,23 +111,6 @@ def cost_fn(env, solution, target_pos, end_effector="right_hand", is_self_collis
 
     return cost, m, dist
 
-
-def eulidean_distance(cur, target):
-    print("current: ", cur, "target: ", target)
-    # convert tuple to np array
-    cur = np.array(cur)
-    return np.sqrt(np.sum(np.square(cur - target)))
-
-
-# for debugging
-def get_single_target(ee_pos):
-    point = np.array(list(ee_pos))
-    point[1] -= 0.2
-    point[0] += 0.2
-    point[2] += 0.2
-    return point
-
-
 def generate_target_points(env, num_points):
     # init points
     # human_pos = p.getBasePositionAndOrientation(env.human.body, env.human.id)[0]
@@ -186,7 +118,8 @@ def generate_target_points(env, num_points):
     human = env.human
     right_hand_pos = p.getLinkState(human.body, human.human_dict.get_dammy_joint_id("right_hand"))[0]
     # points = uniform_sample(right_hand_pos, 0.5, num_points)
-    points = fibonacci_quarter_sphere(right_hand_pos, [0.3, 0.5], num_points)
+    points = fibonacci_evenly_sampling_range_sphere(right_hand_pos, [0.25, 0.5], 50)
+    # points = fibonacci_sphere(right_hand_pos, 0.5, num_points)
     return points
 
 
@@ -339,7 +272,7 @@ def train(env_name, seed=0,  num_points = 50, smpl_file = 'examples/data/smpl_bp
                 human.set_joint_angles(human.controllable_joint_indices, s)  # force set joint angle
                 cost, m, dist, energy_change = cal_cost(env, s, target, original_self_collisions, original_collisions, env_object_ids, original_link_positions)
                 # restore joint angle
-                human.set_joint_angles(human.controllable_joint_indices, original_joint_angles)
+                # human.set_joint_angles(human.controllable_joint_indices, original_joint_angles)
 
                 fitness_values.append(cost)
                 dists.append(dist)
@@ -406,6 +339,7 @@ def render(env_name, smpl_file, save_dir):
 
     # init points
     points = pickle.load(open(os.path.join(save_dir, "points.pkl"), "rb"))
+    print ("points: ", len(points))
     best_idx = pickle.load(open(os.path.join(save_dir,"best_action_idx.pkl"), "rb"))
     for (idx, point) in enumerate(points):
         # print(idx, point)
@@ -419,7 +353,9 @@ def render(env_name, smpl_file, save_dir):
         if idx == best_idx:
             plot_CMAES_metrics(action['mean_cost'], action['mean_dist'], action['mean_m'])
             plot_mean_evolution(action['mean_evolution'])
-
+    # for i in range (1000):
+    #     p.stepSimulation(env.id)
+    # time.sleep(100)
 
 
 if __name__ == '__main__':
