@@ -327,16 +327,16 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
             "mean_cost": mean_cost,
             "mean_dist": mean_dist,
             "mean_m": mean_m,
-            "mean_evolution": mean_evolution
+            "mean_evolution": mean_evolution,
+            "mean_torque": mean_torque
         }
         actions.append(action)
-        plot_cmaes_metrics(mean_cost, mean_dist, mean_m, mean_energy, mean_torque)
-        plot_mean_evolution(mean_evolution)
+        # plot_cmaes_metrics(mean_cost, mean_dist, mean_m, mean_energy, mean_torque)
+        # plot_mean_evolution(mean_evolution)
 
         if cost < best_cost:
             best_cost = cost
             best_action_idx = idx
-        time.sleep(100)
     env.disconnect()
 
     # save action to replay
@@ -362,22 +362,13 @@ def render(env_name, smpl_file, save_dir):
     env = make_env(env_name, coop=True, smpl_file=smpl_file)
     env.render()  # need to call reset after render
     env.reset()
-
-    # init points
-    points = pickle.load(open(os.path.join(save_dir, "points.pkl"), "rb"))
-    print("points: ", len(points))
     best_idx = pickle.load(open(os.path.join(save_dir, "best_action_idx.pkl"), "rb"))
-    for (idx, point) in enumerate(points):
-        # print(idx, point)
-        if idx == best_idx:
-            draw_point(point, color=[0, 0, 1, 1])
-        else:
-            draw_point(point)
+
     for (idx, action) in enumerate(actions):
         env.human.set_joint_angles(env.human.controllable_joint_indices, action["solution"])
         time.sleep(0.5)
         if idx == best_idx:
-            plot_cmaes_metrics(action['mean_cost'], action['mean_dist'], action['mean_m'], action['mean_energy'])
+            plot_cmaes_metrics(action['mean_cost'], action['mean_dist'], action['mean_m'], action['mean_energy'], action['mean_torque'])
             plot_mean_evolution(action['mean_evolution'])
     # for i in range (1000):
     #     p.stepSimulation(env.id)

@@ -179,8 +179,9 @@ def set_self_collision2(human_id, physic_client_id, joint_chain, joint_to_ignore
         for j_name in joint_to_ignore:
             if j_name == "pelvis":
                 ignore_ids.append(human_dict.get_fixed_joint_id(j_name))
-            else:
-                ignore_ids.append(human_dict.get_dammy_joint_id(j_name))
+            # else:
+            #     if joint_name ==
+            #     ignore_ids.append(human_dict.get_dammy_joint_id(j_name))
 
         print (f"ignore_ids: {ignore_ids}")
         for j in all_real_limb_ids:
