@@ -174,9 +174,10 @@ def cost_fn(env, ee_name, angle_config, ee_target_pos, original_self_collisions,
     # cost = dist + 1.0/m + np.abs(energy_final)/1000.0
     # cost = 1.0/m + (energy_final-49)/5
     # cost = dist + 1 / manipulibility + energy_final / 100 + torque / 10
-    cost = dist + 0.5 / manipulibility +  energy_final / 50 + torque / 10
+    # cost = dist + 0.5 / manipulibility +  energy_final / 50 + torque / 10
 
-    # cost = torque
+    cost = dist + 1 / manipulibility +  energy_final / 50
+
     if has_new_self_collision:
         cost += 100
     if has_new_env_collision:

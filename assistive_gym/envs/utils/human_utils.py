@@ -103,7 +103,7 @@ def change_dynamic_properties(human_id, link_ids):
                          angularDamping=0.01,
                          contactStiffness=1e3,
                          # contact stiffness need to be large otherwise the body will penetrate the ground
-                         contactDamping=1e8)  # contact damping need to be much larger than contact stiffness so that no bounciness
+                         contactDamping=1e6)  # contact damping need to be much larger than contact stiffness so that no bounciness
 
 
 def check_collision(body_id, other_body_id):
@@ -183,9 +183,10 @@ def set_self_collision2(human_id, physic_client_id, joint_chain, joint_to_ignore
             #     if joint_name ==
             #     ignore_ids.append(human_dict.get_dammy_joint_id(j_name))
 
-        print (f"ignore_ids: {ignore_ids}")
+        # print (f"ignore_ids: {ignore_ids}")
         for j in all_real_limb_ids:
             if j not in ignore_ids:
+                # print (f"enable collision between {j} and {limb_id}")
                 p.setCollisionFilterPair(human_id, human_id, limb_id, j, 1, physicsClientId=physic_client_id)
 
 
