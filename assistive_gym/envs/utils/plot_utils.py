@@ -11,7 +11,7 @@ def plot(vals, title, xlabel, ylabel):
     plt.show()
 
 
-def plot_cmaes_metrics(mean_cost, mean_dist, mean_m, mean_energy):
+def plot_cmaes_metrics(mean_cost, mean_dist, mean_m, mean_energy, mean_torque):
     # Plot the fitness values
     plot(mean_cost, "Cost Function", "Iteration", "Cost")
 
@@ -24,6 +24,8 @@ def plot_cmaes_metrics(mean_cost, mean_dist, mean_m, mean_energy):
     # Plot energy
     plot (mean_energy, "Energy Values", "Iteration", "Energy")
 
+    # Plot torque
+    plot (mean_torque, "Torque Values", "Iteration", "Torque")
 
 def plot_mean_evolution(mean_evolution):
     # Plot the mean vector evolution

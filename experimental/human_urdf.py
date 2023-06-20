@@ -314,6 +314,43 @@ class HumanUrdf(Agent):
 
         return link_positions
 
+    def inverse_dynamic(self, end_effector_name=None):
+        # inverse dynamics will return the torque for base 7 DOF + all joints DOF (in our case of floating base + 23 joints, it will be 76)
+        # we need pass all DOF positions to inverse dynamics method, then filter out the result
+        # see: https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/gym/pybullet_utils/pd_controller_stable.py
+
+        base_pos, base_orn = p.getBasePositionAndOrientation(self.body, physicsClientId=self.id)
+        joint_positions = []
+        joint_positions.extend(list(base_pos))
+        joint_positions.extend(list(base_orn)) # DOF for base = 7
+
+        default_velocity = 0.0
+        joint_indices_map = {} # (joint_index, index)
+        count = 6
+        for j in self.all_joint_indices:
+            if p.getJointInfo(self.body, j, physicsClientId=self.id)[2] != p.JOINT_FIXED:
+                joint_state = p.getJointState(self.body, j)
+                joint_positions.append(joint_state[0])
+                count+=1
+                joint_indices_map[j] = count
+        # print("joint_positions: ", len(joint_positions))
+
+        # need to pass flags=1 to overcome inverseDynamics error for floating base
+        # see https://github.com/bulletphysics/bullet3/issues/3188
+        torques = p.calculateInverseDynamics(self.body, objPositions=joint_positions,
+                                             objVelocities=[default_velocity] * (len(joint_positions)),
+                                             objAccelerations=[0] * (len(joint_positions)), physicsClientId=self.id, flags=1)
+        if end_effector_name is None:
+            torques = torques[7:]
+        else:
+            # filter out the torques for the end effector
+            indices = []
+            for j in self.controllable_joint_indices:
+                indices.append(joint_indices_map[j])
+            torques = [torques[i] for i in indices]
+        # print("torques: ", len(torques))
+        return torques
+
     def check_env_collision(self, body_ids):
         """
         Check self collision

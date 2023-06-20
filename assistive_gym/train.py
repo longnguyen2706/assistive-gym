@@ -17,26 +17,11 @@ from assistive_gym.envs.utils.point_utils import fibonacci_evenly_sampling_range
 LOG = get_logger()
 
 
-def inverse_dynamic(human):
-    pos = []
-    default_velocity = 0.1
-    for j in human.all_joint_indices:
-        if p.getJointInfo(human.body, j, physicsClientId=human.id)[2] != p.JOINT_FIXED:
-            joint_state = p.getJointState(human.body, j)
-            pos.append(joint_state[0])
-
-    # need to pass flags=1 to overcome inverseDynamics error for floating base
-    # see https://github.com/bulletphysics/bullet3/issues/3188
-    ivd = p.calculateInverseDynamics(human.body, objPositions= pos, objVelocities=[default_velocity]*len(pos),
-                                                 objAccelerations=[0] * len(pos), physicsClientId=human.id, flags=1)
-    print ("inverse_dynamic: ", ivd, np.array(ivd).sum())
-    return ivd
-
 def create_point(point, size=0.01, color=[1, 0, 0, 1]):
     sphere = p.createCollisionShape(p.GEOM_SPHERE, radius=size)
     id = p.createMultiBody(baseMass=0,
-                                  baseCollisionShapeIndex=sphere,
-                                  basePosition=np.array(point))
+                           baseCollisionShapeIndex=sphere,
+                           basePosition=np.array(point))
     p.setGravity(0, 0, 0)
     return id
 
@@ -64,8 +49,7 @@ def solve_ik(env, target_pos, end_effector="right_hand"):
     human = env.human
     ee_idx = human.human_dict.get_dammy_joint_id(end_effector)
     ik_joint_indices = human.find_ik_joint_indices()
-    # print ("ik_joint_indices: ", ik_joint_indices)
-    solution = human.ik(ee_idx, target_pos, None, ik_joint_indices,  max_iterations=1000)  # TODO: Fix index
+    solution = human.ik(ee_idx, target_pos, None, ik_joint_indices, max_iterations=1000)  # TODO: Fix index
     # print ("ik solution: ", solution)
     return solution
 
@@ -85,11 +69,12 @@ def cal_energy_change(env, original_link_positions, end_effector):
         LOG.debug(f"{bcolors.WARNING}link {j}, mass: {mass}{bcolors.ENDC}")
 
         # Calculate initial potential energy
-        potential_energy_initial += mass * g * original_link_positions[idx][2] # z axis
+        potential_energy_initial += mass * g * original_link_positions[idx][2]  # z axis
         potential_energy_final += mass * g * current_link_positions[idx][2]
         # Add changes to the total energy change
     total_energy_change = potential_energy_final - potential_energy_initial
-    LOG.debug(f"Total energy change: {total_energy_change}, Potential energy initial: {potential_energy_initial}, Potential energy final: {potential_energy_final}")
+    LOG.debug(
+        f"Total energy change: {total_energy_change}, Potential energy initial: {potential_energy_initial}, Potential energy final: {potential_energy_final}")
 
     return total_energy_change, potential_energy_initial, potential_energy_final
 
@@ -143,11 +128,11 @@ def test_collision():
     pass
 
 
-
 def step_forward(env, x0):
-    p.setJointMotorControlArray(env.human.body, jointIndices=env.human.controllable_joint_indices, controlMode=p.POSITION_CONTROL,
+    p.setJointMotorControlArray(env.human.body, jointIndices=env.human.controllable_joint_indices,
+                                controlMode=p.POSITION_CONTROL,
                                 forces=[1000] * len(env.human.controllable_joint_indices),
-                                positionGains = [0.01] * len(env.human.controllable_joint_indices),
+                                positionGains=[0.01] * len(env.human.controllable_joint_indices),
                                 targetPositions=x0,
                                 physicsClientId=env.human.id)
     # for _ in range(5):
@@ -162,7 +147,8 @@ def has_new_collision(old_collisions: Set, new_collisions: Set) -> bool:
     return False
 
 
-def cost_fn(env, ee_name, angle_config, ee_target_pos, original_self_collisions, original_env_collisions, env_collisions, original_link_positions):
+def cost_fn(env, ee_name, angle_config, ee_target_pos, original_self_collisions, original_env_collisions,
+            env_collisions, original_link_positions):
     human = env.human
 
     # inverse_dynamic(human)
@@ -179,20 +165,24 @@ def cost_fn(env, ee_name, angle_config, ee_target_pos, original_self_collisions,
     ee_real_pos = p.getLinkState(human.body, human.human_dict.get_dammy_joint_id(ee_name))[0]
     dist = eulidean_distance(ee_real_pos, ee_target_pos)
 
+    # cal torque
+    torque = cal_torque_magnitude(human, ee_name)
     # cal manipulibility
     manipulibility = human.cal_chain_manipulibility(angle_config, ee_name)
 
     # cost
     # cost = dist + 1.0/m + np.abs(energy_final)/1000.0
     # cost = 1.0/m + (energy_final-49)/5
-    cost = dist / 10 + 1 / manipulibility + energy_final / 10
+    # cost = dist + 1 / manipulibility + energy_final / 100 + torque / 10
+    cost = dist + 0.5 / manipulibility +  energy_final / 50 + torque / 10
+
+    # cost = torque
     if has_new_self_collision:
         cost += 100
     if has_new_env_collision:
         cost += 100
 
-    return cost, manipulibility, dist, energy_final
-
+    return cost, manipulibility, dist, energy_final, torque
 
 
 def get_save_dir(save_dir, env_name, smpl_file):
@@ -212,7 +202,7 @@ def get_valid_points(env, points):
     for idx, point in enumerate(points):
         id = point_ids[idx]
         contact_points = p.getContactPoints(bodyA=id, physicsClientId=env.id)
-        if len(contact_points)==0:
+        if len(contact_points) == 0:
             valid_points.append(point)
             # valid_ids.append(id)
         # else:
@@ -221,8 +211,34 @@ def get_valid_points(env, points):
     return valid_points, valid_ids
 
 
+
+def cal_torque_magnitude(human, end_effector):
+    def pretty_print_torque(human, torques, end_effector):
+        link_names = human.human_dict.joint_chain_dict[end_effector]
+        # print ("link_names: ", link_names)
+        # print ("torques: ", len(torques))
+        for i in range(0, len(torques), 3):
+            LOG.info(f"{link_names[i // 3]}: {torques[i : i + 3]}")
+
+    # torques = human.inverse_dynamic(end_effector)
+    # print ("torques ee: ", len(torques), torques)
+    # torques = human.inverse_dynamic()
+    # print ("torques: ", len(torques), torques)
+    torques = human.inverse_dynamic(end_effector)
+    # print("torques ee: ", torques)
+    # print ("----------------------------------")
+    pretty_print_torque(human, torques, end_effector)
+
+    torque_magnitude = 0
+    for i in range(0, len(torques), 3):
+        torque = np.sqrt(np.sum(np.square(torques[i:i+3])))
+        torque_magnitude += torque
+    LOG.debug(f"torques: {torques}, torque magnitude: {torque_magnitude}")
+    return torque_magnitude
+
 # args.env, args.seed, args.num_points, args.smpl_file, args.save_dir, args.render_train
-def train(env_name, seed=0,  num_points = 50, smpl_file = 'examples/data/smpl_bp_ros_smpl_re2.pkl', end_effector='right_hand', save_dir='./trained_models/', render=False):
+def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
+          end_effector='right_hand', save_dir='./trained_models/', render=False):
     start_time = time.time()
     env = make_env(env_name, smpl_file, coop=True)
 
@@ -241,7 +257,7 @@ def train(env_name, seed=0,  num_points = 50, smpl_file = 'examples/data/smpl_bp
     best_action_idx = 0
     best_cost = 10 ^ 9
     cost = 0
-    env_object_ids= [env.robot.body, env.furniture.body, env.plane.body] # set env object for collision check
+    env_object_ids = [env.robot.body, env.furniture.body, env.plane.body]  # set env object for collision check
     human = env.human
     # original value
     original_joint_angles = human.get_joint_angles(human.controllable_joint_indices)
@@ -249,7 +265,8 @@ def train(env_name, seed=0,  num_points = 50, smpl_file = 'examples/data/smpl_bp
     original_self_collisions = human.check_self_collision()
     original_env_collisions = human.check_env_collision(env_object_ids)
 
-    points = [[0, 0, 0]]
+    original_ee_pos = human.get_pos_orient(human.human_dict.get_dammy_joint_id(end_effector), center_of_mass=True)[0]
+    points = [original_ee_pos]
     for (idx, target) in enumerate(points):
         # draw_point(target, size=0.01)
         # point_id= point_ids[idx]
@@ -260,41 +277,46 @@ def train(env_name, seed=0,  num_points = 50, smpl_file = 'examples/data/smpl_bp
         x0 = np.array(original_joint_angles)
         optimizer = init_optimizer(x0, sigma=0.1)
         timestep = 0
-        mean_cost, mean_dist, mean_m, mean_energy, mean_evolution  =[], [], [], [], []
+        mean_cost, mean_dist, mean_m, mean_energy, mean_torque, mean_evolution = [], [], [], [], [], []
 
         while not optimizer.stop():
             timestep += 1
             solutions = optimizer.ask()
-            fitness_values, dists, manipus, energy_changes = [], [], [], []
+            fitness_values, dists, manipus, energy_changes, torques = [], [], [], [], []
             for s in solutions:
                 human.set_joint_angles(human.controllable_joint_indices, s)  # force set joint angle
                 env_collisions = human.check_env_collision(env_object_ids)
-                cost, m, dist, energy_change = cost_fn(env, end_effector, s, target, original_self_collisions,
-                                                       original_env_collisions, env_collisions, original_link_positions)
+
+                cost, m, dist, energy, torque = cost_fn(env, end_effector, s, target, original_self_collisions,
+                                                original_env_collisions, env_collisions, original_link_positions)
                 # restore joint angle
-                # human.set_joint_angles(human.controllable_joint_indices, original_joint_angles)
+                human.set_joint_angles(human.controllable_joint_indices, original_joint_angles)
 
                 fitness_values.append(cost)
                 dists.append(dist)
                 manipus.append(m)
-                energy_changes.append(energy_change)
+                energy_changes.append(energy)
+                torques.append(torque)
 
             optimizer.tell(solutions, fitness_values)
             optimizer.result_pretty()
             LOG.info(
-                f"{bcolors.OKGREEN}timestep: {timestep}, cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy_change}{bcolors.ENDC}")
+                f"{bcolors.OKGREEN}timestep: {timestep}, cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
 
             mean_evolution.append(np.mean(solutions, axis=0))
             mean_cost.append(np.mean(fitness_values, axis=0))
             mean_dist.append(np.mean(dists, axis=0))
             mean_m.append(np.mean(manipus, axis=0))
             mean_energy.append(np.mean(energy_changes, axis=0))
+            mean_torque.append(np.mean(torques, axis=0))
 
         # get the best solution value
         env.human.set_joint_angles(env.human.controllable_joint_indices, optimizer.best.x)
 
-        cost, m, dist, energy_change = cost_fn(env, end_effector, optimizer.best.x, target, original_self_collisions,
+        cost, m, dist, energy, torque = cost_fn(env, end_effector, optimizer.best.x, target, original_self_collisions,
                                                original_env_collisions, env_collisions, original_link_positions)
+        LOG.info(
+            f"{bcolors.OKBLUE} Best cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
         action = {
             "solution": optimizer.best.x,
             "cost": cost,
@@ -308,8 +330,8 @@ def train(env_name, seed=0,  num_points = 50, smpl_file = 'examples/data/smpl_bp
             "mean_evolution": mean_evolution
         }
         actions.append(action)
-        # plot_CMAES_metrics(mean_cost, mean_dist, mean_m)
-        # plot_mean_evolution(mean_evolution)
+        plot_cmaes_metrics(mean_cost, mean_dist, mean_m, mean_energy, mean_torque)
+        plot_mean_evolution(mean_evolution)
 
         if cost < best_cost:
             best_cost = cost
@@ -317,18 +339,18 @@ def train(env_name, seed=0,  num_points = 50, smpl_file = 'examples/data/smpl_bp
         time.sleep(100)
     env.disconnect()
 
-    #save action to replay
+    # save action to replay
     print("actions: ", len(actions))
     pickle.dump(actions, open(os.path.join(save_dir, "actions.pkl"), "wb"))
-    pickle.dump(best_action_idx, open(os.path.join(save_dir,"best_action_idx.pkl"), "wb"))
+    pickle.dump(best_action_idx, open(os.path.join(save_dir, "best_action_idx.pkl"), "wb"))
 
-    print ("training time (s): ", time.time() - start_time)
+    print("training time (s): ", time.time() - start_time)
     return env, actions
 
 
 def init_optimizer(x0, sigma):
     opts = {}
-    opts['tolfun']=  1e-9
+    opts['tolfun'] = 1e-9
     opts['tolx'] = 1e-9
     es = CMAEvolutionStrategy(x0, sigma, opts)
     return es
@@ -343,8 +365,8 @@ def render(env_name, smpl_file, save_dir):
 
     # init points
     points = pickle.load(open(os.path.join(save_dir, "points.pkl"), "rb"))
-    print ("points: ", len(points))
-    best_idx = pickle.load(open(os.path.join(save_dir,"best_action_idx.pkl"), "rb"))
+    print("points: ", len(points))
+    best_idx = pickle.load(open(os.path.join(save_dir, "best_action_idx.pkl"), "rb"))
     for (idx, point) in enumerate(points):
         # print(idx, point)
         if idx == best_idx:
@@ -397,8 +419,8 @@ if __name__ == '__main__':
     checkpoint_path = None
 
     if args.train:
-        _, actions = train(args.env, args.seed, args.num_points, args.smpl_file, args.end_effector, args.save_dir, args.render_gui)
+        _, actions = train(args.env, args.seed, args.num_points, args.smpl_file, args.end_effector, args.save_dir,
+                           args.render_gui)
 
     if args.render:
-
         render(args.env, args.smpl_file, args.save_dir)
