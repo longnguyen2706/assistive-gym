@@ -127,13 +127,16 @@ def test_collision():
     # time.sleep(100)
     pass
 
+
 """
 TODO: 
 1. step forward
 2. check collision and stop on collsion 
 3. check if the target angle is reached. break
 """
-def step_forward(env, x0, env_object_ids):
+
+
+def step_forward(env, x0, env_object_ids, end_effector="right_hand"):
     human = env.human
     # p.setJointMotorControlArray(human.body, jointIndices=human.controllable_joint_indices,
     #                             controlMode=p.POSITION_CONTROL,
@@ -141,28 +144,29 @@ def step_forward(env, x0, env_object_ids):
     #                             positionGains=[0.01] * len(human.controllable_joint_indices),
     #                             targetPositions=x0,
     #                             physicsClientId=human.id)
-    human.control( human.controllable_joint_indices,x0, 0.01, 100)
+    human.control(human.controllable_joint_indices, x0, 0.01, 100)
 
     # for _ in range(5):
     #     p.stepSimulation(physicsClientId=env.human.id)
     # p.setRealTimeSimulation(1)
-    original_self_collisions = human.check_self_collision(end_effector="right_hand")
-    original_env_collisions = human.check_env_collision(env_object_ids, end_effector="right_hand")
+    original_self_collisions = human.check_self_collision(end_effector=end_effector)
+    original_env_collisions = human.check_env_collision(env_object_ids, end_effector=end_effector)
 
     # print ("target: ", x0)
 
     prev_angle = [0] * len(human.controllable_joint_indices)
     count = 0
     while True:
-        p.stepSimulation(physicsClientId=human.id) # step simulation forward
+        p.stepSimulation(physicsClientId=human.id)  # step simulation forward
 
-        self_collision = human.check_self_collision(end_effector="right_hand")
-        env_collision = human.check_env_collision(env_object_ids, end_effector="right_hand")
+        self_collision = human.check_self_collision(end_effector=end_effector)
+        env_collision = human.check_env_collision(env_object_ids, end_effector=end_effector)
         cur_joint_angles = human.get_joint_angles(human.controllable_joint_indices)
         # print ("cur_joint_angles: ", cur_joint_angles)
         angle_dist = cal_angle_diff(cur_joint_angles, x0)
         count += 1
-        if has_new_collision(original_self_collisions, self_collision) or has_new_collision(original_env_collisions, env_collision):
+        if has_new_collision(original_self_collisions, self_collision) or has_new_collision(original_env_collisions,
+                                                                                            env_collision):
             LOG.info(f"{bcolors.FAIL}sim step: {count}, collision{bcolors.ENDC}")
             return angle_dist, self_collision, env_collision, True
 
@@ -174,9 +178,10 @@ def step_forward(env, x0, env_object_ids):
 
 def cal_angle_diff(cur, target):
     # print ("cur: ", len(cur), 'target: ', len(target))
-    diff = np.sqrt(np.sum(np.square(np.array(cur) - np.array(target))))/len(cur)
+    diff = np.sqrt(np.sum(np.square(np.array(cur) - np.array(target)))) / len(cur)
     # print ("diff: ", diff)
     return diff
+
 
 def has_new_collision(old_collisions: Set, new_collisions: Set) -> bool:
     for collision in new_collisions:
@@ -184,12 +189,9 @@ def has_new_collision(old_collisions: Set, new_collisions: Set) -> bool:
             return True
     return False
 
-
 def cost_fn(env, ee_name, angle_config, ee_target_pos, original_self_collisions, original_env_collisions,
             env_collisions, original_link_positions, angle_dist):
     human = env.human
-
-    # inverse_dynamic(human)
 
     # check collision
     has_new_self_collision = has_new_collision(original_self_collisions, human.check_self_collision())
@@ -205,21 +207,23 @@ def cost_fn(env, ee_name, angle_config, ee_target_pos, original_self_collisions,
 
     # cal torque
     torque = cal_torque_magnitude(human, ee_name)
+
     # cal manipulibility
     manipulibility = human.cal_chain_manipulibility(angle_config, ee_name)
 
-    # cost
+    # cost without simulate collision
     # cost = dist + 1.0/m + np.abs(energy_final)/1000.0
     # cost = 1.0/m + (energy_final-49)/5
     # cost = dist + 1 / manipulibility + energy_final / 100 + torque / 10
-    # cost = dist + 0.5 / manipulibility +  energy_final / 50 + torque / 10
+    cost = dist + 0.5 / manipulibility +  energy_final / 50 + torque / 10
 
-    cost = angle_dist +  1 / manipulibility + energy_final / 50 + torque / 10
+    # cost with simulate collision
+    # cost = angle_dist + 1 / manipulibility + energy_final / 50 + torque / 10
 
-    # if has_new_self_collision:
-    #     cost += 100
-    # if has_new_env_collision:
-    #     cost += 100
+    if has_new_self_collision:
+        cost += 100
+    if has_new_env_collision:
+        cost += 100
 
     return cost, manipulibility, dist, energy_final, torque
 
@@ -250,14 +254,13 @@ def get_valid_points(env, points):
     return valid_points, valid_ids
 
 
-
 def cal_torque_magnitude(human, end_effector):
     def pretty_print_torque(human, torques, end_effector):
         link_names = human.human_dict.joint_chain_dict[end_effector]
         # print ("link_names: ", link_names)
         # print ("torques: ", len(torques))
         for i in range(0, len(torques), 3):
-            LOG.debug(f"{link_names[i // 3]}: {torques[i : i + 3]}")
+            LOG.debug(f"{link_names[i // 3]}: {torques[i: i + 3]}")
 
     # torques = human.inverse_dynamic(end_effector)
     # print ("torques ee: ", len(torques), torques)
@@ -270,14 +273,15 @@ def cal_torque_magnitude(human, end_effector):
 
     torque_magnitude = 0
     for i in range(0, len(torques), 3):
-        torque = np.sqrt(np.sum(np.square(torques[i:i+3])))
+        torque = np.sqrt(np.sum(np.square(torques[i:i + 3])))
         torque_magnitude += torque
     LOG.debug(f"torques: {torques}, torque magnitude: {torque_magnitude}")
     return torque_magnitude
 
+
 # args.env, args.seed, args.num_points, args.smpl_file, args.save_dir, args.render_train
 def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
-          end_effector='right_hand', save_dir='./trained_models/', render=False):
+          end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False):
     start_time = time.time()
     env = make_env(env_name, smpl_file, coop=True)
 
@@ -285,112 +289,113 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
         env.render()
     env.reset()
 
-    # init points
-    save_dir = get_save_dir(save_dir, env_name, smpl_file)
-    os.makedirs(save_dir, exist_ok=True)
-
-    # points, point_ids= generate_target_points(env, num_points)
-    # pickle.dump(points, open(os.path.join(save_dir, "points.pkl"), "wb"))
-
-    actions = []
-    best_action_idx = 0
-    best_cost = 10 ^ 9
-    cost = 0
-    env_object_ids = [env.robot.body, env.furniture.body, env.plane.body]  # set env object for collision check
     human = env.human
+    env_object_ids = [env.robot.body, env.furniture.body, env.plane.body]  # set env object for collision check
+
     # original value
     original_joint_angles = human.get_joint_angles(human.controllable_joint_indices)
     original_link_positions = human.get_link_positions(True, end_effector_name=end_effector)
     original_self_collisions = human.check_self_collision()
     original_env_collisions = human.check_env_collision(env_object_ids)
 
+    # draw original ee pos
     original_ee_pos = human.get_pos_orient(human.human_dict.get_dammy_joint_id(end_effector), center_of_mass=True)[0]
-    points = [original_ee_pos]
-    for (idx, target) in enumerate(points):
-        # draw_point(target, size=0.01)
-        # point_id= point_ids[idx]
-        # p.changeVisualShape(point_id, -1, rgbaColor=[0, 1, 0, 1])
-        draw_point(target, size=0.01, color=[0, 1, 0, 1])
+    draw_point(original_ee_pos, size=0.01, color=[0, 1, 0, 1])
 
-        # x0 = get_initial_guess(env, None)
-        x0 = np.array(original_joint_angles)
-        joint_lower_limits, joint_upper_limits = human.controllable_joint_lower_limits, human.controllable_joint_upper_limits
-        optimizer = init_optimizer(x0, 0.1, joint_lower_limits, joint_upper_limits)
-        timestep = 0
-        mean_cost, mean_dist, mean_m, mean_energy, mean_torque, mean_evolution = [], [], [], [], [], []
+    # init optimizer
+    x0 = np.array(original_joint_angles)
+    optimizer = init_optimizer(x0, 0.1, human.controllable_joint_lower_limits, human.controllable_joint_upper_limits)
 
-        while not optimizer.stop():
-            timestep += 1
-            solutions = optimizer.ask()
-            fitness_values, dists, manipus, energy_changes, torques = [], [], [], [], []
-            for s in solutions:
-                # human.set_joint_angles(human.controllable_joint_indices, s)  # force set joint angle
+    timestep = 0
+    mean_cost, mean_dist, mean_m, mean_energy, mean_torque, mean_evolution = [], [], [], [], [], []
+    actions = []
 
-                angle_dist, self_collision, env_collisions, is_collision = step_forward(env, s, env_object_ids)
-
-                # env_collisions = human.check_env_collision(env_object_ids)
-                cost, m, dist, energy, torque = cost_fn(env, end_effector, s, target, original_self_collisions,
-                                                original_env_collisions, env_collisions, original_link_positions, angle_dist)
-
-                # # restore joint angle
-                # human.set_joint_angles(human.controllable_joint_indices, original_joint_angles)
-
-                fitness_values.append(cost)
-                dists.append(dist)
-                manipus.append(m)
-                energy_changes.0(energy)
-                torques.append(torque)
+    while not optimizer.stop():
+        timestep += 1
+        solutions = optimizer.ask()
+        fitness_values, dists, manipus, energy_changes, torques = [], [], [], [], []
+        for s in solutions:
+            if simulate_collision:
+                # step forward env
+                angle_dist, _, env_collisions, _ = step_forward(env, s, env_object_ids, end_effector)
+                cost, m, dist, energy, torque = cost_fn(env, end_effector, s, original_ee_pos, original_self_collisions,
+                                                        original_env_collisions, env_collisions,
+                                                        original_link_positions,
+                                                        angle_dist)
+                env.reset_human(is_collision=True)
                 LOG.info(
                     f"{bcolors.OKGREEN}timestep: {timestep}, cost: {cost}, angle_dist: {angle_dist} , dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
-                env.reset_human(is_collision=True)
-            optimizer.tell(solutions, fitness_values)
-            # optimizer.result_pretty()
-            # LOG.info(
-            #     f"{bcolors.OKGREEN}timestep: {timestep}, cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
+            else:
+                # set angle directly
+                human.set_joint_angles(human.controllable_joint_indices, s)  # force set joint angle
+                env_collisions = human.check_env_collision(env_object_ids)
+                cost, m, dist, energy, torque = cost_fn(env, end_effector, s, original_ee_pos, original_self_collisions,
+                                                        original_env_collisions, env_collisions,
+                                                        original_link_positions,
+                                                        angle_dist=0)
+                # restore joint angle
+                human.set_joint_angles(human.controllable_joint_indices, original_joint_angles)
+                LOG.info(
+                    f"{bcolors.OKGREEN}timestep: {timestep}, cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
+            fitness_values.append(cost)
+            dists.append(dist)
+            manipus.append(m)
+            energy_changes.append(energy)
+            torques.append(torque)
 
-            mean_evolution.append(np.mean(solutions, axis=0))
-            mean_cost.append(np.mean(fitness_values, axis=0))
-            mean_dist.append(np.mean(dists, axis=0))
-            mean_m.append(np.mean(manipus, axis=0))
-            mean_energy.append(np.mean(energy_changes, axis=0))
-            mean_torque.append(np.mean(torques, axis=0))
 
+        optimizer.tell(solutions, fitness_values)
+        # optimizer.result_pretty()
+        # LOG.info(
+        #     f"{bcolors.OKGREEN}timestep: {timestep}, cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
+
+        mean_evolution.append(np.mean(solutions, axis=0))
+        mean_cost.append(np.mean(fitness_values, axis=0))
+        mean_dist.append(np.mean(dists, axis=0))
+        mean_m.append(np.mean(manipus, axis=0))
+        mean_energy.append(np.mean(energy_changes, axis=0))
+        mean_torque.append(np.mean(torques, axis=0))
+
+
+    if simulate_collision:
+        angle_dist, self_collision, env_collisions, is_collision = step_forward(env, optimizer.best.x, env_object_ids)
+    else:
         # get the best solution value
         env.human.set_joint_angles(env.human.controllable_joint_indices, optimizer.best.x)
-        angle_dist, self_collision, env_collisions, is_collision = step_forward(env,  optimizer.best.x, env_object_ids)
-        cost, m, dist, energy, torque = cost_fn(env, end_effector, optimizer.best.x, target, original_self_collisions,
-                                               original_env_collisions, env_collisions, original_link_positions, angle_dist)
-        LOG.info(
-            f"{bcolors.OKBLUE} Best cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
-        action = {
-            "solution": optimizer.best.x,
-            "cost": cost,
-            "m": m,
-            "dist": dist,
-            "mean_energy": mean_energy,
-            "target": target,
-            "mean_cost": mean_cost,
-            "mean_dist": mean_dist,
-            "mean_m": mean_m,
-            "mean_evolution": mean_evolution,
-            "mean_torque": mean_torque
-        }
-        actions.append(action)
-        # plot_cmaes_metrics(mean_cost, mean_dist, mean_m, mean_energy, mean_torque)
-        # plot_mean_evolution(mean_evolution)
+        env_collisions = env.human.check_env_collision(env_object_ids)
+        angle_dist = 0
+    cost, m, dist, energy, torque = cost_fn(env, end_effector, optimizer.best.x, original_ee_pos,
+                                            original_self_collisions,
+                                            original_env_collisions, env_collisions, original_link_positions,
+                                            angle_dist)
+    LOG.info(
+        f"{bcolors.OKBLUE} Best cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
+    action = {
+        "solution": optimizer.best.x,
+        "cost": cost,
+        "m": m,
+        "dist": dist,
+        "mean_energy": mean_energy,
+        "target": original_ee_pos,
+        "mean_cost": mean_cost,
+        "mean_dist": mean_dist,
+        "mean_m": mean_m,
+        "mean_evolution": mean_evolution,
+        "mean_torque": mean_torque
+    }
+    actions.append(action)
+    plot_cmaes_metrics(mean_cost, mean_dist, mean_m, mean_energy, mean_torque)
+    plot_mean_evolution(mean_evolution)
 
-        if cost < best_cost:
-            best_cost = cost
-            best_action_idx = idx
     env.disconnect()
 
     # save action to replay
     print("actions: ", len(actions))
     pickle.dump(actions, open(os.path.join(save_dir, "actions.pkl"), "wb"))
-    pickle.dump(best_action_idx, open(os.path.join(save_dir, "best_action_idx.pkl"), "wb"))
 
     print("training time (s): ", time.time() - start_time)
     return env, actions
+
 
 def init_optimizer(x0, sigma, lower_bounds, upper_bounds):
     opts = {}
@@ -402,8 +407,8 @@ def init_optimizer(x0, sigma, lower_bounds, upper_bounds):
             x0[i] = lower_bounds[i]
         if x0[i] > upper_bounds[i]:
             x0[i] = upper_bounds[i]
-    for i in range (len(lower_bounds)):
-        if lower_bounds[i]  == 0:
+    for i in range(len(lower_bounds)):
+        if lower_bounds[i] == 0:
             lower_bounds[i] = -1e-9
         if upper_bounds[i] == 0:
             upper_bounds[i] = 1e-9
@@ -420,8 +425,8 @@ def init_optimizer2(x0, sigma, lower_bounds, upper_bounds):
     bounds = [[l, u] for l, u in zip(lower_bounds, upper_bounds)]
     bounds = np.array(bounds)
     # print ("bounds: ", bounds.shape, x0.shape, x0.size)
-    print ("bounds: ", bounds)
-    print ("x0: ", x0)
+    print("bounds: ", bounds)
+    print("x0: ", x0)
     for i in range(x0.size):
         if x0[i] < bounds[i][0]:
             x0[i] = bounds[i][0]
@@ -429,6 +434,7 @@ def init_optimizer2(x0, sigma, lower_bounds, upper_bounds):
             x0[i] = bounds[i][1]
     es = CMA(x0, sigma, bounds=np.array(bounds))
     return es
+
 
 def render(env_name, smpl_file, save_dir):
     save_dir = get_save_dir(save_dir, env_name, smpl_file)
@@ -442,7 +448,8 @@ def render(env_name, smpl_file, save_dir):
         env.human.set_joint_angles(env.human.controllable_joint_indices, action["solution"])
         time.sleep(0.5)
         if idx == best_idx:
-            plot_cmaes_metrics(action['mean_cost'], action['mean_dist'], action['mean_m'], action['mean_energy'], action['mean_torque'])
+            plot_cmaes_metrics(action['mean_cost'], action['mean_dist'], action['mean_m'], action['mean_energy'],
+                               action['mean_torque'])
             plot_mean_evolution(action['mean_evolution'])
     # for i in range (1000):
     #     p.stepSimulation(env.id)
@@ -471,6 +478,7 @@ if __name__ == '__main__':
     parser.add_argument('--render-gui', action='store_true', default=False,
                         help='Whether to render during training')
     parser.add_argument('--end-effector', default='right_hand', help='end effector name')
+    parser.add_argument("--simulate-collision", action='store_true', default=False, help="simulate collision")
 
     # replay
     parser.add_argument('--load-policy-path', default='./trained_models/',
@@ -485,7 +493,7 @@ if __name__ == '__main__':
 
     if args.train:
         _, actions = train(args.env, args.seed, args.num_points, args.smpl_file, args.end_effector, args.save_dir,
-                           args.render_gui)
+                           args.render_gui, args.simulate_collision)
 
     if args.render:
         render(args.env, args.smpl_file, args.save_dir)
