@@ -9,6 +9,7 @@ from typing import Set
 
 import numpy as np
 from cma import CMA, CMAEvolutionStrategy
+from cmaes import CMA
 import pybullet as p
 
 from assistive_gym.envs.utils.plot_utils import plot_cmaes_metrics, plot_mean_evolution
@@ -140,7 +141,7 @@ def step_forward(env, x0, env_object_ids):
     #                             positionGains=[0.01] * len(human.controllable_joint_indices),
     #                             targetPositions=x0,
     #                             physicsClientId=human.id)
-    human.control( human.controllable_joint_indices,x0, 0.01, 1000)
+    human.control( human.controllable_joint_indices,x0, 0.01, 100)
 
     # for _ in range(5):
     #     p.stepSimulation(physicsClientId=env.human.id)
@@ -150,7 +151,7 @@ def step_forward(env, x0, env_object_ids):
 
     # print ("target: ", x0)
 
-    prev_angle = human.get_joint_angles(human.controllable_joint_indices)
+    prev_angle = [0] * len(human.controllable_joint_indices)
     count = 0
     while True:
         p.stepSimulation(physicsClientId=human.id) # step simulation forward
@@ -165,7 +166,7 @@ def step_forward(env, x0, env_object_ids):
             LOG.info(f"{bcolors.FAIL}sim step: {count}, collision{bcolors.ENDC}")
             return angle_dist, self_collision, env_collision, True
 
-        if cal_angle_diff(cur_joint_angles, x0) < 0.1 or cal_angle_diff(cur_joint_angles, prev_angle) < 0.01:
+        if cal_angle_diff(cur_joint_angles, x0) < 0.05 or cal_angle_diff(cur_joint_angles, prev_angle) < 0.001:
             LOG.info(f"sim step: {count}, angle diff to prev: {cal_angle_diff(cur_joint_angles, prev_angle)}")
             return angle_dist, self_collision, env_collision, False
         prev_angle = cur_joint_angles
@@ -173,7 +174,7 @@ def step_forward(env, x0, env_object_ids):
 
 def cal_angle_diff(cur, target):
     # print ("cur: ", len(cur), 'target: ', len(target))
-    diff = np.sqrt(np.sum(np.square(np.array(cur) - np.array(target))))
+    diff = np.sqrt(np.sum(np.square(np.array(cur) - np.array(target))))/len(cur)
     # print ("diff: ", diff)
     return diff
 
@@ -213,7 +214,7 @@ def cost_fn(env, ee_name, angle_config, ee_target_pos, original_self_collisions,
     # cost = dist + 1 / manipulibility + energy_final / 100 + torque / 10
     # cost = dist + 0.5 / manipulibility +  energy_final / 50 + torque / 10
 
-    cost = angle_dist +  1 / manipulibility
+    cost = angle_dist +  1 / manipulibility + energy_final / 50 + torque / 10
 
     # if has_new_self_collision:
     #     cost += 100
@@ -313,7 +314,8 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
 
         # x0 = get_initial_guess(env, None)
         x0 = np.array(original_joint_angles)
-        optimizer = init_optimizer(x0, sigma=0.1)
+        joint_lower_limits, joint_upper_limits = human.controllable_joint_lower_limits, human.controllable_joint_upper_limits
+        optimizer = init_optimizer(x0, 0.1, joint_lower_limits, joint_upper_limits)
         timestep = 0
         mean_cost, mean_dist, mean_m, mean_energy, mean_torque, mean_evolution = [], [], [], [], [], []
 
@@ -336,15 +338,13 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
                 fitness_values.append(cost)
                 dists.append(dist)
                 manipus.append(m)
-                energy_changes.append(energy)
+                energy_changes.0(energy)
                 torques.append(torque)
-
-                env.reset_human(is_collision=True)
                 LOG.info(
                     f"{bcolors.OKGREEN}timestep: {timestep}, cost: {cost}, angle_dist: {angle_dist} , dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
-
+                env.reset_human(is_collision=True)
             optimizer.tell(solutions, fitness_values)
-            optimizer.result_pretty()
+            # optimizer.result_pretty()
             # LOG.info(
             #     f"{bcolors.OKGREEN}timestep: {timestep}, cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
 
@@ -357,9 +357,9 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
 
         # get the best solution value
         env.human.set_joint_angles(env.human.controllable_joint_indices, optimizer.best.x)
-
+        angle_dist, self_collision, env_collisions, is_collision = step_forward(env,  optimizer.best.x, env_object_ids)
         cost, m, dist, energy, torque = cost_fn(env, end_effector, optimizer.best.x, target, original_self_collisions,
-                                               original_env_collisions, env_collisions, original_link_positions)
+                                               original_env_collisions, env_collisions, original_link_positions, angle_dist)
         LOG.info(
             f"{bcolors.OKBLUE} Best cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
         action = {
@@ -392,14 +392,43 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
     print("training time (s): ", time.time() - start_time)
     return env, actions
 
-
-def init_optimizer(x0, sigma):
+def init_optimizer(x0, sigma, lower_bounds, upper_bounds):
     opts = {}
-    opts['tolfun'] = 1e-9
-    opts['tolx'] = 1e-9
+    opts['tolfun'] = 1e-3
+    opts['tolx'] = 1e-3
+
+    for i in range(x0.size):
+        if x0[i] < lower_bounds[i]:
+            x0[i] = lower_bounds[i]
+        if x0[i] > upper_bounds[i]:
+            x0[i] = upper_bounds[i]
+    for i in range (len(lower_bounds)):
+        if lower_bounds[i]  == 0:
+            lower_bounds[i] = -1e-9
+        if upper_bounds[i] == 0:
+            upper_bounds[i] = 1e-9
+    # bounds = [lower_bounds, upper_bounds]
+    # opts['bounds'] = bounds
     es = CMAEvolutionStrategy(x0, sigma, opts)
     return es
 
+
+def init_optimizer2(x0, sigma, lower_bounds, upper_bounds):
+    # opts = {}
+    # opts['tolfun'] = 1e-9
+    # opts['tolx'] = 1e-9
+    bounds = [[l, u] for l, u in zip(lower_bounds, upper_bounds)]
+    bounds = np.array(bounds)
+    # print ("bounds: ", bounds.shape, x0.shape, x0.size)
+    print ("bounds: ", bounds)
+    print ("x0: ", x0)
+    for i in range(x0.size):
+        if x0[i] < bounds[i][0]:
+            x0[i] = bounds[i][0]
+        if x0[i] > bounds[i][1]:
+            x0[i] = bounds[i][1]
+    es = CMA(x0, sigma, bounds=np.array(bounds))
+    return es
 
 def render(env_name, smpl_file, save_dir):
     save_dir = get_save_dir(save_dir, env_name, smpl_file)
