@@ -305,6 +305,7 @@ class HumanUrdf(Agent):
             self_collision_pairs = [pair for pair in self_collision_pairs if pair[0] in link_indices or pair[1] in link_indices]
             return self_collision_pairs
 
+    # get link positions for all link in the chain/ all links in body
     def get_link_positions(self, center_of_mass= True, end_effector_name=None):
         link_positions = []
         if end_effector_name is None:

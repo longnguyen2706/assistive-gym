@@ -337,17 +337,44 @@ def find_max_val(human, cost_fn, original_joint_angles, original_link_positions,
                 human.set_joint_angles(human.controllable_joint_indices, s)
                 cost = max_torque_cost_fn(human, end_effector)
                 human.set_joint_angles(human.controllable_joint_indices, original_joint_angles)
+
             elif cost_fn == max_manipulibity_cost_fn:
                 cost = max_manipulibity_cost_fn(human, end_effector, s)
+
             elif cost_fn == max_energy_cost_fn:
                 human.set_joint_angles(human.controllable_joint_indices, s)
                 cost = max_energy_cost_fn(human, end_effector, original_link_positions)
                 human.set_joint_angles(human.controllable_joint_indices, original_joint_angles)
+
             fitness_values.append(cost)
         optimizer.tell(solutions, fitness_values)
 
     human.set_joint_angles(human.controllable_joint_indices, optimizer.best.x)
     return optimizer.best.x, 1.0/optimizer.best.f
+
+
+def find_best_robot_base_pos(env, end_effector = "right_hand", side="right"):
+    # find bed bb
+    bed = env.furniture
+    bed_bb = p.getAABB(bed.body, physicsClientId=env.id)
+    # print("bed: ", bed_bb)
+    if side == "right":
+        bed_xx, bed_yy, bed_zz = bed_bb[1]
+    else:
+        bed_xx, bed_yy, bed_zz = bed_bb[0]
+
+    # find ee pos
+    ee_real_pos = p.getLinkState(env.human.body, env.human.human_dict.get_dammy_joint_id(end_effector))[0]
+    # print ("ee real pos: ", ee_real_pos)
+
+    # find robot base and bb
+    robot_bb= p.getAABB(env.robot.body, physicsClientId=env.id)
+    robot_x_size, robot_y_size, robot_z_size = np.subtract(robot_bb[1], robot_bb[0])
+    # print("robot: ", robot_bb)
+    base_pos = p.getBasePositionAndOrientation(env.robot.body, physicsClientId=env.id)[0]
+    # new pos: side of the bed, near end effector, with z axis unchanged
+    new_base_pos  = (bed_xx + robot_x_size/2 + 0.5, ee_real_pos[1] + robot_y_size/2, base_pos[2])
+    return new_base_pos
 
 
 def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
@@ -358,8 +385,8 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
         env.render()
     env.reset()
 
-    human = env.human
-    env_object_ids = [env.robot.body, env.furniture.body, env.plane.body]  # set env object for collision check
+    human, robot, furniture, plane = env.human, env.robot, env.furniture, env.plane
+    env_object_ids = [robot.body, furniture.body, plane.body]  # set env object for collision check
 
     # original value
     original_joint_angles = human.get_joint_angles(human.controllable_joint_indices)
@@ -403,6 +430,22 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
                 # set angle directly
                 human.set_joint_angles(human.controllable_joint_indices, s)  # force set joint angle
                 env_collisions = human.check_env_collision(env_object_ids)
+
+                # find robot base pos
+
+                robot_base_pos = find_best_robot_base_pos(env)
+                print("robot orient: ", robot.toc_ee_orient_rpy['bed_bathing'])
+                robot_orient = robot.get_quaternion([0,  0, np.pi/2 ])
+
+                p.resetBasePositionAndOrientation(robot.body, robot_base_pos, robot_orient, physicsClientId=env.id)
+                ee_pos, ee_orient = p.getLinkState(human.body, human.human_dict.get_dammy_joint_id(end_effector))[:2] # TODO: refactor
+                # robot_joint_angles = robot.ik(robot.left_end_effector, ee_pos, -1 * np.array(ee_orient), robot.controllable_joint_indices)
+                is_success, robot_joint_angles= robot.ik_random_restarts(False, ee_pos, np.array(robot.toc_ee_orient_rpy['bed_bathing']), randomize_limits=False)
+                print ("is_success: ", is_success)
+                robot.set_joint_angles(robot.controllable_joint_indices, robot_joint_angles)
+                time.sleep(2)
+
+
                 cost, m, dist, energy, torque = cost_fn(human, end_effector,s, original_ee_pos,  original_info, max_dynamics, env_collisions, angle_dist=0)
                 # restore joint angle
                 human.set_joint_angles(human.controllable_joint_indices, original_joint_angles)
