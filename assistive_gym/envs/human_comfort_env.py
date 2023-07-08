@@ -13,7 +13,7 @@ import pybullet as p
 SMPL_PATH = os.path.join(os.getcwd(), "examples/data/smpl_bp_ros_smpl_8.pkl")
 class HumanComfortEnv(AssistiveEnv):
     def __init__(self):
-        self.robot = PR2('right')
+        self.robot = Stretch('wheel_right')
         self.human = HumanUrdf()
         super(HumanComfortEnv, self).__init__(robot=self.robot, human=self.human, task='', obs_robot_len=len(self.robot.controllable_joint_indices),
                                          obs_human_len=len(self.human.controllable_joint_indices)) #hardcoded
@@ -100,6 +100,9 @@ class HumanComfortEnv(AssistiveEnv):
 
         self.robot.set_gravity(0, 0, -9.81)
         self.human.set_gravity(0, 0, -9.81)
+        # debug robot
+        for j in range(p.getNumJoints(self.robot.body, physicsClientId=self.id)):
+            print(p.getJointInfo(self.robot.body, j, physicsClientId=self.id))
 
         p.setPhysicsEngineParameter(numSubSteps=4, numSolverIterations=10, physicsClientId=self.id)
 

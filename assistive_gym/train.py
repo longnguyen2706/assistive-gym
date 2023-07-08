@@ -373,7 +373,7 @@ def find_best_robot_base_pos(env, end_effector = "right_hand", side="right"):
     # print("robot: ", robot_bb)
     base_pos = p.getBasePositionAndOrientation(env.robot.body, physicsClientId=env.id)[0]
     # new pos: side of the bed, near end effector, with z axis unchanged
-    new_base_pos  = (bed_xx + robot_x_size/2 + 0.5, ee_real_pos[1] + robot_y_size/2, base_pos[2])
+    new_base_pos  = (bed_xx + robot_x_size/2 + 0.4, ee_real_pos[1] + robot_y_size/2, base_pos[2])
     return new_base_pos
 
 
@@ -435,14 +435,15 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
 
                 robot_base_pos = find_best_robot_base_pos(env)
                 print("robot orient: ", robot.toc_ee_orient_rpy['bed_bathing'])
-                robot_orient = robot.get_quaternion([0,  0, np.pi/2 ])
+                robot_orient = robot.get_quaternion([0,  0, -np.pi/2])
 
                 p.resetBasePositionAndOrientation(robot.body, robot_base_pos, robot_orient, physicsClientId=env.id)
                 ee_pos, ee_orient = p.getLinkState(human.body, human.human_dict.get_dammy_joint_id(end_effector))[:2] # TODO: refactor
                 # robot_joint_angles = robot.ik(robot.left_end_effector, ee_pos, -1 * np.array(ee_orient), robot.controllable_joint_indices)
-                is_success, robot_joint_angles= robot.ik_random_restarts(False, ee_pos, np.array(robot.toc_ee_orient_rpy['bed_bathing']), randomize_limits=False)
+                is_success, robot_joint_angles= robot.ik_random_restarts(True, ee_pos, np.array([0,  0, np.pi]), randomize_limits=False)
+                is_success, robot_joint_angles= robot.ik_random_restarts(True, ee_pos, None, randomize_limits=False)
                 print ("is_success: ", is_success)
-                robot.set_joint_angles(robot.controllable_joint_indices, robot_joint_angles)
+                robot.set_joint_angles(robot.right_arm_joint_indices, robot_joint_angles, use_limits=False)
                 time.sleep(2)
 
 
