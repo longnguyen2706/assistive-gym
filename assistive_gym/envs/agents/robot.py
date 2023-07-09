@@ -117,8 +117,71 @@ class Robot(Agent):
             if best_ik_angles is None or np.linalg.norm(target_pos - np.array(gripper_pos)) < best_ik_distance:
                 best_ik_angles = target_joint_angles
                 best_ik_distance = np.linalg.norm(target_pos - np.array(gripper_pos))
-        self.set_joint_angles(self.right_arm_joint_indices if right else self.left_arm_joint_indices, best_ik_angles)
+        self.set_joint_angles(self.right_arm_joint_indices if right else self.left_arm_joint_indices, np.array(best_ik_angles))
         return False, np.array(best_ik_angles)
+
+    def ik_random_restarts2(self, right, target_pos, target_orient, max_iterations=1000, max_ik_random_restarts=40, success_threshold=0.03, randomize_limits=False, collision_objects=None):
+        '''
+
+        :param right:
+        :param target_pos:
+        :param target_orient:
+        :param max_iterations:
+        :param max_ik_random_restarts:
+        :param success_threshold:
+        :param randomize_limits:
+        :param collision_objects: dict of body - links to find contact distance with
+        :return:
+        '''
+        if target_orient is not None and len(target_orient) < 4:
+            target_orient = self.get_quaternion(target_orient)
+
+        best_ik_angles = None
+        best_ik_distance = 0
+        for r in range(max_ik_random_restarts):
+            target_joint_angles = self.ik(self.right_end_effector if right else self.left_end_effector, target_pos,
+                                          target_orient,
+                                          ik_indices=self.right_arm_ik_indices if right else self.left_arm_ik_indices,
+                                          max_iterations=max_iterations, half_range=self.half_range,
+                                          randomize_limits=(randomize_limits and r >= 10))
+            self.set_joint_angles(self.right_arm_joint_indices if right else self.left_arm_joint_indices,
+                                  target_joint_angles)
+            gripper_pos, gripper_orient = self.get_pos_orient(
+                self.right_end_effector if right else self.left_end_effector)
+            if np.linalg.norm(target_pos - np.array(gripper_pos)) < success_threshold and (
+                    target_orient is None or np.linalg.norm(
+                    target_orient - np.array(gripper_orient)) < success_threshold or np.isclose(
+                    np.linalg.norm(target_orient - np.array(gripper_orient)), 2, atol=success_threshold)):
+
+                # Check if the robot is colliding with objects in the environment. If so, then continue sampling.
+                if len(collision_objects) > 0:
+                    dists_list = []
+                    for agent, links in collision_objects.items():
+                        if links is None:
+                            dists_list.append(self.get_closest_points(agentB=agent, distance=0)[-1])
+                        # loop through links
+                        else:
+                            for link in links:
+                                dists_list.append(self.get_closest_points(agentB=agent, distance=0, linkB=link)[-1])
+                    if not all(not d for d in dists_list):
+                        continue
+
+                gripper_pos, gripper_orient = self.get_pos_orient(
+                    self.right_end_effector if right else self.left_end_effector)
+                if np.linalg.norm(target_pos - np.array(gripper_pos)) < success_threshold and (
+                        target_orient is None or np.linalg.norm(
+                        target_orient - np.array(gripper_orient)) < success_threshold or np.isclose(
+                        np.linalg.norm(target_orient - np.array(gripper_orient)), 2, atol=success_threshold)):
+                    self.set_joint_angles(self.right_arm_joint_indices if right else self.left_arm_joint_indices,
+                                          target_joint_angles)
+                    return True, np.array(target_joint_angles)
+            if best_ik_angles is None or np.linalg.norm(target_pos - np.array(gripper_pos)) < best_ik_distance:
+                best_ik_angles = target_joint_angles
+                best_ik_distance = np.linalg.norm(target_pos - np.array(gripper_pos))
+        # print (best_ik_angles, np.array(best_ik_angles).shape)
+        # self.set_joint_angles(self.right_arm_joint_indices if right else self.left_arm_joint_indices, np.array(best_ik_angles))
+        return False, np.array(best_ik_angles)
+
 
     def position_robot_toc(self, task, arms, start_pos_orient, target_pos_orients, human, base_euler_orient=np.zeros(3), max_ik_iterations=200, max_ik_random_restarts=1, randomize_limits=False, attempts=100, jlwki_restarts=1, step_sim=False, check_env_collisions=False, right_side=True, random_rotation=30, random_position=0.5):
         # Continually randomize the robot base position and orientation

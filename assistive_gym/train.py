@@ -18,8 +18,8 @@ from assistive_gym.envs.utils.point_utils import fibonacci_evenly_sampling_range
 LOG = get_logger()
 
 class OriginalHumanInfo:
-    def __init__(self, original_angles, original_link_positions, original_self_collisions, original_env_collisions):
-        self.link_positions = original_link_positions
+    def __init__(self, original_angles: np.ndarray, original_link_positions: np.ndarray, original_self_collisions, original_env_collisions):
+        self.link_positions = original_link_positions # should be array of tuples that are the link positions
         self.angles = original_angles
         self.self_collisions = original_self_collisions
         self.env_collisions = original_env_collisions
@@ -352,29 +352,34 @@ def find_max_val(human, cost_fn, original_joint_angles, original_link_positions,
     human.set_joint_angles(human.controllable_joint_indices, optimizer.best.x)
     return optimizer.best.x, 1.0/optimizer.best.f
 
-
-def find_best_robot_base_pos(env, end_effector = "right_hand", side="right"):
+def find_best_robot_base_pos_orient(env, end_effector = "right_hand"):
     # find bed bb
     bed = env.furniture
     bed_bb = p.getAABB(bed.body, physicsClientId=env.id)
-    # print("bed: ", bed_bb)
-    if side == "right":
-        bed_xx, bed_yy, bed_zz = bed_bb[1]
-    else:
-        bed_xx, bed_yy, bed_zz = bed_bb[0]
+    bed_pos = p.getBasePositionAndOrientation(bed.body, physicsClientId=env.id)[0]
 
     # find ee pos
     ee_real_pos = p.getLinkState(env.human.body, env.human.human_dict.get_dammy_joint_id(end_effector))[0]
     # print ("ee real pos: ", ee_real_pos)
+    # find the side of the bed
+
+    side = "right" if ee_real_pos[0] > bed_pos[0] else "left"
+    bed_xx, bed_yy, bed_zz = bed_bb[1] if side == "right" else bed_bb[0]
 
     # find robot base and bb
     robot_bb= p.getAABB(env.robot.body, physicsClientId=env.id)
     robot_x_size, robot_y_size, robot_z_size = np.subtract(robot_bb[1], robot_bb[0])
     # print("robot: ", robot_bb)
     base_pos = p.getBasePositionAndOrientation(env.robot.body, physicsClientId=env.id)[0]
+
     # new pos: side of the bed, near end effector, with z axis unchanged
-    new_base_pos  = (bed_xx + robot_x_size/2 + 0.4, ee_real_pos[1] + robot_y_size/2, base_pos[2])
-    return new_base_pos
+    if side == "right":
+        pos = (bed_xx + robot_x_size/2 + 0.1, ee_real_pos[1] + robot_y_size/2, base_pos[2])
+        orient  = env.robot.get_quaternion([0, 0, -np.pi / 2])
+    else: # left
+        pos  = (bed_xx - robot_x_size/2 - 0.1, ee_real_pos[1], base_pos[2])
+        orient = env.robot.get_quaternion([0, 0, np.pi / 2])
+    return pos, orient, side
 
 
 def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
@@ -387,6 +392,15 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
 
     human, robot, furniture, plane = env.human, env.robot, env.furniture, env.plane
     env_object_ids = [robot.body, furniture.body, plane.body]  # set env object for collision check
+
+    human_link_robot_collision = []
+    for ee in human.human_dict.end_effectors:
+       human_link_robot_collision.extend([link for link in human.human_dict.get_real_link_indices(ee)])
+    # ignore collision with end effector and end effector's parent link
+    parent_ee = human.human_dict.joint_to_parent_joint_dict[end_effector]
+    link_to_ignores = [human.human_dict.get_dammy_joint_id(end_effector),human.human_dict.get_dammy_joint_id(parent_ee)]
+    human_link_robot_collision =[link for link in human_link_robot_collision if link not in link_to_ignores]
+    print ("human_link: ", human_link_robot_collision)
 
     # original value
     original_joint_angles = human.get_joint_angles(human.controllable_joint_indices)
@@ -432,19 +446,20 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
                 env_collisions = human.check_env_collision(env_object_ids)
 
                 # find robot base pos
-
-                robot_base_pos = find_best_robot_base_pos(env)
+                robot_base_pos, robot_base_orient, _ = find_best_robot_base_pos_orient(env)
                 print("robot orient: ", robot.toc_ee_orient_rpy['bed_bathing'])
-                robot_orient = robot.get_quaternion([0,  0, -np.pi/2])
 
-                p.resetBasePositionAndOrientation(robot.body, robot_base_pos, robot_orient, physicsClientId=env.id)
+
+                p.resetBasePositionAndOrientation(robot.body, robot_base_pos, robot_base_orient, physicsClientId=env.id)
                 ee_pos, ee_orient = p.getLinkState(human.body, human.human_dict.get_dammy_joint_id(end_effector))[:2] # TODO: refactor
                 # robot_joint_angles = robot.ik(robot.left_end_effector, ee_pos, -1 * np.array(ee_orient), robot.controllable_joint_indices)
-                is_success, robot_joint_angles= robot.ik_random_restarts(True, ee_pos, np.array([0,  0, np.pi]), randomize_limits=False)
-                is_success, robot_joint_angles= robot.ik_random_restarts(True, ee_pos, None, randomize_limits=False)
-                print ("is_success: ", is_success)
-                robot.set_joint_angles(robot.right_arm_joint_indices, robot_joint_angles, use_limits=False)
-                time.sleep(2)
+                # is_success, robot_joint_angles= robot.ik_random_restarts(True, ee_pos, np.array([0,  0, np.pi]), randomize_limits=False)
+                is_success, robot_joint_angles= robot.ik_random_restarts2(right=True, target_pos = ee_pos, target_orient=None, max_iterations=10000, randomize_limits=False, collision_objects={furniture: None, human: human_link_robot_collision})
+                print ("is_success: ", is_success, "robot_joint_angles: ", robot_joint_angles)
+                if is_success:
+                    robot.set_joint_angles(robot.right_arm_joint_indices, robot_joint_angles, use_limits=True)
+
+                time.sleep(1)
 
 
                 cost, m, dist, energy, torque = cost_fn(human, end_effector,s, original_ee_pos,  original_info, max_dynamics, env_collisions, angle_dist=0)
