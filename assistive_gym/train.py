@@ -225,18 +225,22 @@ def cost_fn(human, ee_name:str, angle_config: np.ndarray, ee_target_pos: np.ndar
     # cal manipulibility
     manipulibility = human.cal_chain_manipulibility(angle_config, ee_name)
 
+    # cal reba score
+    reba = human.get_reba_score()
+    max_reba_score = 9.0
+
     # cal angle displacement from mid angle
     mid_angle = cal_mid_angle(human.controllable_joint_lower_limits, human.controllable_joint_upper_limits)
     mid_angle_displacement = cal_angle_diff(angle_config, mid_angle)
     print ("mid_angle_displacement: ", mid_angle_displacement)
 
-    w = [1, 1, 3, 1, 2]
+    w = [1, 1, 3, 1, 2, 1]
     # cost without simulate collision
     # cost = dist + 1.0/m + np.abs(energy_final)/1000.0
     # cost = 1.0/m + (energy_final-49)/5
     # cost = dist + 1 / manipulibility + energy_final / 100 + torque / 10
-    cost = (w[0]*dist + w[1]* 1 / (manipulibility / max_dynamics.manipulibility) + w[2] * energy_final / max_dynamics.energy \
-           + w[3]* torque / max_dynamics.torque + w[4] * mid_angle_displacement)/np.sum(w)
+    cost = (w[0]*dist + w[1]* 1 / ((manipulibility / max_dynamics.manipulibility) + w[2] * energy_final / max_dynamics.energy \
+           + w[3]* torque / max_dynamics.torque + w[4] * mid_angle_displacement + (w[5] * reba / max_reba_score)))/np.sum(w)
 
     # cost with simulate collision
     # cost = angle_dist + 1 / manipulibility + energy_final / 50 + torque / 10
