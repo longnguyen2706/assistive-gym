@@ -381,9 +381,20 @@ class HumanUrdf(Agent):
 
     def ray_cast(self, end_effector: str):
         ee_pos, ee_orient = self.get_ee_pos_orient(end_effector)
-
-        to_pos = ee_pos + np.array([0, 0, 1])  # ray's ending position
-        result = p.rayTest(ee_pos, to_pos)
+        print ("ee_pos: ", ee_pos, ee_orient)
+        rot_matrix = p.getMatrixFromQuaternion(ee_orient) # 1 by 9 matrix
+        print ("rot_matrix: ", rot_matrix)
+        rot_matrix = np.array(rot_matrix).reshape(3, 3)
+        print ("rot_matrix: ", rot_matrix)
+        # compute the end positions of the orientation vectors for visualization
+        # x_end_pos = ee_pos[0]+ rot_matrix[:, 0]
+        # y_end_pos = ee_pos[1] + rot_matrix[:, 1]
+        # z_end_pos = ee_pos[2] + rot_matrix[:, 2]
+        to_pos = ee_pos + np.dot(np.array([0.5,0.5,0.5]), -rot_matrix)  # ray's ending position
+        print ("to_pos: ", to_pos)
+        # to_pos = ee_pos + np.array([0, 0, 1])* np.array(rot_matrix)  # ray's ending position
+        # to_pos = [x_end_pos, y_end_pos, z_end_pos]
+        result = p.rayTest(ee_pos, to_pos, physicsClientId=self.id)
 
         # visualize the ray from 'from_pos' to 'to_pos'
         ray_id = p.addUserDebugLine(ee_pos, to_pos, [1, 0, 0])  # the ray is red
@@ -402,11 +413,11 @@ class HumanUrdf(Agent):
             print(f"Hit position: {hit_position}")
             print(f"Hit normal: {hit_normal}")
             print(f"Hit fraction: {hit_fraction}")
-        time.sleep(10)
         # p.removeUserDebugItem(ray_id)  # remove the visualized ray
+        return ray_id
 
     def get_ee_pos_orient(self, end_effector):
-        ee_pos, ee_orient = p.getLinkState(self.body, self.human_dict.get_dammy_joint_id(end_effector))[:2]
+        ee_pos, ee_orient = p.getLinkState(self.body, self.human_dict.get_dammy_joint_id(end_effector),  computeForwardKinematics=True, physicsClientId=self.id)[0:2]
         return ee_pos, ee_orient
 
     def _print_joint_indices(self):

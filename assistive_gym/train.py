@@ -495,14 +495,25 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
     mean_cost, mean_dist, mean_m, mean_energy, mean_torque, mean_evolution = [], [], [], [], [], []
     actions = []
 
-    _, max_torque = find_max_val(human, max_torque_cost_fn, original_joint_angles, original_link_positions,
-                                 end_effector)
-    _, max_manipubility = find_max_val(human, max_manipulibity_cost_fn, original_joint_angles, original_link_positions,
-                                       end_effector)
-    _, max_energy = find_max_val(human, max_energy_cost_fn, original_joint_angles, original_link_positions,
-                                 end_effector)
+    # _, max_torque = find_max_val(human, max_torque_cost_fn, original_joint_angles, original_link_positions,
+    #                              end_effector)
+    # _, max_manipubility = find_max_val(human, max_manipulibity_cost_fn, original_joint_angles, original_link_positions,
+    #                                    end_effector)
+    # _, max_energy = find_max_val(human, max_energy_cost_fn, original_joint_angles, original_link_positions,
+    #                              end_effector)
+    max_torque, max_manipubility, max_energy = 10, 1, 100
     print("max torque: ", max_torque, "max manipubility: ", max_manipubility, "max energy: ", max_energy)
     max_dynamics = MaximumHumanDynamics(max_torque, max_manipubility, max_energy)
+    # time.sleep(1)
+
+    #
+    # for i in range(100):
+    #     random_val = np.random.uniform(-1, 1, len(robot.controllable_joint_indices))
+    #     robot.control(robot.controllable_joint_indices, np.array(random_val), 0.1,100)
+    #     p.stepSimulation()
+    # robot.set_gripper_open_position(robot.right_gripper_indices, [-0.1, -0.1])
+    time.sleep(1)
+    robot.set_joint_angles(robot.right_arm_joint_indices, np.array([0.1] * len(robot.right_arm_joint_indices)), use_limits=True)
     env.reset()
 
     # init optimizer
@@ -512,10 +523,12 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
     # human.ray_cast(end_effector)
 
     while not optimizer.stop():
+
         timestep += 1
         solutions = optimizer.ask()
         fitness_values, dists, manipus, energy_changes, torques = [], [], [], [], []
         for s in solutions:
+
             if simulate_collision:
                 # step forward env
                 angle_dist, _, env_collisions, _ = step_forward(env, s, env_object_ids, end_effector)
@@ -529,6 +542,8 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
             else:
                 # set angle directly
                 human.set_joint_angles(human.controllable_joint_indices, s)  # force set joint angle
+                ray_id = human.ray_cast("right_hand")
+                time.sleep(1)
                 # check collision
                 env_collisions, self_collisions  = human.check_env_collision(env_object_ids), human.check_self_collision()
                 has_self_collision, has_env_collision = detect_collisions(original_info, self_collisions, env_collisions, human, end_effector)
@@ -544,6 +559,7 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
                 human.set_joint_angles(human.controllable_joint_indices, original_joint_angles)
                 LOG.info(
                     f"{bcolors.OKGREEN}timestep: {timestep}, cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
+            p.removeUserDebugItem(ray_id)
             fitness_values.append(cost)
             dists.append(dist)
             manipus.append(m)
@@ -628,7 +644,7 @@ def init_optimizer(x0, sigma, lower_bounds, upper_bounds):
     return es
 
 
-def init_optimizer2(x0, sigma, lower_bounds, upper_bounds):
+def init_optimizer2(x0, sigma, lower_bounds, upper_bounds): # for cma library
     # opts = {}
     # opts['tolfun'] = 1e-9
     # opts['tolx'] = 1e-9
