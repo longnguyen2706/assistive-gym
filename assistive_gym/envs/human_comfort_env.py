@@ -20,7 +20,7 @@ class HumanComfortEnv(AssistiveEnv):
                                          obs_human_len=len(self.human.controllable_joint_indices)) #hardcoded
         self.target_pos = np.array([0, 0, 0])
         self.smpl_file = SMPL_PATH
-        self.task = 'comfort_drinking' # task = 'comfort_standing_up', 'comfort_taking_medicine',  'comfort_drinking'
+        self.task = 'comfort_taking_medicine' # task = 'comfort_standing_up', 'comfort_taking_medicine',  'comfort_drinking'
 
     def get_comfort_score(self):
         return np.random.rand() #TODO: implement this
@@ -103,12 +103,16 @@ class HumanComfortEnv(AssistiveEnv):
         self.robot.set_gravity(0, 0, -9.81)
         self.human.set_gravity(0, 0, -9.81)
 
+        self.robot.set_joint_angles([4], [0.5]) # for stretch_dex: move the gripper upward
+
         # init tool
         self.tool.init(self.robot, self.task, self.directory, self.id, self.np_random, right=True,
                        mesh_scale=[0.045] * 3, alpha=0.75)
         # Open gripper to hold the tool
         self.robot.set_gripper_open_position(self.robot.right_gripper_indices, self.robot.gripper_pos[self.task],
                                              set_instantly=True)
+
+
         # debug robot
         # for j in range(p.getNumJoints(self.robot.body, physicsClientId=self.id)):
         #     print(p.getJointInfo(self.robot.body, j, physicsClientId=self.id))
