@@ -33,7 +33,7 @@ class StretchDex(Robot):
                            'bed_bathing': [0, 0, 0],
                            'arm_manipulation': [0.11, 0, -0.07],
                            'comfort_standing_up':[0, 0, -0.1],
-                           'comfort_drinking':[0, 0, 0],
+                           'comfort_drinking':[0, 0, -0.05],
                            'comfort_taking_medicine':[0, 0, 0]}
         tool_orient_offset = {'scratch_itch': [0, 0, 0], # RPY orientation offset between tool and robot tool joint
                               'feeding': [np.pi/2.0-0.1, 0, -np.pi/2.0],
@@ -41,7 +41,7 @@ class StretchDex(Robot):
                               'bed_bathing': [0, 0, 0],
                               'arm_manipulation': [np.pi/2.0, 0, 0],
                               'comfort_standing_up':[0, 0, np.pi/2.0],
-                              'comfort_drinking': [np.pi/2, 0, 0],
+                              'comfort_drinking': [np.pi/2.0, 0, 0],
                               'comfort_taking_medicine': [0, 0, 0]}
         toc_base_pos_offset = {'scratch_itch': [-1.0, -0.1, 0.09], # Robot base offset before TOC base pose optimization
                                'feeding': [-0.9, -0.3, 0.09],

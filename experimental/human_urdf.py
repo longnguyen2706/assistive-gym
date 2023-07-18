@@ -16,6 +16,7 @@ from assistive_gym.envs.utils.human_utils import set_self_collisions, change_dyn
 from assistive_gym.envs.utils.log_utils import get_logger
 from assistive_gym.envs.utils.plot_utils import plot
 from assistive_gym.envs.utils.smpl_dict import SMPLDict
+from scipy.spatial.transform import Rotation as R
 
 from assistive_gym.envs.utils.urdf_utils import convert_aa_to_euler_quat, load_smpl, generate_urdf, SMPLData
 import kinpy as kp
@@ -379,18 +380,77 @@ class HumanUrdf(Agent):
 
         return collision_pairs
 
+    def find_perpendicular_vector(self, v):
+        if v[0] == v[1] == 0:  # if the vector is aligned with the z-axis
+            if v[2] == 0:
+                # v is a zero vector
+                raise ValueError("The zero vector has no unique perpendicular vector")
+            return np.array([0, 1, 0])  # any vector in the xy-plane is perpendicular
+
+        # choose a vector with -v[1] for x, v[0] for y, and zero for z
+        w = np.array([-v[1], v[0], 0])
+        return w
+
+
     def ray_cast(self, end_effector: str):
         ee_pos, ee_orient = self.get_ee_pos_orient(end_effector)
-        print ("ee_pos: ", ee_pos, ee_orient)
+        q = np.array(list(ee_orient[1:]) + [ee_orient[0]])
+        rotation = R.from_quat(q)
+        rotation_vector = rotation.as_rotvec()
+
+        rotation_vector = rotation_vector / np.linalg.norm(rotation_vector)
+        print("rotation_vector: ", rotation_vector)
+
+        z_vector = np.array([0, 0, 1])
+
+        rotation_axis = np.cross(z_vector, rotation_vector)
+        rotation_angle = np.arccos(np.dot(z_vector, rotation_vector))
+
+        # Create a rotation from the axis and angle
+        rotation = R.from_rotvec(rotation_axis * rotation_angle)
+
+        debug_lines = []
+
+        # Apply the rotation to the Z unit vector
+        perpendicular_vector = rotation.apply(z_vector)
+        v_id = p.addUserDebugLine(ee_pos, (ee_pos + rotation_vector), [0, 1, 0])
+        v_id2 = p.addUserDebugLine(ee_pos, (ee_pos + rotation_axis), [1, 0, 0])
+        ee_link_id = self.human_dict.get_dammy_joint_id(end_effector)
+        res = p.getClosestPoints(bodyA = 3, bodyB = self.body, linkIndexB=ee_link_id, physicsClientId=self.id, distance=1)
+        for r in res:
+            posA, posB, normalB, dist = r[5:9]
+            # print ("posA: ", posA, "posB: ", posB, "normalB: ", normalB, "dist: ", dist)
+            v_id3 = p.addUserDebugLine(ee_pos,ee_pos+np.array(normalB)* dist, [0, 0, 1])
+            debug_lines.append(v_id3)
+
+        debug_lines.extend([v_id, v_id2])
+        return debug_lines
+
+    def ray_cast2(self, end_effector: str):
+        ee_pos, ee_orient = self.get_ee_pos_orient(end_effector)
+        print("ee_pos: ", ee_pos, ee_orient)
+        pos, orient = p.getLinkState(self.body, self.human_dict.get_dammy_joint_id(end_effector), physicsClientId=self.id)[4:6]
+        v2 = np.array(pos) - np.array(ee_pos)
+        print("v2: ", v2)
+        # parent = self.human_dict.joint_to_parent_joint_dict[end_effector]
+        # parent_pos = p.getLinkState(self.body, self.human_dict.get_dammy_joint_id(parent), physicsClientId=self.id)[0]
+
         rot_matrix = p.getMatrixFromQuaternion(ee_orient) # 1 by 9 matrix
-        print ("rot_matrix: ", rot_matrix)
+        # print ("rot_matrix: ", rot_matrix)
         rot_matrix = np.array(rot_matrix).reshape(3, 3)
+        v1 = np.dot(np.array([0.5, 0.5, 0.5]), rot_matrix)
+        # v = [0, 0, 1]
+        # v =   v * rot_matrix
+        v = np.cross(v1, v2)/np.linalg.norm(np.cross(v1, v2))
+        print (v)
+
+        # v = self.find_perpendicular_vector(rot_matrix[:, 2])
         print ("rot_matrix: ", rot_matrix)
         # compute the end positions of the orientation vectors for visualization
         # x_end_pos = ee_pos[0]+ rot_matrix[:, 0]
         # y_end_pos = ee_pos[1] + rot_matrix[:, 1]
         # z_end_pos = ee_pos[2] + rot_matrix[:, 2]
-        to_pos = ee_pos + np.dot(np.array([0.5,0.5,0.5]), -rot_matrix)  # ray's ending position
+        to_pos = ee_pos + v  # ray's ending position
         print ("to_pos: ", to_pos)
         # to_pos = ee_pos + np.array([0, 0, 1])* np.array(rot_matrix)  # ray's ending position
         # to_pos = [x_end_pos, y_end_pos, z_end_pos]
@@ -398,6 +458,9 @@ class HumanUrdf(Agent):
 
         # visualize the ray from 'from_pos' to 'to_pos'
         ray_id = p.addUserDebugLine(ee_pos, to_pos, [1, 0, 0])  # the ray is red
+        v2 = v2/np.linalg.norm(v2)
+        line_id = p.addUserDebugLine(ee_pos, (ee_pos+v2), [0, 0, 1])
+        v_id = p.addUserDebugLine(ee_pos, (ee_pos+v1), [0, 1, 0])
 
         # The result is a list of ray hit information tuples. Each tuple contains:
         # - The object ID of the hit object
@@ -414,7 +477,14 @@ class HumanUrdf(Agent):
             print(f"Hit normal: {hit_normal}")
             print(f"Hit fraction: {hit_fraction}")
         # p.removeUserDebugItem(ray_id)  # remove the visualized ray
-        return ray_id
+        return [ray_id, line_id, v_id]
+
+    def get_distance_to_obstacles(self, env_body_ids, end_effector: str):
+        ee_link_id = self.human_dict.get_dammy_joint_id(end_effector)
+
+        for env_body in env_body_ids:
+            linkA, linkB, posA, posB, contact_distance  = self.get_closest_points2(bodyB=env_body,linkA=ee_link_id, distance=0.5)
+            print ("body: ", env_body,  "linkB: ",  "contact_distance: ", contact_distance)
 
     def get_ee_pos_orient(self, end_effector):
         ee_pos, ee_orient = p.getLinkState(self.body, self.human_dict.get_dammy_joint_id(end_effector),  computeForwardKinematics=True, physicsClientId=self.id)[0:2]

@@ -130,6 +130,21 @@ class Agent:
         posB = [c[6] for c in cp]
         contact_distance = [c[8] for c in cp]
         return linkA, linkB, posA, posB, contact_distance
+    
+    # TODO: find better way than to write this function
+    def get_closest_points2(self, bodyB, distance=4.0, linkA=None, linkB=None):
+        args = dict(bodyA=self.body, bodyB=bodyB, distance=distance, physicsClientId=self.id)
+        if linkA is not None:
+            args['linkIndexA'] = linkA
+        if linkB is not None:
+            args['linkIndexB'] = linkB
+        cp = p.getClosestPoints(**args)
+        linkA = [c[3] for c in cp]
+        linkB = [c[4] for c in cp]
+        posA = [c[5] for c in cp]
+        posB = [c[6] for c in cp]
+        contact_distance = [c[8] for c in cp]
+        return linkA, linkB, posA, posB, contact_distance
 
     def get_heights(self, set_on_ground=False):
         min_z = np.inf

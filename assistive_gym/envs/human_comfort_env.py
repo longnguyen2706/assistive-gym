@@ -4,6 +4,7 @@ import time
 from assistive_gym.envs.agents.pr2 import PR2
 from assistive_gym.envs.agents.sawyer import Sawyer
 from assistive_gym.envs.agents.stretch import Stretch
+from assistive_gym.envs.agents.stretch_dex import StretchDex
 from assistive_gym.envs.env import AssistiveEnv
 from assistive_gym.envs.utils.urdf_utils import load_smpl
 from experimental.human_urdf import HumanUrdf
@@ -13,13 +14,13 @@ import pybullet as p
 SMPL_PATH = os.path.join(os.getcwd(), "examples/data/smpl_bp_ros_smpl_8.pkl")
 class HumanComfortEnv(AssistiveEnv):
     def __init__(self):
-        self.robot = Stretch('wheel_right')
+        self.robot = StretchDex('wheel_right')
         self.human = HumanUrdf()
         super(HumanComfortEnv, self).__init__(robot=self.robot, human=self.human, task='', obs_robot_len=len(self.robot.controllable_joint_indices),
                                          obs_human_len=len(self.human.controllable_joint_indices)) #hardcoded
         self.target_pos = np.array([0, 0, 0])
         self.smpl_file = SMPL_PATH
-        self.task = 'comfort_standing_up' # task = 'comfort_standing_up', 'comfort_taking_medicine',  'comfort_drinking'
+        self.task = 'comfort_drinking' # task = 'comfort_standing_up', 'comfort_taking_medicine',  'comfort_drinking'
 
     def get_comfort_score(self):
         return np.random.rand() #TODO: implement this
@@ -109,12 +110,12 @@ class HumanComfortEnv(AssistiveEnv):
         self.robot.set_gripper_open_position(self.robot.right_gripper_indices, self.robot.gripper_pos[self.task],
                                              set_instantly=True)
         # debug robot
-        for j in range(p.getNumJoints(self.robot.body, physicsClientId=self.id)):
-            print(p.getJointInfo(self.robot.body, j, physicsClientId=self.id))
+        # for j in range(p.getNumJoints(self.robot.body, physicsClientId=self.id)):
+        #     print(p.getJointInfo(self.robot.body, j, physicsClientId=self.id))
 
         # debug human links
-        for j in range(p.getNumJoints(self.human.body, physicsClientId=self.id)):
-            print(p.getLinkState(self.human.body, j, physicsClientId=self.id))
+        # for j in range(p.getNumJoints(self.human.body, physicsClientId=self.id)):
+        #     print(p.getLinkState(self.human.body, j, physicsClientId=self.id))
 
         p.setPhysicsEngineParameter(numSubSteps=4, numSolverIterations=10, physicsClientId=self.id)
 

@@ -1,7 +1,11 @@
+import time
+
 import numpy as np
 import pybullet as p
 from .agent import Agent
 from ..utils.human_utils import check_collision
+from scipy.spatial.transform import Rotation as R
+
 # TODO: refactor this one out from human_utils
 
 class Robot(Agent):
@@ -122,7 +126,7 @@ class Robot(Agent):
         self.set_joint_angles(self.right_arm_joint_indices if right else self.left_arm_joint_indices, np.array(best_ik_angles))
         return False, np.array(best_ik_angles)
 
-    def ik_random_restarts2(self, right, target_pos, target_orient, max_iterations=1000, max_ik_random_restarts=40, success_threshold=0.03, randomize_limits=False, collision_objects=None):
+    def ik_random_restarts2(self, right, target_pos, target_orient, max_iterations=1000, max_ik_random_restarts=40, success_threshold=0.03, randomize_limits=False, collision_objects=None, tool = None):
         '''
 
         :param right:
@@ -146,10 +150,28 @@ class Robot(Agent):
                                           ik_indices=self.right_arm_ik_indices if right else self.left_arm_ik_indices,
                                           max_iterations=max_iterations, half_range=self.half_range,
                                           randomize_limits=(randomize_limits and r >= 10))
+            # for i in range(1000):
+            #     # random_val = np.random.uniform(-1, 1, len(robot.controllable_joint_indices))
+            #     self.control(self.right_arm_joint_indices, np.array(target_joint_angles), 0.1,100)
+            #     p.stepSimulation()
             self.set_joint_angles(self.right_arm_joint_indices if right else self.left_arm_joint_indices,
                                   target_joint_angles)
             gripper_pos, gripper_orient = self.get_pos_orient(
                 self.right_end_effector if right else self.left_end_effector)
+            print ("gripper pos: ", gripper_pos, "gripper orient: ", gripper_orient)
+            if tool is not None:
+
+                # for debugging
+                tool_transform_pos, tool_transform_orient = self.set_tool_pos_orient(tool, gripper_pos, gripper_orient)
+                q = [tool_transform_orient[3]] + list(tool_transform_orient[:3])
+                rotation = R.from_quat(q)
+                rotation_vector = rotation.as_rotvec()
+
+                rotation_vector = rotation_vector / np.linalg.norm(rotation_vector)
+                ray_id = p.addUserDebugLine(gripper_pos, gripper_pos + rotation_vector, [1, 0, 0])  # the ray is red
+                time.sleep(1)
+                p.removeUserDebugItem(ray_id)
+
             if np.linalg.norm(target_pos - np.array(gripper_pos)) < success_threshold and (
                     target_orient is None or np.linalg.norm(
                     target_orient - np.array(gripper_orient)) < success_threshold or np.isclose(
@@ -282,7 +304,7 @@ class Robot(Agent):
     def position_robot_toc2(self, base_pos, arms, start_pos_orient, target_pos_orients, human, base_euler_orient=np.zeros(3),
                            max_ik_iterations=200, max_ik_random_restarts=1, randomize_limits=False, attempts=100,
                            jlwki_restarts=1, check_env_collisions=False, right_side=True,
-                           random_rotation=30, random_position=0.5, collision_objects={}):
+                           random_rotation=30, random_position=0.5, collision_objects={}, tool = None):
         # Continually randomize the robot base position and orientation
         # Select best base pose according to number of goals reached and manipulability
         if type(arms) == str:
@@ -340,7 +362,8 @@ class Robot(Agent):
                                                                                   max_ik_random_restarts=max_ik_random_restarts,
                                                                                   success_threshold=0.03,
                                                                                   randomize_limits=randomize_limits,
-                                                                                   collision_objects=collision_objects)
+                                                                                   collision_objects=collision_objects,
+                                                                                   tool = tool)
                         if not success:
                             continue
                         _, motor_positions, _, _ = self.get_motor_joint_states()
@@ -415,3 +438,9 @@ class Robot(Agent):
         joint_limit_weight = np.diag(weights)
         return joint_limit_weight
 
+    def set_tool_pos_orient(self, tool, gripper_pos, gripper_orient):
+        transform_pos, transform_orient = p.multiplyTransforms(positionA=gripper_pos, orientationA=gripper_orient,
+                                                               positionB=tool.pos_offset,
+                                                               orientationB=tool.orient_offset, physicsClientId=self.id)
+        p.resetBasePositionAndOrientation(tool.body, transform_pos, transform_orient, physicsClientId=self.id)
+        return transform_pos, transform_orient
