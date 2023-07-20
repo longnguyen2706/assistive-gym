@@ -20,7 +20,7 @@ class HumanComfortEnv(AssistiveEnv):
                                          obs_human_len=len(self.human.controllable_joint_indices)) #hardcoded
         self.target_pos = np.array([0, 0, 0])
         self.smpl_file = SMPL_PATH
-        self.task = 'comfort_taking_medicine' # task = 'comfort_standing_up', 'comfort_taking_medicine',  'comfort_drinking'
+        self.task = 'comfort_standing_up' # task = 'comfort_standing_up', 'comfort_taking_medicine',  'comfort_drinking'
 
     def get_comfort_score(self):
         return np.random.rand() #TODO: implement this
@@ -84,6 +84,8 @@ class HumanComfortEnv(AssistiveEnv):
             p.setPhysicsEngineParameter(numSubSteps=4, numSolverIterations=10, physicsClientId=self.id)
             for _ in range(100):
                 p.stepSimulation(physicsClientId=self.id)
+
+    # for clearing human hand
 
 
     def reset(self):

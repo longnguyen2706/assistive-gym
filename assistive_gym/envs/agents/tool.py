@@ -78,6 +78,10 @@ class Tool(Agent):
         return transform_pos, transform_orient
 
     def reset_pos_orient(self):
+        """
+        Reset the position and orientation of the tool to the gripper position
+        :return:
+        """
         transform_pos, transform_orient = self.get_transform()
         self.set_base_pos_orient(transform_pos, transform_orient)
 

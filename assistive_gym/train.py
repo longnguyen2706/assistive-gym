@@ -202,6 +202,8 @@ def cal_mid_angle(lower_bounds, upper_bounds):
     return (np.array(lower_bounds) + np.array(upper_bounds)) / 2
 
 def has_new_collision(old_collisions: Set, new_collisions: Set, human, end_effector="right_hand") -> bool:
+    # TODO: remove magic number (might need to check why self colllision happen in such case)
+    # TODO: return number of collisions instead and use that to scale the cost
     link_ids = set(human.human_dict.get_real_link_indices(end_effector))
     # print ("link ids", link_ids)
     collisions = set()
@@ -402,10 +404,10 @@ def find_robot_start_pos_orient(env, end_effector="right_hand"):
 
     # new pos: side of the bed, near end effector, with z axis unchanged
     if side == "right":
-        pos = (bed_xx + robot_x_size / 2 + 0.1, ee_pos[1] + robot_y_size / 2, base_pos[2])
+        pos = (bed_xx + robot_x_size / 2 + 0.2, ee_pos[1] + robot_y_size / 2, base_pos[2])
         orient = env.robot.get_quaternion([0, 0, -np.pi / 2])
     else:  # left
-        pos = (bed_xx - robot_x_size / 2 - 0.1, ee_pos[1], base_pos[2])
+        pos = (bed_xx - robot_x_size / 2 - 0.2, ee_pos[1], base_pos[2])
         orient = env.robot.get_quaternion([0, 0, np.pi / 2])
     return pos, orient, side
 
@@ -466,8 +468,7 @@ def find_robot_ik_solution(env, end_effector:str, human_link_robot_collision, to
 
     if is_success: # TODO: what if we can't find a solution?
         robot.set_joint_angles(robot.right_arm_joint_indices, robot_joint_angles, use_limits=True)
-        gripper_pos, gripper_orient = p.getLinkState(robot.body, robot.right_tool_joint, physicsClientId=env.id)[:2]
-        robot.set_tool_pos_orient(tool, gripper_pos, gripper_orient)
+        tool.reset_pos_orient()
 
     return is_success
 
@@ -482,7 +483,6 @@ def get_human_link_robot_collision(human, end_effector):
     human_link_robot_collision = [link for link in human_link_robot_collision if link not in link_to_ignores]
     print("human_link: ", human_link_robot_collision)
     return human_link_robot_collision
-
 
 def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
           end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False, robot_ik=False):
@@ -520,11 +520,20 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
     max_torque, max_manipubility, max_energy = 10, 1, 100
     print("max torque: ", max_torque, "max manipubility: ", max_manipubility, "max energy: ", max_energy)
     max_dynamics = MaximumHumanDynamics(max_torque, max_manipubility, max_energy)
+
     env.reset()
 
     # init optimizer
     x0 = np.array(original_joint_angles)
     optimizer = init_optimizer(x0, 0.1, human.controllable_joint_lower_limits, human.controllable_joint_upper_limits)
+
+    ee_link_idx = human.human_dict.get_dammy_joint_id(end_effector)
+    ee_bb_dim, center_top_surface = human.get_ee_bb_dimension(end_effector)
+    print ("ee_bb_dim: ", ee_bb_dim)
+    ee_collision_shape = human.add_collision_object_around_link(ee_link_idx, radius= ee_bb_dim[0]/2, length=ee_bb_dim[0]) # create an imaginary collision object around the end effector
+    
+    ee_collision_pos_offset, ee_collision_orient_offset = center_top_surface, [0, 0, 0, 1] # TODO: seems like the collision object is not centered at the end effector
+    time.sleep(10)
     while not optimizer.stop():
 
         timestep += 1
@@ -547,7 +556,7 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
                 human.set_joint_angles(human.controllable_joint_indices, s)  # force set joint angle
                 # ray_ids = human.ray_cast("right_hand")
                 # human.get_distance_to_obstacles(env_object_ids, end_effector)
-
+                human.set_collision_object_pos_orient(ee_link_idx, ee_collision_shape, ee_collision_pos_offset, ee_collision_orient_offset)
                 # check collision
                 env_collisions, self_collisions  = human.check_env_collision(env_object_ids), human.check_self_collision()
                 has_self_collision, has_env_collision = detect_collisions(original_info, self_collisions, env_collisions, human, end_effector)

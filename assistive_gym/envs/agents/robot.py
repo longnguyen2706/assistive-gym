@@ -84,9 +84,6 @@ class Robot(Agent):
         if set_instantly:
             self.set_joint_angles(indices, positions, use_limits=True)
 
-    def randomize_init_joint_angles(self, task, offset=0):
-        return
-
     def ik_random_restarts(self, right, target_pos, target_orient, max_iterations=1000, max_ik_random_restarts=40, success_threshold=0.03, step_sim=False, check_env_collisions=False, randomize_limits=True, collision_objects=[]):
         if target_orient is not None and len(target_orient) < 4:
             target_orient = self.get_quaternion(target_orient)
@@ -157,8 +154,7 @@ class Robot(Agent):
                 self.right_end_effector if right else self.left_end_effector)
 
             if tool is not None:
-                tool_transform_pos, tool_transform_orient = self.set_tool_pos_orient(tool, gripper_pos, gripper_orient)
-                time.sleep(0.5)
+                tool.reset_pos_orient()
 
             if np.linalg.norm(target_pos - np.array(gripper_pos)) < success_threshold and (
                     target_orient is None or np.linalg.norm(
@@ -289,6 +285,7 @@ class Robot(Agent):
             self.set_joint_angles(self.right_arm_joint_indices if arm == 'right' else self.left_arm_joint_indices, best_start_joint_poses[i])
         return best_position, best_orientation, best_start_joint_poses
 
+    #TODO: for the bed, robot seems to run under, so need to find a better way to model. Might be a different bed/ using AABB
     def position_robot_toc2(self, base_pos, arms, start_pos_orient, target_pos_orients, human, base_euler_orient=np.zeros(3),
                            max_ik_iterations=200, max_ik_random_restarts=1, randomize_limits=False, attempts=100,
                            jlwki_restarts=1, check_env_collisions=False, right_side=True,
@@ -427,9 +424,3 @@ class Robot(Agent):
         joint_limit_weight = np.diag(weights)
         return joint_limit_weight
 
-    def set_tool_pos_orient(self, tool, gripper_pos, gripper_orient):
-        transform_pos, transform_orient = p.multiplyTransforms(positionA=gripper_pos, orientationA=gripper_orient,
-                                                               positionB=tool.pos_offset,
-                                                               orientationB=tool.orient_offset, physicsClientId=self.id)
-        p.resetBasePositionAndOrientation(tool.body, transform_pos, transform_orient, physicsClientId=self.id)
-        return transform_pos, transform_orient

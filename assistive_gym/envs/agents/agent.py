@@ -1,6 +1,7 @@
 import numpy as np
 import pybullet as p
 
+
 class Agent:
     def __init__(self):
         self.base = -1
@@ -301,3 +302,45 @@ class Agent:
                 joint_names.append((j, info[1]))
         print(joint_names)
 
+    def set_collision_object_pos_orient(self, link_idx: int, collision_obj: int, pos_offset, orient_offset):
+        """
+        Set the position and orientation of the tool relative to the end effector and tool pos/ orient offset setting
+        :param tool:
+        :param ee_pos:
+        :param ee_orient:
+        :return:
+        """
+        link_pos, link_orient = p.getLinkState(self.body, link_idx, physicsClientId=self.id)[:2]
+        transform_pos, transform_orient = p.multiplyTransforms(positionA=link_pos, orientationA=link_orient,
+                                                               positionB=pos_offset,
+                                                               orientationB=orient_offset, physicsClientId=self.id)
+        p.resetBasePositionAndOrientation(collision_obj, transform_pos, transform_orient, physicsClientId=self.id)
+        return transform_pos, transform_orient
+
+    def add_collision_object_around_link(self, link_idx, radius=0.05, length=0.1):
+        def create_capsule(radius=0, length=0, position_offset=[0, 0, 0], orientation=[0, 0, 0, 1]):
+            visual_shape = p.createVisualShape(p.GEOM_CAPSULE, radius=radius, length=length,
+                                               visualFramePosition=position_offset,
+                                               visualFrameOrientation=orientation, physicsClientId=self.id)
+            collision_shape = p.createCollisionShape(p.GEOM_CAPSULE, radius=radius, height=length,
+                                                     collisionFramePosition=position_offset,
+                                                     collisionFrameOrientation=orientation, physicsClientId=self.id)
+            return visual_shape, collision_shape
+
+        link_pos, link_orient = p.getLinkState(self.body, link_idx, physicsClientId=self.id)[:2]
+
+        shape_visual, shape_collision = create_capsule(radius=radius, length=length, position_offset=[0, 0, 0.0],
+                                                       orientation=p.getQuaternionFromEuler([0, np.pi / 2.0, 0]))
+        collision_body = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=shape_collision,
+                                 baseVisualShapeIndex=shape_visual, basePosition=link_pos,useMaximalCoordinates=False,
+                                 baseOrientation=link_orient, physicsClientId=self.id)
+
+        pos_offset = [0, 0, 0]
+        orient_offset = [0, 0, 0, 1]
+        constraint = p.createConstraint(self.body, link_idx,
+                                        collision_body, -1, p.JOINT_FIXED, [0, 0, 0], parentFramePosition=pos_offset,
+                                        childFramePosition=[0, 0, 0], parentFrameOrientation=orient_offset,
+                                        childFrameOrientation=[0, 0, 0, 1], physicsClientId=self.id)
+        p.changeConstraint(constraint, maxForce=500000, physicsClientId=self.id)
+
+        return collision_body
