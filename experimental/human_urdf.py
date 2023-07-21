@@ -380,6 +380,7 @@ class HumanUrdf(Agent):
 
         return collision_pairs
 
+    # TODO: revise
     def find_perpendicular_vector(self, v):
         if v[0] == v[1] == 0:  # if the vector is aligned with the z-axis
             if v[2] == 0:
@@ -391,7 +392,7 @@ class HumanUrdf(Agent):
         w = np.array([-v[1], v[0], 0])
         return w
 
-
+    # TODO: revise
     def ray_cast(self, end_effector: str):
         ee_pos, ee_orient = self.get_ee_pos_orient(end_effector)
         q = np.array(list(ee_orient[1:]) + [ee_orient[0]])
@@ -426,6 +427,7 @@ class HumanUrdf(Agent):
         debug_lines.extend([v_id, v_id2])
         return debug_lines
 
+    # TODO: revise
     def ray_cast2(self, end_effector: str):
         ee_pos, ee_orient = self.get_ee_pos_orient(end_effector)
         print("ee_pos: ", ee_pos, ee_orient)
@@ -479,6 +481,7 @@ class HumanUrdf(Agent):
         # p.removeUserDebugItem(ray_id)  # remove the visualized ray
         return [ray_id, line_id, v_id]
 
+    # TODO: revise
     def get_distance_to_obstacles(self, env_body_ids, end_effector: str):
         ee_link_id = self.human_dict.get_dammy_joint_id(end_effector)
 
@@ -490,10 +493,46 @@ class HumanUrdf(Agent):
         ee_pos, ee_orient = p.getLinkState(self.body, self.human_dict.get_dammy_joint_id(end_effector),  computeForwardKinematics=True, physicsClientId=self.id)[0:2]
         return ee_pos, ee_orient
 
+    def get_ee_shape(self, end_effector):
+        link_idx = self.human_dict.get_dammy_joint_id(end_effector)
+        collisionShapeData = p.getCollisionShapeData(self.body, link_idx)
+
+        for shape in collisionShapeData:
+            shapeType = shape[2]  # this gives you the type of the shape
+            dimensions = shape[3]  # this gives you the dimensions of the shape
+
+            print(f'Shape Type: {shapeType}, Dimensions: {dimensions}')
+        return collisionShapeData
+
+    def get_ee_bb_dimension(self, end_effector):
+        link_idx = self.human_dict.get_dammy_joint_id(end_effector)
+        min_pos, max_pos = p.getAABB(self.body, link_idx, physicsClientId=self.id)
+        # compute box lengths
+        box_dims = [max_pos[i] - min_pos[i] for i in range(3)]
+
+        # compute box position (which is the center of the AABB)
+        # box_pos = [(max_pos[i]+ min_pos[i]) / 2 for i in range(3)]
+        box_pos, box_orient = p.getLinkState(self.body, link_idx, physicsClientId=self.id)[:2]
+
+        # set the box halfExtents
+        half_extends= [length/ 2 for length in box_dims]
+        collisionShapeId = p.createCollisionShape(shapeType=p.GEOM_BOX, halfExtents=half_extends)
+        visualShapeId = p.createVisualShape(shapeType=p.GEOM_BOX, rgbaColor=[1, 0, 0, 0.7], halfExtents=half_extends)
+
+        # create a multi-body with baseMass=0 (making it static)
+        box_id = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=collisionShapeId,
+                                  baseVisualShapeIndex=visualShapeId, basePosition=box_pos,
+                                      baseOrientation=[0, 0, 0, 1], physicsClientId=self.id)
+
+        center_top_surface = [0, -(max_pos[1]-box_pos[1]), 0]
+        # displacement_vector = np.array(center_top_surface) - np.array(box_pos)
+        return  np.array(box_dims), center_top_surface
+
+
     def _print_joint_indices(self):
         """
         Getting the joint index for debugging purpose
-        TODO: refactor for programmatically generate the joint ind
+        TODO: refactor for programmatically generate the joint index
         :return:
         """
         print(self._get_controllable_joints())

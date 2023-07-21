@@ -531,7 +531,7 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
     ee_bb_dim, center_top_surface = human.get_ee_bb_dimension(end_effector)
     print ("ee_bb_dim: ", ee_bb_dim)
     ee_collision_shape = human.add_collision_object_around_link(ee_link_idx, radius= ee_bb_dim[0]/2, length=ee_bb_dim[0]) # create an imaginary collision object around the end effector
-    
+
     ee_collision_pos_offset, ee_collision_orient_offset = center_top_surface, [0, 0, 0, 1] # TODO: seems like the collision object is not centered at the end effector
     time.sleep(10)
     while not optimizer.stop():
