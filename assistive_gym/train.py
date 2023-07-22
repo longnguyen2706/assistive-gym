@@ -484,8 +484,22 @@ def get_human_link_robot_collision(human, end_effector):
     print("human_link: ", human_link_robot_collision)
     return human_link_robot_collision
 
+def get_ee_collision_offset(human, end_effector):
+    ee_pos, ee_orient = human.get_ee_pos_orient(end_effector)
+    ee_rot_matrix = np.array(p.getMatrixFromQuaternion(ee_orient)).reshape(3, 3)
+    ee_norm_vec = -ee_rot_matrix[:, 1]
+    print (ee_norm_vec)
+    ee_collision_pos_offset, ee_collision_orient_offset = ee_norm_vec*0.1, [0, 0, 0, 1] # TODO: seems like the collision object is not centered at the end effector
+
+    # p.addUserDebugLine([0, 0, 0], [2, 0, 0], [1, 0, 0], physicsClientId=env.id)
+    # p.addUserDebugLine([0, 1, 0], [0,2, 0], [0, 0, 1], physicsClientId=env.id)
+    line_id = p.addUserDebugLine(ee_pos, np.array(ee_pos) + np.array(ee_collision_pos_offset)*100, [1, 0, 0], physicsClientId=human.id)
+    time.sleep(1)
+    p.removeUserDebugItem(line_id, physicsClientId=human.id)
+    return np.array(ee_pos) + np.array(ee_collision_pos_offset), ee_collision_orient_offset
 def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
           end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False, robot_ik=False):
+
     start_time = time.time()
     env = make_env(env_name, smpl_file, coop=True)
     if render:
@@ -530,10 +544,11 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
     ee_link_idx = human.human_dict.get_dammy_joint_id(end_effector)
     ee_bb_dim, center_top_surface = human.get_ee_bb_dimension(end_effector)
     print ("ee_bb_dim: ", ee_bb_dim)
-    ee_collision_shape = human.add_collision_object_around_link(ee_link_idx, radius= ee_bb_dim[0]/2, length=ee_bb_dim[0]) # create an imaginary collision object around the end effector
+    # ee_collision_shape = human.add_collision_object_around_link(ee_link_idx, radius= ee_bb_dim[0]/2, length=ee_bb_dim[0]) # create an imaginary collision object around the end effector
+    ee_collision_shape = human.add_collision_object_around_link(ee_link_idx, radius=0.05,
+                                                                length=ee_bb_dim[0])
 
-    ee_collision_pos_offset, ee_collision_orient_offset = center_top_surface, [0, 0, 0, 1] # TODO: seems like the collision object is not centered at the end effector
-    time.sleep(10)
+    time.sleep(1)
     while not optimizer.stop():
 
         timestep += 1
@@ -556,6 +571,7 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
                 human.set_joint_angles(human.controllable_joint_indices, s)  # force set joint angle
                 # ray_ids = human.ray_cast("right_hand")
                 # human.get_distance_to_obstacles(env_object_ids, end_effector)
+                ee_collision_pos_offset, ee_collision_orient_offset = get_ee_collision_offset(human, end_effector)
                 human.set_collision_object_pos_orient(ee_link_idx, ee_collision_shape, ee_collision_pos_offset, ee_collision_orient_offset)
                 # check collision
                 env_collisions, self_collisions  = human.check_env_collision(env_object_ids), human.check_self_collision()

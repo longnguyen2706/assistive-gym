@@ -505,6 +505,11 @@ class HumanUrdf(Agent):
         return collisionShapeData
 
     def get_ee_bb_dimension(self, end_effector):
+        """
+        Return the AABB bounding box dimensions of the end effector
+        :param end_effector:
+        :return:
+        """
         link_idx = self.human_dict.get_dammy_joint_id(end_effector)
         min_pos, max_pos = p.getAABB(self.body, link_idx, physicsClientId=self.id)
         # compute box lengths
@@ -525,6 +530,7 @@ class HumanUrdf(Agent):
                                       baseOrientation=[0, 0, 0, 1], physicsClientId=self.id)
 
         center_top_surface = [0, -(max_pos[1]-box_pos[1]), 0]
+        p.addUserDebugLine(box_pos, [box_pos[0], box_pos[1]+ box_dims[1]/2, box_pos[2]], [0, 0, 1], 1, physicsClientId=self.id)
         # displacement_vector = np.array(center_top_surface) - np.array(box_pos)
         return  np.array(box_dims), center_top_surface
 

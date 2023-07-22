@@ -314,13 +314,14 @@ class Agent:
         transform_pos, transform_orient = p.multiplyTransforms(positionA=link_pos, orientationA=link_orient,
                                                                positionB=pos_offset,
                                                                orientationB=orient_offset, physicsClientId=self.id)
-        p.resetBasePositionAndOrientation(collision_obj, transform_pos, transform_orient, physicsClientId=self.id)
+        p.resetBasePositionAndOrientation(collision_obj, transform_pos, orient_offset, physicsClientId=self.id)
         return transform_pos, transform_orient
 
     def add_collision_object_around_link(self, link_idx, radius=0.05, length=0.1):
         def create_capsule(radius=0, length=0, position_offset=[0, 0, 0], orientation=[0, 0, 0, 1]):
             visual_shape = p.createVisualShape(p.GEOM_CAPSULE, radius=radius, length=length,
                                                visualFramePosition=position_offset,
+                                               rgbaColor=[1, 0, 0, 0.5],
                                                visualFrameOrientation=orientation, physicsClientId=self.id)
             collision_shape = p.createCollisionShape(p.GEOM_CAPSULE, radius=radius, height=length,
                                                      collisionFramePosition=position_offset,
@@ -330,7 +331,7 @@ class Agent:
         link_pos, link_orient = p.getLinkState(self.body, link_idx, physicsClientId=self.id)[:2]
 
         shape_visual, shape_collision = create_capsule(radius=radius, length=length, position_offset=[0, 0, 0.0],
-                                                       orientation=p.getQuaternionFromEuler([0, np.pi / 2.0, 0]))
+                                                       orientation=p.getQuaternionFromEuler([0, np.pi/2, 0]))
         collision_body = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=shape_collision,
                                  baseVisualShapeIndex=shape_visual, basePosition=link_pos,useMaximalCoordinates=False,
                                  baseOrientation=link_orient, physicsClientId=self.id)
