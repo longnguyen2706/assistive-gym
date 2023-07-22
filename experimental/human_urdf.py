@@ -380,131 +380,11 @@ class HumanUrdf(Agent):
 
         return collision_pairs
 
-    # TODO: revise
-    def find_perpendicular_vector(self, v):
-        if v[0] == v[1] == 0:  # if the vector is aligned with the z-axis
-            if v[2] == 0:
-                # v is a zero vector
-                raise ValueError("The zero vector has no unique perpendicular vector")
-            return np.array([0, 1, 0])  # any vector in the xy-plane is perpendicular
-
-        # choose a vector with -v[1] for x, v[0] for y, and zero for z
-        w = np.array([-v[1], v[0], 0])
-        return w
-
-    # TODO: revise
-    def ray_cast(self, end_effector: str):
-        ee_pos, ee_orient = self.get_ee_pos_orient(end_effector)
-        q = np.array(list(ee_orient[1:]) + [ee_orient[0]])
-        rotation = R.from_quat(q)
-        rotation_vector = rotation.as_rotvec()
-
-        rotation_vector = rotation_vector / np.linalg.norm(rotation_vector)
-        print("rotation_vector: ", rotation_vector)
-
-        z_vector = np.array([0, 0, 1])
-
-        rotation_axis = np.cross(z_vector, rotation_vector)
-        rotation_angle = np.arccos(np.dot(z_vector, rotation_vector))
-
-        # Create a rotation from the axis and angle
-        rotation = R.from_rotvec(rotation_axis * rotation_angle)
-
-        debug_lines = []
-
-        # Apply the rotation to the Z unit vector
-        perpendicular_vector = rotation.apply(z_vector)
-        v_id = p.addUserDebugLine(ee_pos, (ee_pos + rotation_vector), [0, 1, 0])
-        v_id2 = p.addUserDebugLine(ee_pos, (ee_pos + rotation_axis), [1, 0, 0])
-        ee_link_id = self.human_dict.get_dammy_joint_id(end_effector)
-        res = p.getClosestPoints(bodyA = 3, bodyB = self.body, linkIndexB=ee_link_id, physicsClientId=self.id, distance=1)
-        for r in res:
-            posA, posB, normalB, dist = r[5:9]
-            # print ("posA: ", posA, "posB: ", posB, "normalB: ", normalB, "dist: ", dist)
-            v_id3 = p.addUserDebugLine(ee_pos,ee_pos+np.array(normalB)* dist, [0, 0, 1])
-            debug_lines.append(v_id3)
-
-        debug_lines.extend([v_id, v_id2])
-        return debug_lines
-
-    # TODO: revise
-    def ray_cast2(self, end_effector: str):
-        ee_pos, ee_orient = self.get_ee_pos_orient(end_effector)
-        print("ee_pos: ", ee_pos, ee_orient)
-        pos, orient = p.getLinkState(self.body, self.human_dict.get_dammy_joint_id(end_effector), physicsClientId=self.id)[4:6]
-        v2 = np.array(pos) - np.array(ee_pos)
-        print("v2: ", v2)
-        # parent = self.human_dict.joint_to_parent_joint_dict[end_effector]
-        # parent_pos = p.getLinkState(self.body, self.human_dict.get_dammy_joint_id(parent), physicsClientId=self.id)[0]
-
-        rot_matrix = p.getMatrixFromQuaternion(ee_orient) # 1 by 9 matrix
-        # print ("rot_matrix: ", rot_matrix)
-        rot_matrix = np.array(rot_matrix).reshape(3, 3)
-        v1 = np.dot(np.array([0.5, 0.5, 0.5]), rot_matrix)
-        # v = [0, 0, 1]
-        # v =   v * rot_matrix
-        v = np.cross(v1, v2)/np.linalg.norm(np.cross(v1, v2))
-        print (v)
-
-        # v = self.find_perpendicular_vector(rot_matrix[:, 2])
-        print ("rot_matrix: ", rot_matrix)
-        # compute the end positions of the orientation vectors for visualization
-        # x_end_pos = ee_pos[0]+ rot_matrix[:, 0]
-        # y_end_pos = ee_pos[1] + rot_matrix[:, 1]
-        # z_end_pos = ee_pos[2] + rot_matrix[:, 2]
-        to_pos = ee_pos + v  # ray's ending position
-        print ("to_pos: ", to_pos)
-        # to_pos = ee_pos + np.array([0, 0, 1])* np.array(rot_matrix)  # ray's ending position
-        # to_pos = [x_end_pos, y_end_pos, z_end_pos]
-        result = p.rayTest(ee_pos, to_pos, physicsClientId=self.id)
-
-        # visualize the ray from 'from_pos' to 'to_pos'
-        ray_id = p.addUserDebugLine(ee_pos, to_pos, [1, 0, 0])  # the ray is red
-        v2 = v2/np.linalg.norm(v2)
-        line_id = p.addUserDebugLine(ee_pos, (ee_pos+v2), [0, 0, 1])
-        v_id = p.addUserDebugLine(ee_pos, (ee_pos+v1), [0, 1, 0])
-
-        # The result is a list of ray hit information tuples. Each tuple contains:
-        # - The object ID of the hit object
-        # - The link index of the hit link
-        # - The hit position in the world frame
-        # - The hit surface normal in the world frame
-        # - The hit fraction along the ray's length (0=start, 1=end)
-
-        for hit in result:
-            object_id, link_index, hit_position, hit_normal, hit_fraction = hit
-            print(f"Hit object ID: {object_id}")
-            print(f"Hit link index: {link_index}")
-            print(f"Hit position: {hit_position}")
-            print(f"Hit normal: {hit_normal}")
-            print(f"Hit fraction: {hit_fraction}")
-        # p.removeUserDebugItem(ray_id)  # remove the visualized ray
-        return [ray_id, line_id, v_id]
-
-    # TODO: revise
-    def get_distance_to_obstacles(self, env_body_ids, end_effector: str):
-        ee_link_id = self.human_dict.get_dammy_joint_id(end_effector)
-
-        for env_body in env_body_ids:
-            linkA, linkB, posA, posB, contact_distance  = self.get_closest_points2(bodyB=env_body,linkA=ee_link_id, distance=0.5)
-            print ("body: ", env_body,  "linkB: ",  "contact_distance: ", contact_distance)
-
     def get_ee_pos_orient(self, end_effector):
         ee_pos, ee_orient = p.getLinkState(self.body, self.human_dict.get_dammy_joint_id(end_effector),  computeForwardKinematics=True, physicsClientId=self.id)[0:2]
         return ee_pos, ee_orient
 
-    def get_ee_shape(self, end_effector):
-        link_idx = self.human_dict.get_dammy_joint_id(end_effector)
-        collisionShapeData = p.getCollisionShapeData(self.body, link_idx)
-
-        for shape in collisionShapeData:
-            shapeType = shape[2]  # this gives you the type of the shape
-            dimensions = shape[3]  # this gives you the dimensions of the shape
-
-            print(f'Shape Type: {shapeType}, Dimensions: {dimensions}')
-        return collisionShapeData
-
-    def get_ee_bb_dimension(self, end_effector):
+    def get_ee_bb_dimension(self, end_effector, draw_bb=False):
         """
         Return the AABB bounding box dimensions of the end effector
         :param end_effector:
@@ -514,26 +394,28 @@ class HumanUrdf(Agent):
         min_pos, max_pos = p.getAABB(self.body, link_idx, physicsClientId=self.id)
         # compute box lengths
         box_dims = [max_pos[i] - min_pos[i] for i in range(3)]
+        if draw_bb: # fopr debugging
+            # compute box position (which is the center of the AABB)
+            box_pos, box_orient = p.getLinkState(self.body, link_idx, physicsClientId=self.id)[:2]
 
-        # compute box position (which is the center of the AABB)
-        # box_pos = [(max_pos[i]+ min_pos[i]) / 2 for i in range(3)]
-        box_pos, box_orient = p.getLinkState(self.body, link_idx, physicsClientId=self.id)[:2]
+            # set the box halfExtents
+            half_extends= [length/ 2 for length in box_dims]
+            collision_shape_id = p.createCollisionShape(shapeType=p.GEOM_BOX, halfExtents=half_extends)
+            visual_shape_id = p.createVisualShape(shapeType=p.GEOM_BOX, rgbaColor=[1, 0, 0, 0.7], halfExtents=half_extends)
 
-        # set the box halfExtents
-        half_extends= [length/ 2 for length in box_dims]
-        collisionShapeId = p.createCollisionShape(shapeType=p.GEOM_BOX, halfExtents=half_extends)
-        visualShapeId = p.createVisualShape(shapeType=p.GEOM_BOX, rgbaColor=[1, 0, 0, 0.7], halfExtents=half_extends)
+            # create a multi-body with baseMass=0 (making it static)
+            box_id = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=collision_shape_id,
+                                      baseVisualShapeIndex=visual_shape_id, basePosition=box_pos,
+                                          baseOrientation=[0, 0, 0, 1], physicsClientId=self.id)
 
-        # create a multi-body with baseMass=0 (making it static)
-        box_id = p.createMultiBody(baseMass=0, baseCollisionShapeIndex=collisionShapeId,
-                                  baseVisualShapeIndex=visualShapeId, basePosition=box_pos,
-                                      baseOrientation=[0, 0, 0, 1], physicsClientId=self.id)
+        return np.array(box_dims)
 
-        center_top_surface = [0, -(max_pos[1]-box_pos[1]), 0]
-        p.addUserDebugLine(box_pos, [box_pos[0], box_pos[1]+ box_dims[1]/2, box_pos[2]], [0, 0, 1], 1, physicsClientId=self.id)
-        # displacement_vector = np.array(center_top_surface) - np.array(box_pos)
-        return  np.array(box_dims), center_top_surface
-
+    def get_ee_collision_shape_pos_orient(self, end_effector, collision_shape_radius=0.05):
+        ee_pos, ee_orient = self.get_ee_pos_orient(end_effector)
+        ee_rot_matrix = np.array(p.getMatrixFromQuaternion(ee_orient)).reshape(3, 3)
+        ee_norm_vec = -ee_rot_matrix[:, 1]  # perpendicular to the palm, pointing from palm outward
+        pos_offset = ee_norm_vec / np.linalg.norm(ee_norm_vec) * collision_shape_radius # create a displacement along the normal vector, and scale it by the radius
+        return np.array(ee_pos) + pos_offset, ee_orient
 
     def _print_joint_indices(self):
         """

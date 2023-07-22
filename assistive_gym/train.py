@@ -484,19 +484,8 @@ def get_human_link_robot_collision(human, end_effector):
     print("human_link: ", human_link_robot_collision)
     return human_link_robot_collision
 
-def get_ee_collision_offset(human, end_effector):
-    ee_pos, ee_orient = human.get_ee_pos_orient(end_effector)
-    ee_rot_matrix = np.array(p.getMatrixFromQuaternion(ee_orient)).reshape(3, 3)
-    ee_norm_vec = -ee_rot_matrix[:, 1]
-    print (ee_norm_vec)
-    ee_collision_pos_offset, ee_collision_orient_offset = ee_norm_vec*0.1, [0, 0, 0, 1] # TODO: seems like the collision object is not centered at the end effector
 
-    # p.addUserDebugLine([0, 0, 0], [2, 0, 0], [1, 0, 0], physicsClientId=env.id)
-    # p.addUserDebugLine([0, 1, 0], [0,2, 0], [0, 0, 1], physicsClientId=env.id)
-    line_id = p.addUserDebugLine(ee_pos, np.array(ee_pos) + np.array(ee_collision_pos_offset)*100, [1, 0, 0], physicsClientId=human.id)
-    time.sleep(1)
-    p.removeUserDebugItem(line_id, physicsClientId=human.id)
-    return np.array(ee_pos) + np.array(ee_collision_pos_offset), ee_collision_orient_offset
+
 def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
           end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False, robot_ik=False):
 
@@ -541,16 +530,12 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
     x0 = np.array(original_joint_angles)
     optimizer = init_optimizer(x0, 0.1, human.controllable_joint_lower_limits, human.controllable_joint_upper_limits)
 
-    ee_link_idx = human.human_dict.get_dammy_joint_id(end_effector)
-    ee_bb_dim, center_top_surface = human.get_ee_bb_dimension(end_effector)
-    print ("ee_bb_dim: ", ee_bb_dim)
-    # ee_collision_shape = human.add_collision_object_around_link(ee_link_idx, radius= ee_bb_dim[0]/2, length=ee_bb_dim[0]) # create an imaginary collision object around the end effector
-    ee_collision_shape = human.add_collision_object_around_link(ee_link_idx, radius=0.05,
-                                                                length=ee_bb_dim[0])
+    if not robot_ik: # simulate collision
+        ee_link_idx = human.human_dict.get_dammy_joint_id(end_effector)
+        ee_collision_radius = 0.1 # 20cm range
+        ee_collision_body = human.add_collision_object_around_link(ee_link_idx, radius=ee_collision_radius) # TODO: ignore collision with hand
 
-    time.sleep(1)
     while not optimizer.stop():
-
         timestep += 1
         solutions = optimizer.ask()
         fitness_values, dists, manipus, energy_changes, torques = [], [], [], [], []
@@ -569,10 +554,7 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
             else:
                 # set angle directly
                 human.set_joint_angles(human.controllable_joint_indices, s)  # force set joint angle
-                # ray_ids = human.ray_cast("right_hand")
-                # human.get_distance_to_obstacles(env_object_ids, end_effector)
-                ee_collision_pos_offset, ee_collision_orient_offset = get_ee_collision_offset(human, end_effector)
-                human.set_collision_object_pos_orient(ee_link_idx, ee_collision_shape, ee_collision_pos_offset, ee_collision_orient_offset)
+
                 # check collision
                 env_collisions, self_collisions  = human.check_env_collision(env_object_ids), human.check_self_collision()
                 has_self_collision, has_env_collision = detect_collisions(original_info, self_collisions, env_collisions, human, end_effector)
@@ -580,12 +562,15 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
                 if robot_ik: # solve robot ik when doing training
                     has_valid_robot_ik = False if has_env_collision or has_self_collision else find_robot_ik_solution(env, end_effector, human_link_robot_collision )
                 else:
+                    ee_collision_body_pos, ee_collision_body_offset = human.get_ee_collision_shape_pos_orient(end_effector, ee_collision_radius)
+                    p.resetBasePositionAndOrientation(ee_collision_body, ee_collision_body_pos, ee_collision_body_offset, physicsClientId=env.id)
                     has_valid_robot_ik = True
 
                 cost, m, dist, energy, torque = cost_fn(human, end_effector, s, original_ee_pos, original_info,
                                                         max_dynamics, has_self_collision, has_env_collision, has_valid_robot_ik, angle_dist=0)
                 # restore joint angle
                 human.set_joint_angles(human.controllable_joint_indices, original_joint_angles)
+
 
                 LOG.info(
                     f"{bcolors.OKGREEN}timestep: {timestep}, cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
@@ -620,6 +605,8 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
             has_valid_robot_ik = False if has_env_collision or has_self_collision else find_robot_ik_solution(env,end_effector, human_link_robot_collision)
         else:
             has_valid_robot_ik = True
+            ee_collision_body_pos, ee_collision_body_offset = human.get_ee_collision_shape_pos_orient(end_effector, ee_collision_radius)
+            p.resetBasePositionAndOrientation(ee_collision_body, ee_collision_body_pos,ee_collision_body_offset, physicsClientId=env.id)
         angle_dist = 0
     cost, m, dist, energy, torque = cost_fn(human, end_effector, optimizer.best.x, original_ee_pos, original_info,
                                             max_dynamics, has_self_collision, has_env_collision, has_valid_robot_ik, angle_dist)
