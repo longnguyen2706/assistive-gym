@@ -119,21 +119,9 @@ class Agent:
         return linkA, linkB, posA, posB, force
 
     def get_closest_points(self, agentB, distance=4.0, linkA=None, linkB=None):
-        args = dict(bodyA=self.body, bodyB=agentB.body, distance=distance, physicsClientId=self.id)
-        if linkA is not None:
-            args['linkIndexA'] = linkA
-        if linkB is not None:
-            args['linkIndexB'] = linkB
-        cp = p.getClosestPoints(**args)
-        linkA = [c[3] for c in cp]
-        linkB = [c[4] for c in cp]
-        posA = [c[5] for c in cp]
-        posB = [c[6] for c in cp]
-        contact_distance = [c[8] for c in cp]
-        return linkA, linkB, posA, posB, contact_distance
-    
-    # TODO: find better way than to write this function
-    def get_closest_points2(self, bodyB, distance=4.0, linkA=None, linkB=None):
+        return self.get_closest_points_with_body_id(agentB.body, distance, linkA, linkB)
+
+    def get_closest_points_with_body_id(self, bodyB, distance=4.0, linkA=None, linkB=None):
         args = dict(bodyA=self.body, bodyB=bodyB, distance=distance, physicsClientId=self.id)
         if linkA is not None:
             args['linkIndexA'] = linkA
@@ -302,22 +290,13 @@ class Agent:
                 joint_names.append((j, info[1]))
         print(joint_names)
 
-    def set_collision_object_pos_orient(self, link_idx: int, collision_obj: int, pos_offset, orient_offset):
+    def add_collision_object_around_link(self, link_idx, radius=0.05):
         """
-        Set the position and orientation of the tool relative to the end effector and tool pos/ orient offset setting
-        :param tool:
-        :param ee_pos:
-        :param ee_orient:
+        Adds a collision object around a link for end effector clearance check
+        :param link_idx:
+        :param radius:
         :return:
         """
-        link_pos, link_orient = p.getLinkState(self.body, link_idx, physicsClientId=self.id)[:2]
-        transform_pos, transform_orient = p.multiplyTransforms(positionA=link_pos, orientationA=link_orient,
-                                                               positionB=pos_offset,
-                                                               orientationB=orient_offset, physicsClientId=self.id)
-        p.resetBasePositionAndOrientation(collision_obj, transform_pos, orient_offset, physicsClientId=self.id)
-        return transform_pos, transform_orient
-
-    def add_collision_object_around_link(self, link_idx, radius=0.05):
         def create_sphere(radius=0, position_offset=[0, 0, 0], orientation=[0, 0, 0, 1]):
             visual_shape = p.createVisualShape(p.GEOM_SPHERE, radius=radius,
                                                visualFramePosition=position_offset,
