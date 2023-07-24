@@ -60,6 +60,15 @@ class HumanUrdfTest(Agent):
         wrist_orientation = p.getLinkState(self.human_id, wrist_ind)[1]
         return wrist_orientation[1]
 
+    def get_flat_wrist_orientation(self, end_effector="right_hand"):
+        human_dict = HumanUrdfDict()
+        # determine wrist index for the correct hand
+        wrist_ind = human_dict.get_dammy_joint_id(end_effector)
+        wrist_orientation = p.getLinkState(self.body, wrist_ind)[1]
+        array = p.getEulerFromQuaternion(wrist_orientation)
+        return array[2]
+
+
 if __name__ == "__main__":
     # Start the simulation engine
     physic_client_id = p.connect(p.GUI)
@@ -135,9 +144,9 @@ if __name__ == "__main__":
             break
         init_angle += 0.1
         # print("### angle: ", init_angle)
-        orn = p.getQuaternionFromEuler([0, init_angle, 0])
+        orn = p.getQuaternionFromEuler([0, 0, init_angle])
         p.resetBasePositionAndOrientation(human.human_id, [0, 0, 2], orn)
-        print(human.get_parallel_wrist_orientation(end_effector="left_hand"))
+        print(human.get_flat_wrist_orientation(end_effector="left_hand"))
         stop = "n"==input("continue? ###")
 
     while True:
