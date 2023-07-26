@@ -331,13 +331,13 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
                     cost += 100 * human.ray_cast_parallel(end_effector=ee_name)
 
     if has_self_collision:
-        cost += 10000
+        cost += 1000
     if has_env_collision:
-        cost += 10000
+        cost += 1000
 
     if robot_ik_mode:
         if not has_valid_robot_ik:
-            cost += 10000
+            cost += 1000
 
     return cost, manipulibility, dist, energy_final, torque, reba
 
@@ -476,10 +476,10 @@ def find_robot_start_pos_orient(env, end_effector="right_hand"):
 
     # new pos: side of the bed, near end effector, with z axis unchanged
     if side == "right":
-        pos = (bed_xx + robot_x_size / 2 + 0.2, ee_pos[1] + robot_y_size / 2, base_pos[2])
+        pos = (bed_xx + robot_x_size / 2 + 0.3, ee_pos[1] + robot_y_size / 2, base_pos[2])
         orient = env.robot.get_quaternion([0, 0, -np.pi / 2])
     else:  # left
-        pos = (bed_xx - robot_x_size / 2 - 0.2, ee_pos[1], base_pos[2])
+        pos = (bed_xx - robot_x_size / 2 - 0.3, ee_pos[1], base_pos[2])
         orient = env.robot.get_quaternion([0, 0, np.pi / 2])
     return pos, orient, side
 
@@ -642,13 +642,13 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
     mean_cost, mean_dist, mean_m, mean_energy, mean_torque, mean_evolution, mean_reba = [], [], [], [], [], [], []
     actions = []
 
-    # _, max_torque = find_max_val(human, max_torque_cost_fn, original_joint_angles, original_link_positions,
-    #                              end_effector)
-    # _, max_manipubility = find_max_val(human, max_manipulibity_cost_fn, original_joint_angles, original_link_positions,
-    #                                    end_effector)
-    # _, max_energy = find_max_val(human, max_energy_cost_fn, original_joint_angles, original_link_positions,
-    #                              end_effector)
-    max_torque, max_manipubility, max_energy = 10, 1, 100
+    _, max_torque = find_max_val(human, max_torque_cost_fn, original_joint_angles, original_link_positions,
+                                 end_effector)
+    _, max_manipubility = find_max_val(human, max_manipulibity_cost_fn, original_joint_angles, original_link_positions,
+                                       end_effector)
+    _, max_energy = find_max_val(human, max_energy_cost_fn, original_joint_angles, original_link_positions,
+                                 end_effector)
+    # max_torque, max_manipubility, max_energy = 10, 1, 100
     print("max torque: ", max_torque, "max manipubility: ", max_manipubility, "max energy: ", max_energy)
     max_dynamics = MaximumHumanDynamics(max_torque, max_manipubility, max_energy)
 
