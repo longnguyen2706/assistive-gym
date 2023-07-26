@@ -609,31 +609,68 @@ def get_task_from_handover_object(object_name):
     task = objectTaskMapping[object_type]
     return task
 
-def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
-          end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False, robot_ik=False, handover_obj=None):
-    start_time = time.time()
 
-    env = make_env(env_name, smpl_file, handover_obj, coop=True)
-    if render:
-        env.render()
+def build_max_human_dynamics(env, end_effector, original_info: OriginalHumanInfo) -> MaximumHumanDynamics:
+    """
+    build maximum human dynamics by doing CMAES search
+    will reset the env after all searches are done
+
+    :param env:
+    :param end_effector:
+    :param original_info:
+    :return:
+    """
+    human = env.human
+    _, max_torque = find_max_val(human, max_torque_cost_fn, original_info.angles, original_info.link_positions,
+                                 end_effector)
+    _, max_manipubility = find_max_val(human, max_manipulibity_cost_fn, original_info.angles, original_info.link_positions,
+                                       end_effector)
+    _, max_energy = find_max_val(human, max_energy_cost_fn, original_info.angles, original_info.link_positions,
+                                 end_effector)
+    # max_torque, max_manipubility, max_energy = 10, 1, 100
+    print("max torque: ", max_torque, "max manipubility: ", max_manipubility, "max energy: ", max_energy)
+    max_dynamics = MaximumHumanDynamics(max_torque, max_manipubility, max_energy)
+
     env.reset()
+    return max_dynamics
 
-    human, robot, furniture, plane = env.human, env.robot, env.furniture, env.plane
-    # switch controllable indicies to left arm if end_effector does not equal right > this will likely be removed/can be overwritten by an object
-    handover_obj_config = get_handover_object_config(handover_obj, human)
-    if handover_obj_config and handover_obj_config.end_effector: # reset the end effector based on the object
-        human.reset_controllable_joints(handover_obj_config.end_effector)
 
-    env_object_ids = [furniture.body, plane.body]  # set env object for collision check
-    human_link_robot_collision = get_human_link_robot_collision(human, end_effector)
-
+def build_original_human_info(human, env_object_ids, end_effector) -> OriginalHumanInfo:
     # original value
     original_joint_angles = human.get_joint_angles(human.controllable_joint_indices)
     original_link_positions = human.get_link_positions(center_of_mass=True, end_effector_name=end_effector)
     original_self_collisions = human.check_self_collision()
     original_env_collisions = human.check_env_collision(env_object_ids)
     original_info = OriginalHumanInfo(original_joint_angles, original_link_positions, original_self_collisions,
-                                        original_env_collisions)
+                                      original_env_collisions)
+    return original_info
+
+
+def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
+          end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False, robot_ik=False, handover_obj=None):
+    start_time = time.time()
+    # init
+    env = make_env(env_name, smpl_file, handover_obj, coop=True)
+    if render:
+        env.render()
+    env.reset()
+
+    human, robot, furniture, plane = env.human, env.robot, env.furniture, env.plane
+
+    # choose end effector
+    handover_obj_config = get_handover_object_config(handover_obj, human)
+    if handover_obj_config and handover_obj_config.end_effector: # reset the end effector based on the object
+        human.reset_controllable_joints(handover_obj_config.end_effector)
+        end_effector = handover_obj_config.end_effector
+
+    # init collision check
+    env_object_ids = [furniture.body, plane.body]  # set env object for collision check
+    human_link_robot_collision = get_human_link_robot_collision(human, end_effector)
+
+    # init original info and max dynamics
+    original_info = build_original_human_info(human, env_object_ids, end_effector)
+    max_dynamics = build_max_human_dynamics(env, end_effector, original_info)
+
     # draw original ee pos
     original_ee_pos = human.get_pos_orient(human.human_dict.get_dammy_joint_id(end_effector), center_of_mass=True)[0]
     draw_point(original_ee_pos, size=0.01, color=[0, 1, 0, 1])
@@ -642,20 +679,8 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
     mean_cost, mean_dist, mean_m, mean_energy, mean_torque, mean_evolution, mean_reba = [], [], [], [], [], [], []
     actions = []
 
-    _, max_torque = find_max_val(human, max_torque_cost_fn, original_joint_angles, original_link_positions,
-                                 end_effector)
-    _, max_manipubility = find_max_val(human, max_manipulibity_cost_fn, original_joint_angles, original_link_positions,
-                                       end_effector)
-    _, max_energy = find_max_val(human, max_energy_cost_fn, original_joint_angles, original_link_positions,
-                                 end_effector)
-    # max_torque, max_manipubility, max_energy = 10, 1, 100
-    print("max torque: ", max_torque, "max manipubility: ", max_manipubility, "max energy: ", max_energy)
-    max_dynamics = MaximumHumanDynamics(max_torque, max_manipubility, max_energy)
-
-    env.reset()
-
     # init optimizer
-    x0 = np.array(original_joint_angles)
+    x0 = np.array(original_info.angles)
     optimizer = init_optimizer(x0, 0.1, human.controllable_joint_lower_limits, human.controllable_joint_upper_limits)
 
     if not robot_ik: # simulate collision
@@ -700,7 +725,7 @@ def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_
                                                         max_dynamics, has_self_collision, has_env_collision, has_valid_robot_ik, 
                                                         0, handover_obj_config, robot_ik_mode=robot_ik)
                 # restore joint angle
-                human.set_joint_angles(human.controllable_joint_indices, original_joint_angles)
+                human.set_joint_angles(human.controllable_joint_indices, original_info.angles)
 
 
                 LOG.info(
