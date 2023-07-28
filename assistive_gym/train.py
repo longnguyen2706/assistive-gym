@@ -525,12 +525,12 @@ def find_robot_ik_solution(env, end_effector:str, human_link_robot_collision, to
 
     ee_pos, ee_orient = human.get_ee_pos_orient(end_effector)
     ee_norm_vec = human.get_ee_normal_vector(end_effector)
-    target_pos = np.array(ee_pos) + ee_norm_vec * 0.05
+    target_pos = np.array(ee_pos) + ee_norm_vec * 0.05 # need to depends on the size of the object as well
     p.addUserDebugLine(ee_pos, target_pos, [1, 0, 0], 5, 0.1)
 
     _, _, best_poses = robot.position_robot_toc2(robot_base_pos, side, [(target_pos, None)],
                                                  [(target_pos, None)], human,
-                                                 base_euler_orient=robot_base_orient, attempts=10,
+                                                 base_euler_orient=robot_base_orient, attempts=5,
                                                  random_position=0.3, max_ik_iterations=50,
                                                  collision_objects={
                                                      furniture: None,
