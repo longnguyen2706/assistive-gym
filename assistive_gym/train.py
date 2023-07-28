@@ -652,6 +652,13 @@ def build_original_human_info(human, env_object_ids, end_effector) -> OriginalHu
     return original_info
 
 
+def get_task_from_handover_object(object_name):
+    if not object_name:
+        return None
+    object_type = HandoverObject.from_string(object_name)
+    task = objectTaskMapping[object_type]
+    return task
+
 def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
           end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False, robot_ik=False, handover_obj=None):
     start_time = time.time()
