@@ -1,3 +1,4 @@
+import os
 import pickle
 from typing import List
 
@@ -10,23 +11,29 @@ from trimesh import Trimesh
 from assistive_gym.envs.utils.human_urdf_dict import HumanUrdfDict
 from assistive_gym.envs.utils.smpl_geom import generate_geom
 from assistive_gym.envs.utils.urdf_editor import UrdfEditor, UrdfJoint, UrdfLink
+from experimental.urdf_name_resolver import get_urdf_file, get_urdf_mesh_folder
 
+DEFAULT_MODEL_PATH = os.path.join(os.getcwd(), "examples/data/SMPL_NEUTRAL.pkl")  # TODO: choose based on gender
 """
 Collection of helper functions to generate human URDF file from SMPL model
 """
 
 ################################################## SMPL setting #######################################################
 class SMPLData:
-    def __init__(self, body_pose, betas, global_orient):  # TODO: add static typing
+    def __init__(self, body_pose, betas, global_orient, transl = None):  # TODO: add static typing
         self.body_pose = body_pose
         self.betas = betas
         self.global_orient = global_orient
+        self.transl = transl
 
 
 def load_smpl(filepath) -> SMPLData:
     with open(filepath, "rb") as handle:
         data = pickle.load(handle)
-    smpl_data: SMPLData = SMPLData(data["body_pose"], data["betas"], data["global_orient"])
+
+        if len(data["body_pose"]) == 69: # we need to extends the dimension of the smpl_data['pose'] from 69 to 72 to match the urdf
+            data["body_pose"] = np.concatenate([data["global_orient"], data["body_pose"]])
+    smpl_data: SMPLData = SMPLData(data["body_pose"], data["betas"], data["global_orient"], data["transl"])
     return smpl_data
 
 
@@ -181,14 +188,17 @@ JOINT_SETTING = {
 
 
 #################################### URDF Generation ##################################################################
-def generate_human_mesh(physic_id, ref_urdf_path, out_urdf_path, smpl_path):
+def generate_human_mesh(physic_id, ref_urdf_path, out_urdf_folder, smpl_path):
     smpl_data = load_smpl(smpl_path)
     body = p.loadURDF(ref_urdf_path, [0, 0, 0],
                       flags=p.URDF_USE_SELF_COLLISION,
                       useFixedBase=False)
-    hull_dict, joint_pos_dict, _ = generate_geom(smpl_path, smpl_data)
+
+    out_geom_folder = get_urdf_mesh_folder(out_urdf_folder)
+    hull_dict, joint_pos_dict, _ = generate_geom(DEFAULT_MODEL_PATH, smpl_data, out_geom_folder)
+    out_urdf_file = get_urdf_file(out_urdf_folder)
     # now trying to scale the urdf file
-    generate_urdf(body, physic_id, hull_dict, joint_pos_dict, out_urdf_path)
+    generate_urdf(body, physic_id, hull_dict, joint_pos_dict, out_urdf_file)
 
 
 def generate_urdf(human_id, physic_client_id, hull_dict, pos_dict, out_path):
