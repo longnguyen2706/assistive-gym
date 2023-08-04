@@ -16,6 +16,7 @@ import pybullet as p
 
 from assistive_gym.envs.utils.plot_utils import plot_cmaes_metrics, plot_mean_evolution
 from assistive_gym.envs.utils.point_utils import fibonacci_evenly_sampling_range_sphere, eulidean_distance
+from experimental.urdf_name_resolver import get_urdf_filepath, get_urdf_folderpath
 
 LOG = get_logger()
 
@@ -94,7 +95,7 @@ def draw_point(point, size=0.01, color=[1, 0, 0, 1]):
                       basePosition=np.array(point))
 
 
-def make_env(env_name, smpl_file, object_name, coop=False, seed=1001):
+def make_env(env_name, person_id, smpl_file, object_name, coop=False, seed=1001):
     if not coop:
         env = gym.make('assistive_gym:' + env_name)
     else:
@@ -103,6 +104,10 @@ def make_env(env_name, smpl_file, object_name, coop=False, seed=1001):
         env = env_class()
     env.seed(seed)
     env.set_smpl_file(smpl_file)
+
+    human_urdf_path = get_urdf_filepath(get_urdf_folderpath(person_id))
+    env.set_human_urdf(human_urdf_path)
+
     task = get_task_from_handover_object(object_name)
     env.set_task(task)
     return env
@@ -679,11 +684,11 @@ def get_actions_dict_key(handover_obj, robot_ik):
     return handover_obj + "_robot_ik" if robot_ik else handover_obj + "_no_robot_ik"
 
 
-def train(env_name, seed=0, num_points=50, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
+def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', person_id='p001',
           end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False, robot_ik=False, handover_obj=None):
     start_time = time.time()
     # init
-    env = make_env(env_name, smpl_file, handover_obj, coop=True)
+    env = make_env(env_name, person_id, smpl_file, handover_obj, coop=True)
     if render:
         env.render()
     env.reset()
@@ -896,8 +901,8 @@ def render(env_name, smpl_file, save_dir, handover_obj, robot_ik:bool):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='RL for Assistive Gym')
     # env
-    parser.add_argument('--env', default='ScratchItchJaco-v0',
-                        help='Environment to train.py on (default: ScratchItchJaco-v0)')
+    parser.add_argument('--env', default='',
+                        help='Environment to train.py on (default: HumanComfort-v1)')
     parser.add_argument('--seed', type=int, default=1,
                         help='Random seed (default: 1)')
     # mode
@@ -908,8 +913,8 @@ if __name__ == '__main__':
     parser.add_argument('--evaluate', action='store_true', default=False,
                         help='Whether to evaluate a trained policy over n_episodes')
     # train details
-    parser.add_argument('--num-points', type=int, default=100, help="Number of points to sample")
-    parser.add_argument('--smpl-file', default='examples/data/smpl_bp_ros_smpl_re2.pkl', help='smpl or smplx')
+    parser.add_argument('--smpl-file', default='examples/data/fits/p002/s01.pkl', help='smpl file')
+    parser.add_argument('--person-id', default='p002', help='person id')
     parser.add_argument('--save-dir', default='./trained_models/',
                         help='Directory to save trained policy in (default ./trained_models/)')
     parser.add_argument('--render-gui', action='store_true', default=False,
@@ -934,10 +939,10 @@ if __name__ == '__main__':
         if args.handover_obj == 'all': # train all at once
             handover_objs = ['pill', 'cup', 'cane']
             for handover_obj in handover_objs:
-                train(args.env, args.seed, args.num_points, args.smpl_file, args.end_effector, args.save_dir,
+                train(args.env, args.seed, args.smpl_file, args.person_id, args.end_effector, args.save_dir,
                     args.render_gui, args.simulate_collision, args.robot_ik, handover_obj)
         else:
-            _, actions = train(args.env, args.seed, args.num_points, args.smpl_file, args.end_effector, args.save_dir,
+            _, actions = train(args.env, args.seed, args.smpl_file,  args.person_id, args.end_effector, args.save_dir,
                                args.render_gui, args.simulate_collision, args.robot_ik, args.handover_obj)
 
     if args.render:

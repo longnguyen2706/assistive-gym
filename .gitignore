@@ -125,3 +125,6 @@ trained_models/
 
 # data 
 examples/data/fits/
+
+# urdf 
+experimental/urdf

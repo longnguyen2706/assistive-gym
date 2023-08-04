@@ -13,16 +13,17 @@ from ergonomics.reba import RebaScore
 import numpy as np
 import pybullet as p
 
-SMPL_PATH = os.path.join(os.getcwd(), "examples/data/smpl_bp_ros_smpl_8.pkl")
 class HumanComfortEnv(AssistiveEnv):
     def __init__(self):
         self.robot = StretchDex('wheel_right')
         self.human = HumanUrdf()
+
         super(HumanComfortEnv, self).__init__(robot=self.robot, human=self.human, task='', obs_robot_len=len(self.robot.controllable_joint_indices), 
                                          obs_human_len=len(self.human.controllable_joint_indices)) #hardcoded
         self.target_pos = np.array([0, 0, 0])
-        self.smpl_file = SMPL_PATH
-        self.task = 'comfort_taking_medicine' # task = 'comfort_standing_up', 'comfort_taking_medicine',  'comfort_drinking'
+        self.smpl_file = None
+        self.task = None # task = 'comfort_standing_up', 'comfort_taking_medicine',  'comfort_drinking'
+
 
     def get_comfort_score(self):
         return np.random.rand() #TODO: implement this
@@ -30,6 +31,9 @@ class HumanComfortEnv(AssistiveEnv):
 
     def set_smpl_file(self, smpl_file):
         self.smpl_file = smpl_file
+
+    def set_human_urdf(self, urdf_path):
+        self.human.set_urdf_path(urdf_path)
 
     def set_task(self, task):
         if not task: # default task
@@ -45,21 +49,22 @@ class HumanComfortEnv(AssistiveEnv):
 
         obs = self._get_obs()
 
-        comfort_score = self.get_comfort_score()
-        reward = comfort_score
-        if self.gui and comfort_score != 0:
-            # print('Task success:', self.task_success, 'Food reward:', comfort_score)
-            pass
-
-        info = {'comfort_score': comfort_score}
-        done = self.iteration >= 200
-        print (done, self.iteration)
-        if not self.human.controllable:
-            return obs, reward, done, info
-        else:
-            # Co-optimization with both human and robot controllable
-            return obs, {'robot': reward, 'human': reward}, {'robot': done, 'human': done, '__all__': done}, {
-                'robot': info, 'human': info}
+        # comfort_score = self.get_comfort_score()
+        # reward = comfort_score
+        # if self.gui and comfort_score != 0:
+        #     # print('Task success:', self.task_success, 'Food reward:', comfort_score)
+        #     pass
+        #
+        # info = {'comfort_score': comfort_score}
+        # done = self.iteration >= 200
+        # print (done, self.iteration)
+        # if not self.human.controllable:
+        #     return obs, reward, done, info
+        # else:
+        #     # Co-optimization with both human and robot controllable
+        #     return obs, {'robot': reward, 'human': reward}, {'robot': done, 'human': done, '__all__': done}, {
+        #         'robot': info, 'human': info}
+        return None
 
     def _get_obs(self, agent=None): # not needed
         target_pos_real, _ = self.robot.convert_to_realworld(self.target_pos) 
@@ -95,6 +100,7 @@ class HumanComfortEnv(AssistiveEnv):
     def reset(self):
         super(HumanComfortEnv, self).reset()
 
+        # magic happen here - now call agent.init()
         self.build_assistive_env("hospital_bed")
 
         bed_height, bed_base_height = self.furniture.get_heights(set_on_ground=True)
