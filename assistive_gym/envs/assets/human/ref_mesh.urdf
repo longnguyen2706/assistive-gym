@@ -16,7 +16,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/Pelvis.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/Pelvis.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_0_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -25,7 +25,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/Pelvis.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/Pelvis.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -104,7 +104,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/L_Hip.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/L_Hip.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_4_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -113,7 +113,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/L_Hip.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/L_Hip.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -192,7 +192,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/L_Knee.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/L_Knee.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_8_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -201,7 +201,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/L_Knee.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/L_Knee.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -280,7 +280,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/L_Ankle.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/L_Ankle.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_12_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -289,7 +289,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/L_Ankle.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/L_Ankle.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -368,7 +368,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/L_Foot.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/L_Foot.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_16_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -377,7 +377,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/L_Foot.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/L_Foot.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -456,7 +456,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/R_Hip.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/R_Hip.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_22_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -465,7 +465,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/R_Hip.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/R_Hip.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -544,7 +544,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/R_Knee.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/R_Knee.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_26_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -553,7 +553,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/R_Knee.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/R_Knee.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -632,7 +632,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/R_Ankle.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/R_Ankle.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_30_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -641,7 +641,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/R_Ankle.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/R_Ankle.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -720,7 +720,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/R_Foot.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/R_Foot.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_34_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -729,7 +729,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/R_Foot.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/R_Foot.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -808,7 +808,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/Spine1.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/Spine1.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_40_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -817,7 +817,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/Spine1.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/Spine1.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -896,7 +896,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/Spine2.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/Spine2.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_44_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -905,7 +905,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/Spine2.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/Spine2.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -984,7 +984,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/Spine3.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/Spine3.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_48_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -993,7 +993,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/Spine3.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/Spine3.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1072,7 +1072,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/Neck.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/Neck.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_52_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -1081,7 +1081,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/Neck.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/Neck.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1160,7 +1160,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/Head.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/Head.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_56_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -1169,7 +1169,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/Head.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/Head.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1248,7 +1248,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/L_Collar.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/L_Collar.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_60_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -1257,7 +1257,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/L_Collar.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/L_Collar.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1336,7 +1336,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/L_Shoulder.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/L_Shoulder.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_64_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -1345,7 +1345,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/L_Shoulder.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/L_Shoulder.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1424,7 +1424,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/L_Elbow.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/L_Elbow.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_68_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -1433,7 +1433,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/L_Elbow.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/L_Elbow.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1512,7 +1512,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/L_Wrist.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/L_Wrist.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_72_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -1521,7 +1521,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/L_Wrist.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/L_Wrist.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1600,7 +1600,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/L_Hand.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/L_Hand.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_76_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -1609,7 +1609,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/L_Hand.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/L_Hand.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1688,7 +1688,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/R_Collar.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/R_Collar.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_80_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -1697,7 +1697,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/R_Collar.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/R_Collar.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1776,7 +1776,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/R_Shoulder.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/R_Shoulder.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_84_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -1785,7 +1785,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/R_Shoulder.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/R_Shoulder.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1864,7 +1864,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/R_Elbow.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/R_Elbow.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_88_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -1873,7 +1873,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/R_Elbow.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/R_Elbow.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -1952,7 +1952,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/R_Wrist.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/R_Wrist.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_92_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -1961,7 +1961,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/R_Wrist.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/R_Wrist.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>
@@ -2040,7 +2040,7 @@
 		<visual>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/R_Hand.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/R_Hand.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 			<material name="mat_96_0">
 				<color rgba="0.71879 0.53909 0.35939 1.00000" />
@@ -2049,7 +2049,7 @@
 		<collision>
 			<origin rpy="0.00000 0.0000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<mesh filename="./meshes/R_Hand.obj" scale="1.00000 1.00000 1.00000"/>
+				<mesh filename="/meshes/R_Hand.obj" scale="1.00000 1.00000 1.00000"/>
 			</geometry>
 		</collision>
 	</link>

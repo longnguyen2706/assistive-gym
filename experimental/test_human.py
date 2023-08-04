@@ -20,7 +20,8 @@ from assistive_gym.envs.utils.smpl_dict import SMPLDict
 
 from assistive_gym.envs.utils.urdf_utils import convert_aa_to_euler_quat, load_smpl, generate_urdf
 
-SMPL_PATH = os.path.join(os.getcwd(), "examples/data/fits/p003/s02.pkl")
+SMPL_PATH = os.path.join(os.getcwd(), "examples/data/fits/p002/s01.pkl")
+URDF_PATH = os.path.join(os.getcwd(), "experimental/urdf/p002/human.urdf")
 class HumanUrdfTest(Agent):
     def __init__(self):
         super(HumanUrdfTest, self).__init__()
@@ -35,7 +36,7 @@ class HumanUrdfTest(Agent):
         # TODO: no hard coding
         # self.human_id = p.loadURDF("assistive_gym/envs/assets/human/human_pip.urdf")
         self.id= id
-        self.human_id = p.loadURDF("test_mesh.urdf", [0, 0, 0.2], flags = p.URDF_USE_SELF_COLLISION, useFixedBase=False)
+        self.human_id = p.loadURDF(URDF_PATH, [0, 0, 0.2], flags = p.URDF_USE_SELF_COLLISION, useFixedBase=False)
         change_dynamic_properties(human.human_id, list(range(0, 93)))
         super(HumanUrdfTest, self).init(self.human_id, id, np_random)
 

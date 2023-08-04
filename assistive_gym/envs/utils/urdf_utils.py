@@ -11,7 +11,7 @@ from trimesh import Trimesh
 from assistive_gym.envs.utils.human_urdf_dict import HumanUrdfDict
 from assistive_gym.envs.utils.smpl_geom import generate_geom
 from assistive_gym.envs.utils.urdf_editor import UrdfEditor, UrdfJoint, UrdfLink
-from experimental.urdf_name_resolver import get_urdf_file, get_urdf_mesh_folder
+from experimental.urdf_name_resolver import get_urdf_filepath, get_urdf_mesh_folderpath
 
 DEFAULT_MODEL_PATH = os.path.join(os.getcwd(), "examples/data/SMPL_NEUTRAL.pkl")  # TODO: choose based on gender
 """
@@ -190,14 +190,15 @@ JOINT_SETTING = {
 #################################### URDF Generation ##################################################################
 def generate_human_mesh(physic_id, ref_urdf_path, out_urdf_folder, smpl_path):
     smpl_data = load_smpl(smpl_path)
+
+
+    out_geom_folder = get_urdf_mesh_folderpath(out_urdf_folder)
+    hull_dict, joint_pos_dict, _ = generate_geom(DEFAULT_MODEL_PATH, smpl_data, out_geom_folder)
+    out_urdf_file = get_urdf_filepath(out_urdf_folder)
+    # now trying to scale the urdf file
     body = p.loadURDF(ref_urdf_path, [0, 0, 0],
                       flags=p.URDF_USE_SELF_COLLISION,
                       useFixedBase=False)
-
-    out_geom_folder = get_urdf_mesh_folder(out_urdf_folder)
-    hull_dict, joint_pos_dict, _ = generate_geom(DEFAULT_MODEL_PATH, smpl_data, out_geom_folder)
-    out_urdf_file = get_urdf_file(out_urdf_folder)
-    # now trying to scale the urdf file
     generate_urdf(body, physic_id, hull_dict, joint_pos_dict, out_urdf_file)
 
 
