@@ -358,13 +358,13 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
     return cost, manipulibility, dist, energy_final, torque, reba
 
 
-def get_save_dir(save_dir, env_name, smpl_file, timestamp=False):
+def get_save_dir(save_dir, env_name, person_id, smpl_file, timestamp=False):
     smpl_name = smpl_file.split('/')[-1].split('.')[0]
     time= datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     if timestamp:
-        return os.path.join(save_dir, env_name, smpl_name, time)
+        return os.path.join(save_dir, env_name, person_id, smpl_name, time)
     else:
-        return os.path.join(save_dir, env_name, smpl_name)
+        return os.path.join(save_dir, env_name, person_id, smpl_name)
 
 
 def get_valid_points(env, points):
@@ -826,15 +826,25 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
 
     env.disconnect()
 
-    # save action to replay
-    # print("actions: ", len(actions))
-    save_dir = get_save_dir(save_dir, env_name, smpl_file)
-    os.makedirs(save_dir, exist_ok=True)
-    pickle.dump(actions, open(os.path.join(save_dir, "actions.pkl"), "wb"))
+    save_train_result(save_dir, env_name, person_id, smpl_file, actions)
 
     print("training time (s): ", time.time() - start_time)
     return env, actions
 
+def save_train_result(save_dir, env_name, person_id, smpl_file, actions):
+    # save action to replay
+    # print("actions: ", len(actions))
+    save_dir = get_save_dir(save_dir, env_name, person_id, smpl_file)
+    os.makedirs(save_dir, exist_ok=True)
+
+    if os.path.exists(os.path.join(save_dir, "actions.pkl")):
+        old_actions = pickle.load(open(os.path.join(save_dir, "actions.pkl"), "rb"))
+        # merge
+        if old_actions:
+            for key in old_actions.keys():
+                if key not in actions.keys():
+                    actions[key] = old_actions[key]
+    pickle.dump(actions, open(os.path.join(save_dir, "actions.pkl"), "wb"))
 
 def init_optimizer(x0, sigma, lower_bounds, upper_bounds): # for cmaes library
     opts = {}
@@ -875,15 +885,14 @@ def init_optimizer2(x0, sigma, lower_bounds, upper_bounds): # for cma library
     return es
 
 
-def render(env_name, smpl_file, save_dir, handover_obj, robot_ik:bool):
-    save_dir = get_save_dir(save_dir, env_name, smpl_file)
+def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik:bool):
+    save_dir = get_save_dir(save_dir, env_name, person_id,  smpl_file)
     actions = pickle.load(open(os.path.join(save_dir, "actions.pkl"), "rb"))
-    env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=handover_obj)
+    env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=handover_obj, person_id=person_id)
     env.render()  # need to call reset after render
     env.reset()
 
     key = get_actions_dict_key(handover_obj, robot_ik)
-
     if key not in actions:
         raise Exception("no action found for ", key)
 
@@ -946,4 +955,4 @@ if __name__ == '__main__':
                                args.render_gui, args.simulate_collision, args.robot_ik, args.handover_obj)
 
     if args.render:
-        render(args.env, args.smpl_file, args.save_dir,  args.handover_obj, args.robot_ik)
+        render(args.env, args.person_id, args.smpl_file, args.save_dir,  args.handover_obj, args.robot_ik)

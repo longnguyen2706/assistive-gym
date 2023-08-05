@@ -28,6 +28,7 @@ def generate_urdf(args):
     # Disconnect from the simulation
     p.disconnect()
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Util script for human urdf generation')
     parser.add_argument('--ref-urdf-file', default='assistive_gym/envs/assets/human/ref_mesh.urdf',  help='Path to reference urdf file')
