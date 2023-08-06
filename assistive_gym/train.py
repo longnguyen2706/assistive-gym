@@ -13,6 +13,7 @@ import numpy as np
 from cma import CMA, CMAEvolutionStrategy
 from cmaes import CMA
 import pybullet as p
+import keyboard
 
 from assistive_gym.envs.utils.plot_utils import plot_cmaes_metrics, plot_mean_evolution
 from assistive_gym.envs.utils.point_utils import fibonacci_evenly_sampling_range_sphere, eulidean_distance
@@ -681,7 +682,7 @@ def get_task_from_handover_object(object_name):
 
 
 def get_actions_dict_key(handover_obj, robot_ik):
-    return handover_obj + "_robot_ik" if robot_ik else handover_obj + "_no_robot_ik"
+    return handover_obj + "-robot_ik" if robot_ik else handover_obj + "-no_robot_ik"
 
 
 def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', person_id='p001',
@@ -832,8 +833,6 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
     return env, actions
 
 def save_train_result(save_dir, env_name, person_id, smpl_file, actions):
-    # save action to replay
-    # print("actions: ", len(actions))
     save_dir = get_save_dir(save_dir, env_name, person_id, smpl_file)
     os.makedirs(save_dir, exist_ok=True)
 
@@ -886,26 +885,49 @@ def init_optimizer2(x0, sigma, lower_bounds, upper_bounds): # for cma library
 
 
 def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik:bool):
-    save_dir = get_save_dir(save_dir, env_name, person_id,  smpl_file)
+    print("rendering person {} and smpl file {}".format(person_id, smpl_file))
+    save_dir = get_save_dir(save_dir, env_name, person_id, smpl_file)
     actions = pickle.load(open(os.path.join(save_dir, "actions.pkl"), "rb"))
+    if not actions:
+        raise Exception("no actions found for person {} and smpl file {}".format(person_id, smpl_file))
+    if handover_obj == "all":
+        for key in actions.keys():
+            action = actions[key]
+            print("key: ", key)
+            handover_obj = key.split("-")[0]
+            robot_ik = key.split("-")[1] == "robot_ik"
+            print ("handover obj: ", handover_obj, "robot_ik: ", robot_ik)
+            render_result(env_name, action,  person_id, smpl_file, handover_obj, robot_ik)
+    else:
+        key = get_actions_dict_key(handover_obj, robot_ik)
+        if key not in actions:
+            raise Exception("no action found for ", key)
+        render_result(env_name, actions[key], person_id, smpl_file, handover_obj, robot_ik)
+
+
+def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik:bool):
     env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=handover_obj, person_id=person_id)
     env.render()  # need to call reset after render
     env.reset()
 
-    key = get_actions_dict_key(handover_obj, robot_ik)
-    if key not in actions:
-        raise Exception("no action found for ", key)
+    smpl_name = os.path.basename(smpl_file).split(".")[0]
+    p.addUserDebugText("person: {}, smpl: {}".format(person_id,smpl_name), [0, 0, 1], textColorRGB=[1, 0, 0])
 
-    action = actions[key]
     env.human.reset_controllable_joints(action["end_effector"])
     env.human.set_joint_angles(env.human.controllable_joint_indices, action["solution"])
     if robot_ik:
-        find_robot_ik_solution(env, action["end_effector"], get_human_link_robot_collision(env.human, action["end_effector"]))
+        find_robot_ik_solution(env, action["end_effector"],
+                               get_human_link_robot_collision(env.human, action["end_effector"]))
 
-    plot_cmaes_metrics(action['mean_cost'], action['mean_dist'], action['mean_m'], action['mean_energy'],
-                       action['mean_torque'])
-    plot_mean_evolution(action['mean_evolution'])
+    # plot_cmaes_metrics(action['mean_cost'], action['mean_dist'], action['mean_m'], action['mean_energy'],
+    #                    action['mean_torque'])
+    # plot_mean_evolution(action['mean_evolution'])
 
+    while True:
+        keys = p.getKeyboardEvents()
+        if ord('q') in keys:
+            break
+    env.disconnect()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='RL for Assistive Gym')
