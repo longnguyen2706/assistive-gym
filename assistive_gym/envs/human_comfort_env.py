@@ -6,6 +6,7 @@ from assistive_gym.envs.agents.sawyer import Sawyer
 from assistive_gym.envs.agents.stretch import Stretch
 from assistive_gym.envs.agents.stretch_dex import StretchDex
 from assistive_gym.envs.env import AssistiveEnv
+from assistive_gym.envs.utils.human_utils import set_self_collisions, disable_self_collisions
 from assistive_gym.envs.utils.urdf_utils import load_smpl
 from assistive_gym.envs.utils.human_urdf_dict import HumanUrdfDict
 from experimental.human_urdf import HumanUrdf
@@ -110,9 +111,9 @@ class HumanComfortEnv(AssistiveEnv):
         self.human.set_joint_angles_with_smpl(smpl_data)
         height, base_height = self.human.get_heights()
         print ("human height ", height, base_height, "bed height ", bed_height, bed_base_height)
-        self.human.set_global_orientation(smpl_data, [0, 0,  bed_height])
+        self.human.set_global_orientation(smpl_data, [0, 0,  bed_height+0.2])
 
-        self.robot.set_gravity(0, 0, -9.81) 
+        self.robot.set_gravity(0, 0, -9.81)
         self.human.set_gravity(0, 0, -9.81)
 
         self.robot.set_joint_angles([4], [0.5]) # for stretch_dex: move the gripper upward
@@ -132,8 +133,15 @@ class HumanComfortEnv(AssistiveEnv):
         # debug human links
         # for j in range(p.getNumJoints(self.human.body, physicsClientId=self.id)):
         #     print(p.getLinkState(self.human.body, j, physicsClientId=self.id))
+        # for j in range(p.getNumJoints(self.human.body, physicsClientId=self.id)):
+        #     print(p.getJointInfo(self.human.body, j, physicsClientId=self.id))
 
         p.setPhysicsEngineParameter(numSubSteps=4, numSolverIterations=10, physicsClientId=self.id)
+        p.setTimeStep(1/240., physicsClientId=self.id)
+
+        # disable self collision before dropping on bed
+        num_joints = p.getNumJoints(self.human.body, physicsClientId=self.id)
+        disable_self_collisions(self.human.body, num_joints, self.id)
 
         # Enable rendering
         p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1, physicsClientId=self.id)
@@ -141,7 +149,11 @@ class HumanComfortEnv(AssistiveEnv):
         for i in range(100):
             p.stepSimulation(physicsClientId=self.id)
 
-        # p.setTimeStep(1/240., physicsClientId=self.id)
+        # enable self collision and reset joint angle after dropping on bed
+        self.human.set_joint_angles_with_smpl(smpl_data)
+        set_self_collisions(self.human.body, self.id)
+        self.human.initial_self_collisions= self.human.check_self_collision()
+
         self.init_env_variables()
         return self._get_obs()
 

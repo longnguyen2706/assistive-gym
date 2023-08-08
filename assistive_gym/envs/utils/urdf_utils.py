@@ -13,7 +13,7 @@ from assistive_gym.envs.utils.smpl_geom import generate_geom
 from assistive_gym.envs.utils.urdf_editor import UrdfEditor, UrdfJoint, UrdfLink
 from experimental.urdf_name_resolver import get_urdf_filepath, get_urdf_mesh_folderpath
 
-DEFAULT_MODEL_PATH = os.path.join(os.getcwd(), "examples/data/SMPL_NEUTRAL.pkl")  # TODO: choose based on gender
+
 """
 Collection of helper functions to generate human URDF file from SMPL model
 """
@@ -26,13 +26,18 @@ class SMPLData:
         self.global_orient = global_orient
         self.transl = transl
 
+def get_template_smpl_path(gender):
+    if not gender:
+        return os.path.join(os.getcwd(), "examples/data/SMPL_NEUTRAL.pkl")
+    else:
+        return os.path.join(os.getcwd(), "examples/data/SMPL_FEMALE.pkl") if gender == 'female' else os.path.join(os.getcwd(), "examples/data/SMPL_MALE.pkl")
 
 def load_smpl(filepath) -> SMPLData:
     with open(filepath, "rb") as handle:
         data = pickle.load(handle)
 
         if len(data["body_pose"]) == 69: # we need to extends the dimension of the smpl_data['pose'] from 69 to 72 to match the urdf
-            data["body_pose"] = np.concatenate([data["global_orient"], data["body_pose"]])
+            data["body_pose"] = np.concatenate((np.array([0.0, 0.0, 0.0]), data["body_pose"]))
     smpl_data: SMPLData = SMPLData(data["body_pose"], data["betas"], data["global_orient"], data["transl"])
     return smpl_data
 
@@ -188,12 +193,13 @@ JOINT_SETTING = {
 
 
 #################################### URDF Generation ##################################################################
-def generate_human_mesh(physic_id, ref_urdf_path, out_urdf_folder, smpl_path):
+def generate_human_mesh(physic_id, gender, ref_urdf_path, out_urdf_folder, smpl_path):
     smpl_data = load_smpl(smpl_path)
 
 
     out_geom_folder = get_urdf_mesh_folderpath(out_urdf_folder)
-    hull_dict, joint_pos_dict, _ = generate_geom(DEFAULT_MODEL_PATH, smpl_data, out_geom_folder)
+    template_smpl_path = get_template_smpl_path(gender)
+    hull_dict, joint_pos_dict, _ = generate_geom(template_smpl_path, smpl_data, out_geom_folder)
     out_urdf_file = get_urdf_filepath(out_urdf_folder)
     # now trying to scale the urdf file
     body = p.loadURDF(ref_urdf_path, [0, 0, 0],

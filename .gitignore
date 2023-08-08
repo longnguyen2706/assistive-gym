@@ -124,7 +124,7 @@ trained_models/
 
 
 # data 
-examples/data/fits/
+examples/data/slp3d/
 
 # urdf 
 experimental/urdf

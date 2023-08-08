@@ -260,25 +260,26 @@ def count_new_collision(old_collisions: Set, new_collisions: Set, human, end_eff
     # print ("link ids", link_ids)
 
     # convert old collision to set of tuples (link1, link2), remove penetration
-    collisions = set()
+    initial_collision_map = dict()
     for o in old_collisions:
-        collisions.add((o[0], o[1]))
+        initial_collision_map[(o[0], o[1])]= o[2]
 
     collision_set = set() # list of collision that is new or has deep penetration
     for collision in new_collisions:
-        if not collision[0] in link_ids and not collision[1] in link_ids:
+        link1, link2, penetration = collision
+        if not link1 in link_ids and not link2 in link_ids:
             continue # not end effector chain collision, skip
         # TODO: fix it, since link1 and link2 in collision from different object, so there is a slim chance of collision
-        if (collision[0], collision[1]) not in collisions or (collision[1], collision[0]) not in collisions: #new collision:
-            if abs(collision[2]) > penetration_threshold["new"]:  # magic number. we have penetration between spine4 and shoulder in pose 5
+        if (link1, link2) not in initial_collision_map or (link2, link1) not in initial_collision_map: #new collision:
+            if abs(penetration) > penetration_threshold["new"]:  # magic number. we have penetration between spine4 and shoulder in pose 5
                 print ("new collision: ", collision)
                 collision_set.add((collision[0], collision[1]))
         else:
             # collision in old collision
-            link1, link2, penetration = collision
-            if abs(penetration) > penetration_threshold["old"]: # magic number. we have penetration between spine4 and shoulder in pose 5
+            initial_depth = initial_collision_map[(link1, link2)] if (link1, link2) in initial_collision_map else initial_collision_map[(link2, link1)]
+            if abs(penetration) > max(penetration_threshold["old"], initial_depth): # magic number. we have penetration between spine4 and shoulder in pose 5
                 print ("old collision with deep penetration: ", collision)
-                collision_set.add((collision[0], collision[1]))
+                collision_set.add((link1, link2))
 
     return len(collision_set)
 
@@ -690,6 +691,7 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
     start_time = time.time()
     # init
     env = make_env(env_name, person_id, smpl_file, handover_obj, coop=True)
+    print ("person_id: ", person_id, smpl_file)
     if render:
         env.render()
     env.reset()
@@ -944,7 +946,7 @@ if __name__ == '__main__':
     parser.add_argument('--evaluate', action='store_true', default=False,
                         help='Whether to evaluate a trained policy over n_episodes')
     # train details
-    parser.add_argument('--smpl-file', default='examples/data/fits/p002/s01.pkl', help='smpl file')
+    parser.add_argument('--smpl-file', default='examples/data/slp3d/p002/s01.pkl', help='smpl file')
     parser.add_argument('--person-id', default='p002', help='person id')
     parser.add_argument('--save-dir', default='./trained_models/',
                         help='Directory to save trained policy in (default ./trained_models/)')

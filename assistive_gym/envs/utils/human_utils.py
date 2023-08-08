@@ -58,7 +58,7 @@ def set_joint_angle(human_id, pose, smpl_joint_name, robot_joint_name):
 def set_joint_angles(human_id, pose):
     r"""
       Set the joint angles of the robot.
-      :param pose: 75 dimensional vector of joint angles. (0:3 - root, 3:75 - joint angles)
+      :param pose: 72 dimensional vector of joint angles. (0:3 - root, 3:72 - joint angles)
       :return:
       """
 
@@ -183,10 +183,9 @@ def set_self_collision2(human_id, physic_client_id, joint_chain, joint_to_ignore
         for j_name in joint_to_ignore:
             if j_name == "pelvis":
                 ignore_ids.append(human_dict.get_fixed_joint_id(j_name))
-            # else:
-            #     if joint_name ==
-            #     ignore_ids.append(human_dict.get_dammy_joint_id(j_name))
 
+        if joint_name == "right_shoulder" or joint_name == "left_shoulder": # TODO: remove this hack
+            ignore_ids.append(human_dict.get_dammy_joint_id("spine_4"))
         # print (f"ignore_ids: {ignore_ids}")
         for j in all_real_limb_ids:
             if j not in ignore_ids:
@@ -206,7 +205,7 @@ def set_self_collisions(human_id, physic_client_id):
 
     disable_self_collisions(human_id, num_joints, physic_client_id)
 
-    # # only enable self collision for arms and legs with the rest of the body
+    # # # only enable self collision for arms and legs with the rest of the body
     set_self_collision2(human_id, physic_client_id, human_dict.joint_chain_dict["right_hand"],
                         human_dict.joint_collision_ignore_dict["right_hand"])
     set_self_collision2(human_id, physic_client_id, human_dict.joint_chain_dict["left_hand"],

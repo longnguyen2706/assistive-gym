@@ -5,13 +5,13 @@ from assistive_gym.train import render
 #### Define dynamic configs ####
 # PERSON_IDS = ['p001', 'p002', 'p003', 'p004', 'p005']
 # SMPL_FILES = ['s01', 's02', 's03', 's04', 's05']
-PERSON_IDS = ['p001', 'p002']
-SMPL_FILES = ['s01', 's02']
+PERSON_IDS = ['p001']
+SMPL_FILES = ['s10', 's11', 's12', 's13', 's14', 's15', 's16', 's17', 's18', 's19']
 OBJECTS = ['cane', 'cup', 'pill']
 
 #### Define static configs ####
-SMPL_DIR = 'examples/data/fits/'
-ENV = 'HumanComfort-v1'
+SMPL_DIR = 'examples/data/slp3d/'
+ENV = 'HumanComfort-v1_0508'
 SEED = 1001
 SAVE_DIR = 'trained_models'
 SIMULATE_COLLISION = False

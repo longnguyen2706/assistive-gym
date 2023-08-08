@@ -78,7 +78,7 @@ class HumanUrdf(Agent):
 
     def set_joint_angles_with_smpl(self, smpl_data: SMPLData):
         set_joint_angles(self.body, smpl_data.body_pose)
-        self.initial_self_collisions = self.check_self_collision()  # collision due to initial pose
+        # self.initial_self_collisions = self.check_self_collision()  # collision due to initial pose
 
     def set_global_orientation(self, smpl_data: SMPLData, pos):
         set_global_orientation(self.body, smpl_data.global_orient, pos)
@@ -136,7 +136,7 @@ class HumanUrdf(Agent):
                                useFixedBase=False)
         self._init_kinematic_chain()
 
-        set_self_collisions(self.body, physics_id)
+        # set_self_collisions(self.body, physics_id)
 
         # set contact damping
         num_joints = p.getNumJoints(self.body, physicsClientId=physics_id)
