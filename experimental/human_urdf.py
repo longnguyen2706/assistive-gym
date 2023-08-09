@@ -15,7 +15,7 @@ from ergonomics.reba import RebaScore
 from assistive_gym.envs.agents.agent import Agent
 from assistive_gym.envs.utils.human_urdf_dict import HumanUrdfDict
 from assistive_gym.envs.utils.human_utils import set_self_collisions, change_dynamic_properties, check_collision, \
-    set_joint_angles, set_global_orientation
+    set_joint_angles, set_global_orientation, set_joint_angles_2
 from assistive_gym.envs.utils.log_utils import get_logger
 from assistive_gym.envs.utils.plot_utils import plot
 from assistive_gym.envs.utils.smpl_dict import SMPLDict
@@ -78,6 +78,10 @@ class HumanUrdf(Agent):
 
     def set_joint_angles_with_smpl(self, smpl_data: SMPLData):
         set_joint_angles(self.body, smpl_data.body_pose)
+        # self.initial_self_collisions = self.check_self_collision()  # collision due to initial pose
+
+    def set_joint_angles_with_smpl2(self, smpl_data: SMPLData):
+        set_joint_angles_2(self.body, smpl_data.body_pose)
         # self.initial_self_collisions = self.check_self_collision()  # collision due to initial pose
 
     def set_global_orientation(self, smpl_data: SMPLData, pos):
@@ -321,7 +325,6 @@ class HumanUrdf(Agent):
         return cosine
 
     def get_pitch_wrist_orientation(self, end_effector="right_hand"):
-        human_dict = HumanUrdfDict()
         # determine wrist index for the correct hand
         _, ee_orient = self.get_ee_pos_orient(end_effector)
         rotation = np.array(p.getMatrixFromQuaternion(ee_orient))

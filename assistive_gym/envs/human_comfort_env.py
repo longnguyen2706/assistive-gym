@@ -105,7 +105,8 @@ class HumanComfortEnv(AssistiveEnv):
         self.build_assistive_env("hospital_bed")
 
         bed_height, bed_base_height = self.furniture.get_heights(set_on_ground=True)
-
+        min_pos, max_pos = p.getAABB(self.furniture.body, physicsClientId=self.id)
+        print("bed height ", bed_height, bed_base_height, "bed pos ", min_pos, max_pos)
         # reset human pose
         smpl_data = load_smpl(self.smpl_file)
         self.human.set_joint_angles_with_smpl(smpl_data)
@@ -136,7 +137,7 @@ class HumanComfortEnv(AssistiveEnv):
         # for j in range(p.getNumJoints(self.human.body, physicsClientId=self.id)):
         #     print(p.getJointInfo(self.human.body, j, physicsClientId=self.id))
 
-        p.setPhysicsEngineParameter(numSubSteps=4, numSolverIterations=10, physicsClientId=self.id)
+        # p.setPhysicsEngineParameter(numSubSteps=4, numSolverIterations=10, physicsClientId=self.id)
         p.setTimeStep(1/240., physicsClientId=self.id)
 
         # disable self collision before dropping on bed
@@ -146,11 +147,15 @@ class HumanComfortEnv(AssistiveEnv):
         # Enable rendering
         p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1, physicsClientId=self.id)
         # drop human on bed
-        for i in range(100):
+        for i in range(300):
             p.stepSimulation(physicsClientId=self.id)
 
         # enable self collision and reset joint angle after dropping on bed
-        self.human.set_joint_angles_with_smpl(smpl_data)
+        human_pos = p.getBasePositionAndOrientation(self.human.body, physicsClientId=self.id)[0]
+
+        self.human.set_global_orientation(smpl_data, human_pos)
+        self.human.set_joint_angles_with_smpl2(smpl_data)
+
         set_self_collisions(self.human.body, self.id)
         self.human.initial_self_collisions= self.human.check_self_collision()
 

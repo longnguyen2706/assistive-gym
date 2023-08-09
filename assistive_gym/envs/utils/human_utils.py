@@ -91,6 +91,35 @@ def set_joint_angles(human_id, pose):
     set_joint_angle(human_id, pose, "Neck", "neck")
     set_joint_angle(human_id, pose, "Head", "head")
 
+def set_joint_angles_2(human_id, pose):
+    # set_joint_angle(human_id, pose, "Spine1", "spine_2")
+    # set_joint_angle(human_id, pose, "Spine2", "spine_3")
+    # set_joint_angle(human_id, pose, "Spine3", "spine_4")
+
+    # set_joint_angle(human_id, pose, "L_Hip", "left_hip")
+    # set_joint_angle(human_id, pose, "L_Knee", "left_knee")
+    # set_joint_angle(human_id, pose, "L_Ankle", "left_ankle")
+    # set_joint_angle(human_id, pose, "L_Foot", "left_foot")
+    #
+    # set_joint_angle(human_id, pose, "R_Hip", "right_hip")
+    # set_joint_angle(human_id, pose, "R_Knee", "right_knee")
+    # set_joint_angle(human_id, pose, "R_Ankle", "right_ankle")
+    # set_joint_angle(human_id, pose, "R_Foot", "right_foot")
+
+    set_joint_angle(human_id, pose, "R_Collar", "right_clavicle")
+    set_joint_angle(human_id, pose, "R_Shoulder", "right_shoulder")
+    set_joint_angle(human_id, pose, "R_Elbow", "right_elbow")
+    set_joint_angle(human_id, pose, "R_Wrist", "right_lowarm")
+    set_joint_angle(human_id, pose, "R_Hand", "right_hand")
+
+    set_joint_angle(human_id, pose, "L_Collar", "left_clavicle")
+    set_joint_angle(human_id, pose, "L_Shoulder", "left_shoulder")
+    set_joint_angle(human_id, pose, "L_Elbow", "left_elbow")
+    set_joint_angle(human_id, pose, "L_Wrist", "left_lowarm")
+    set_joint_angle(human_id, pose, "L_Hand", "left_hand")
+
+    set_joint_angle(human_id, pose, "Neck", "neck")
+    set_joint_angle(human_id, pose, "Head", "head")
 # TODO: review the parameters
 def change_dynamic_properties(human_id, link_ids):
     for link_id in link_ids:
