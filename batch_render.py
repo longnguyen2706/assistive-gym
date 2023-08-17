@@ -7,7 +7,7 @@ from assistive_gym.train import render, render_pose
 # SMPL_FILES = ['s05']
 # PERSON_IDS = ['p002']
 SMPL_FILES = [ 's16', 's17', 's18', 's19', 's20', 's21', 's22', 's23', 's24', 's25']
-PERSON_IDS = [ 'p002', 'p003', 'p004', 'p005']
+PERSON_IDS = [ 'p005']
 OBJECTS = ['cane', 'cup', 'pill']
 
 #### Define static configs ####

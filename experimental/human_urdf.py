@@ -117,6 +117,7 @@ class HumanUrdf(Agent):
         smpl_angles, _ = convert_aa_to_euler_quat(pose[smpl_dict.get_pose_ids(smpl_joint_name)])
 
         robot_joints = self.human_dict.get_joint_ids(robot_joint_name)
+        print ("joint name: ", smpl_joint_name, " angles: ", smpl_angles*180/np.pi)
         self.set_joint_angles(robot_joints, smpl_angles)
 
     def set_global_orientation(self, smpl_data: SMPLData, pos):
