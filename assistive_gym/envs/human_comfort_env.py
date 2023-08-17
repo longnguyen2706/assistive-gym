@@ -150,7 +150,6 @@ class HumanComfortEnv(AssistiveEnv):
         for i in range(300):
             p.stepSimulation(physicsClientId=self.id)
 
-
         # enable self collision and reset joint angle after dropping on bed
         human_pos = p.getBasePositionAndOrientation(self.human.body, physicsClientId=self.id)[0]
 
