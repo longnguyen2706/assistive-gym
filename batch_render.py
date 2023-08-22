@@ -6,8 +6,12 @@ from assistive_gym.train import render, render_pose
 # PERSON_IDS = [ 'p002']
 # SMPL_FILES = ['s05']
 # PERSON_IDS = ['p002']
-SMPL_FILES = [ 's16', 's17', 's18', 's19', 's20', 's21', 's22', 's23', 's24', 's25']
-PERSON_IDS = [ 'p005']
+# SMPL_FILES = ['s05', 's20', 's45']
+# # SMPL_FILES = [ 's16', 's17', 's18', 's19', 's20']
+# PERSON_IDS = ['p001', 'p002', 'p003', 'p004', 'p005']
+# OBJECTS = ['cane', 'cup', 'pill']
+SMPL_FILES = [ 's01','s19', 's40']
+PERSON_IDS = ['p001', 'p002', 'p003', 'p004', 'p005']
 OBJECTS = ['cane', 'cup', 'pill']
 
 #### Define static configs ####

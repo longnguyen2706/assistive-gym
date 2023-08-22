@@ -346,7 +346,7 @@ class Robot(Agent):
                         success, joint_positions_q_star = self.ik_random_restarts2(right, target_pos, target_orient,
                                                                                   max_iterations=max_ik_iterations,
                                                                                   max_ik_random_restarts=max_ik_random_restarts,
-                                                                                  success_threshold=0.03,
+                                                                                  success_threshold=0.02,
                                                                                   randomize_limits=randomize_limits,
                                                                                    collision_objects=collision_objects,
                                                                                    tool = tool)
