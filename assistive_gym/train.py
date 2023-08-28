@@ -341,7 +341,10 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
     reba = human.get_reba_score(end_effector=ee_name)
     max_reba = 9.0
 
-    w = [1, 1, 4, 1, 1, 0, 1]
+    eye = human.get_eyeline_offset(end_effector=ee_name)
+    max_eye = 2.0
+
+    w = [1, 1, 4, 1, 1, 1, 1]
     cost = None
 
     if not object_config: # no object handover case
@@ -352,19 +355,19 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
     else:
         if object_config.object_type == HandoverObject.PILL:
             # cal wrist orient (pill)
-            wr_offset = human.get_roll_wrist_orientation(end_effector=ee_name)
+            wr_offset = human.get_vertical_offset(end_effector=ee_name)
             max_wr_offset = 1
             w = w + object_config.weights
             # cal cost
             cost = (w[0] * dist + w[1] * 1 / (manipulibility / max_dynamics.manipulibility) + w[2] * energy_final / max_dynamics.energy \
-                + w[3] * torque / max_dynamics.torque + w[4] * mid_angle_displacement + w[5] * reba/max_reba +  w[6] * dist_to_bedside
+                + w[3] * torque / max_dynamics.torque + w[4] * mid_angle_displacement + w[5] * eye/max_eye +  w[6] * dist_to_bedside
                 + w[7] * wr_offset/max_wr_offset) / np.sum(w)
             # check angle
             cost += 100 * (wr_offset > object_config.limits[0])
 
         elif object_config.object_type in [HandoverObject.CUP, HandoverObject.CANE]:
             # cal wrist orient (cup and cane)
-            cup_wr_offset = abs(human.get_pitch_wrist_orientation(end_effector=ee_name)-1)
+            cup_wr_offset = abs(human.get_parallel_offset(end_effector=ee_name)-1)
             max_cup = 1
             w = w + object_config.weights
             # cal cost
@@ -619,8 +622,8 @@ def get_human_link_robot_collision(human, end_effector):
 
 
 def choose_upward_hand(human):
-    right_offset = abs(-np.pi/2 - human.get_roll_wrist_orientation(end_effector="right_hand"))
-    left_offset = abs(-np.pi/2 - human.get_roll_wrist_orientation(end_effector="left_hand"))
+    right_offset = abs(-np.pi/2 - human.get_vertical_offset(end_effector="right_hand"))
+    left_offset = abs(-np.pi/2 - human.get_vertical_offset(end_effector="left_hand"))
 
     if right_offset > np.pi/2 and left_offset < np.pi/2:
         return "left_hand"
@@ -630,19 +633,28 @@ def choose_upward_hand(human):
         return None
 
 
-def choose_upper_hand(human):
+def choose_upper_hand(human, margin=0.1):
     right_pos = human.get_link_positions(True, end_effector_name="right_hand")
     left_pos = human.get_link_positions(True, end_effector_name="left_hand")
     right_shoulder_z = right_pos[1][2]
     left_shoulder_z = left_pos[1][2]
     print("right_shoulder_z: ", right_shoulder_z, "\nleft_shoudler_z: ", left_shoulder_z)
-    diff = right_shoulder_z - left_shoulder_z
-    if diff > 0.1:
-        return "right_hand"
-    elif diff < -0.1:
+    diff = left_shoulder_z - right_shoulder_z
+    if diff > margin: # if the difference between the left and right shoulder is outside the allowable margin
         return "left_hand"
-    else:
-        return None
+    else: # otherwise the right hand is the default return value
+        return "right_hand"
+
+def choose_bedside_arm(human, margin=0):
+    right_pos = human.get_link_positions(True, end_effector_name="right_hand")
+    left_pos = human.get_link_positions(True, end_effector_name="left_hand")
+    right_shoulder_x = right_pos[1][0]
+    left_shoulder_x = left_pos[1][0]
+    diff = abs(left_shoulder_x) - abs(right_shoulder_x)
+    if diff > margin: # if the diff between the left and right shoulder is outside the allowable margin
+        return "left_hand"
+    else: # otherwise the right hand is the default return value
+        return "right_hand"
 
 
 def get_handover_object_config(object_name, human) -> Optional[HandoverObjectConfig]:
@@ -657,7 +669,8 @@ def get_handover_object_config(object_name, human) -> Optional[HandoverObjectCon
         ee = choose_upper_hand(human)
         return HandoverObjectConfig(object_type, weights=[6], limits=[0.23], end_effector=ee)
     elif object_name == "cane":
-        return HandoverObjectConfig(object_type, weights=[6], limits=[0.23], end_effector=None)
+        ee = choose_bedside_arm(human)
+        return HandoverObjectConfig(object_type, weights=[6], limits=[0.23], end_effector=ee)
 
 
 def get_task_from_handover_object(object_name):

@@ -309,7 +309,7 @@ class HumanUrdf(Agent):
         return arm_score
 
 
-    def get_roll_wrist_orientation(self, end_effector="right_hand"):
+    def get_vertical_offset(self, end_effector="right_hand"):
         human_dict = HumanUrdfDict()
         # determine wrist index for the correct hand
         _, ee_orient = self.get_ee_pos_orient(end_effector)
@@ -323,7 +323,7 @@ class HumanUrdf(Agent):
 
         return cosine
 
-    def get_pitch_wrist_orientation(self, end_effector="right_hand"):
+    def get_parallel_offset(self, end_effector="right_hand"):
         # determine wrist index for the correct hand
         _, ee_orient = self.get_ee_pos_orient(end_effector)
         rotation = np.array(p.getMatrixFromQuaternion(ee_orient))
@@ -342,6 +342,30 @@ class HumanUrdf(Agent):
         wrist_orientation = p.getLinkState(self.body, wrist_ind)[1]
         array = p.getEulerFromQuaternion(wrist_orientation)
         return array[2]
+
+    
+    def get_eyeline_offset(self, end_effector):
+        ee_pos, ee_orient = self.get_ee_pos_orient("head")
+        hand_pos, _ = self.get_pos_orient(end_effector) 
+        # if we keep using this, we can likely save the orientation (since the head will not move) and just check the hand
+        rotation = np.array(p.getMatrixFromQuaternion(ee_orient))
+        ray_dir = rotation.reshape(3, 3)[:, 2]
+        ### FOR TESTING
+        l = 0.5
+        end_pos = [ee_pos[0] + (ray_dir[0]*l), ee_pos[1] + (ray_dir[1]*l), ee_pos[2] + (ray_dir[2]*l)]
+        p.addUserDebugLine(ee_pos, end_pos, [0, 0, 1]) # ray is blue
+        print("z vector x:", ray_dir[0])
+        input("continue")
+        p.removeAllUserDebugItems()
+        ###
+        x = ray_dir[0]
+        if x > 0:
+            bias = 1
+        else:
+            bias = -1
+        return abs(hand_pos[0] - bias)
+
+
 
     def cal_chain_manipulibility(self, joint_angles, ee: str):
         chain = self.chain[ee]
