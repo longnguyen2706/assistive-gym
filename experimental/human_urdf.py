@@ -345,25 +345,55 @@ class HumanUrdf(Agent):
 
     
     def get_eyeline_offset(self, end_effector):
+        fov = self.get_fov()
+        left = fov[0]
+        right = fov[1]
+        center = (left[0] + right[0])/2
+        hand_pos, _ = self.get_ee_pos_orient(end_effector)
+
+        # testing
+        ee_pos, _ = self.get_ee_pos_orient("head")
+        p.addUserDebugLine(ee_pos, left, [1, 0, 0])
+        p.addUserDebugLine(ee_pos, right, [1, 0, 0])
+        time.sleep(2)
+        p.removeAllUserDebugItems
+        return abs(hand_pos[0] - center)
+
+
+
+    def get_fov(self, l=0.5):
+        # casts field of view from head 0.5m outward to define a line of sight -- will check that 0.5m is reasonable
         ee_pos, ee_orient = self.get_ee_pos_orient("head")
-        hand_pos, _ = self.get_pos_orient(end_effector) 
-        # if we keep using this, we can likely save the orientation (since the head will not move) and just check the hand
         rotation = np.array(p.getMatrixFromQuaternion(ee_orient))
         ray_dir = rotation.reshape(3, 3)[:, 2]
-        ### FOR TESTING
-        l = 0.5
-        end_pos = [ee_pos[0] + (ray_dir[0]*l), ee_pos[1] + (ray_dir[1]*l), ee_pos[2] + (ray_dir[2]*l)]
-        p.addUserDebugLine(ee_pos, end_pos, [0, 0, 1]) # ray is blue
-        print("z vector x:", ray_dir[0])
-        input("continue")
-        p.removeAllUserDebugItems()
-        ###
-        x = ray_dir[0]
-        if x > 0:
-            bias = 1
-        else:
-            bias = -1
-        return abs(hand_pos[0] - bias)
+        axis = np.cross(ray_dir, [1, 0, 0])
+        left = self.rotate_3d(ray_dir, axis, 70)
+        right = self.rotate_3d(ray_dir, axis, -70)
+        ray_dir = left
+        end_left = [ee_pos[0] + (ray_dir[0]*l), ee_pos[1] + (ray_dir[1]*l), ee_pos[2] + (ray_dir[2]*l)]
+        ray_dir = right
+        end_right = [ee_pos[0] + (ray_dir[0]*l), ee_pos[1] + (ray_dir[1]*l), ee_pos[2] + (ray_dir[2]*l)]
+        return [end_left, end_right]
+
+
+    def rotate_3d(self, point, axis, angle_degrees):
+        # Convert the angle to radians
+        angle_rad = np.radians(angle_degrees)
+        
+        # Normalize the rotation axis
+        axis = axis / np.linalg.norm(axis)
+        
+        # Create the rotation matrix
+        cos_theta = np.cos(angle_rad)
+        sin_theta = np.sin(angle_rad)
+        ux, uy, uz = axis
+        rotation_matrix = np.array([
+            [cos_theta + ux**2 * (1 - cos_theta), ux * uy * (1 - cos_theta) - uz * sin_theta, ux * uz * (1 - cos_theta) + uy * sin_theta],
+            [uy * ux * (1 - cos_theta) + uz * sin_theta, cos_theta + uy**2 * (1 - cos_theta), uy * uz * (1 - cos_theta) - ux * sin_theta],
+            [uz * ux * (1 - cos_theta) - uy * sin_theta, uz * uy * (1 - cos_theta) + ux * sin_theta, cos_theta + uz**2 * (1 - cos_theta)]
+        ])
+        
+        return np.dot(rotation_matrix, point)
 
 
 
