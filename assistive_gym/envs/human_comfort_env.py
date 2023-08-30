@@ -130,7 +130,6 @@ class HumanComfortEnv(AssistiveEnv):
         self.robot.set_gripper_open_position(self.robot.right_gripper_indices, self.robot.gripper_pos[self.task],
                                              set_instantly=True)
 
-
         # debug robot
         # for j in range(p.getNumJoints(self.robot.body, physicsClientId=self.id)):
         #     print(p.getJointInfo(self.robot.body, j, physicsClientId=self.id))

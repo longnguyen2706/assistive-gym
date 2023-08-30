@@ -351,12 +351,11 @@ class HumanUrdf(Agent):
         _, ee_orient = self.get_ee_pos_orient(end_effector)
         rotation = np.array(p.getMatrixFromQuaternion(ee_orient))
         ray_dir = rotation.reshape(3, 3)[:, 1]
-        print("ray_dir: ", ray_dir)
+        # print("ray_dir: ", ray_dir)
 
         goal = [0, 0, 1]
         cosine = np.dot(ray_dir, goal)/(norm(ray_dir)*norm(goal))
-        print("Cosine Similarity:", cosine)
-
+        # print("Cosine Similarity:", cosine)
 
         return cosine
 
@@ -365,11 +364,11 @@ class HumanUrdf(Agent):
         _, ee_orient = self.get_ee_pos_orient(end_effector)
         rotation = np.array(p.getMatrixFromQuaternion(ee_orient))
         ray_dir = rotation.reshape(3, 3)[:, 2]
-        print("ray_dir: ", ray_dir)
+        # print("ray_dir: ", ray_dir)
 
         goal = [0, 0, 1]
         cosine = np.dot(ray_dir, goal)/(norm(ray_dir)*norm(goal))
-        print("Cosine Similarity:", cosine)
+        # print("Cosine Similarity:", cosine)
 
         return cosine
 
