@@ -342,7 +342,7 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
     max_reba = 9.0
 
     eye = human.get_eyeline_offset(end_effector=ee_name)
-    max_eye = 2.0
+    max_eye = 0.25
 
     w = [1, 1, 4, 1, 1, 1, 1]
     cost = None
