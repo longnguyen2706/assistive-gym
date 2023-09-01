@@ -112,6 +112,7 @@ class HumanUrdf(Agent):
     def set_joint_angles_with_smpl2(self, smpl_data: SMPLData):
         set_joint_angles_2(self.body, smpl_data.body_pose)
         # self.initial_self_collisions = self.check_self_collision()  # collision due to initial pose
+        
     def set_joint_angle_with_limit(self, pose, smpl_joint_name, robot_joint_name, use_limits):
         smpl_dict = SMPLDict()
         smpl_angles, _ = convert_aa_to_euler_quat(pose[smpl_dict.get_pose_ids(smpl_joint_name)])
