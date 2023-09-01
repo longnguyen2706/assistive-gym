@@ -738,6 +738,7 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
     if render:
         env.render()
     env.reset()
+    p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_file), [0, 0, 1], textColorRGB=[1, 0, 0])
 
     human, robot, furniture, plane = env.human, env.robot, env.furniture, env.plane
 
@@ -807,7 +808,7 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
                     # if new_self_collision:
                     #     has_valid_robot_ik = False
                     # else:
-                        has_valid_robot_ik,_, _, _, _, robot_penetration, robot_dist_to_target= find_robot_ik_solution(env, end_effector, handover_obj)
+                    has_valid_robot_ik,_, _, _, _, robot_penetration, robot_dist_to_target= find_robot_ik_solution(env, end_effector, handover_obj)
                 else:
                     ee_collision_body_pos, ee_collision_body_orient = human.get_ee_collision_shape_pos_orient(end_effector, ee_collision_radius)
                     p.resetBasePositionAndOrientation(ee_collision_body, ee_collision_body_pos, ee_collision_body_orient, physicsClientId=env.id)
@@ -847,10 +848,7 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
         self_collisions, env_collisions = human.check_self_collision(), human.check_env_collision(env_object_ids)
         new_self_collision, new_env_collision = detect_collisions(original_info, self_collisions, env_collisions, human, end_effector)
         if robot_ik:  # solve robot ik when doing training
-            if new_self_collision:
-                has_valid_robot_ik = False
-            else:
-                has_valid_robot_ik, robot_joint_angles, robot_base_pos, robot_base_orient, robot_side, robot_penetrations, robot_dist_to_target= find_robot_ik_solution(env,end_effector, handover_obj)
+            has_valid_robot_ik, robot_joint_angles, robot_base_pos, robot_base_orient, robot_side, robot_penetrations, robot_dist_to_target= find_robot_ik_solution(env,end_effector, handover_obj)
         else:
             has_valid_robot_ik = True
             ee_collision_body_pos, ee_collision_body_offset = human.get_ee_collision_shape_pos_orient(end_effector, ee_collision_radius)
@@ -911,8 +909,8 @@ def save_train_result(save_dir, env_name, person_id, smpl_file, actions):
 
 def init_optimizer(x0, sigma, lower_bounds, upper_bounds): # for cmaes library
     opts = {}
-    opts['tolfun'] = 1e-3
-    opts['tolx'] = 1e-3
+    opts['tolfun'] = 1e-2
+    opts['tolx'] = 1e-2
 
     for i in range(x0.size):
         if x0[i] < lower_bounds[i]:
