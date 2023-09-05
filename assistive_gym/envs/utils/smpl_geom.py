@@ -54,8 +54,10 @@ def generate_geom(default_model_path, smpl_data= None, outdir=None):
     pose = torch.zeros((1, 72)) # reset the model to default pose
 
     # pose = torch.Tensor(smpl_data.body_pose).unsqueeze(0)
+    # print ("pose shape: ", pose.shape)
     transl = None
     if smpl_data is not None:
+        print ("betas before: ", smpl_data.betas)
         betas = torch.Tensor(np.array(smpl_data.betas).reshape(1, 10))
         if smpl_data.transl is not None:
             transl = torch.Tensor(smpl_data.transl).unsqueeze(0)
