@@ -346,22 +346,26 @@ class HumanUrdf(Agent):
     
     def get_eyeline_offset(self, end_effector):
         fov = self.get_fov()
-        left = fov[0]
-        right = fov[1]
-        center = (left[0] + right[0])/2
+        right = fov[0]
+        left = fov[1]
         hand_pos, _ = self.get_ee_pos_orient(end_effector)
+        hand_x = hand_pos[0]
 
         # testing
         ee_pos, _ = self.get_ee_pos_orient("head")
-        p.addUserDebugLine(ee_pos, left, [1, 0, 0])
+        p.addUserDebugLine(ee_pos, left, [0, 1, 0])
         p.addUserDebugLine(ee_pos, right, [1, 0, 0])
-        time.sleep(2)
         p.removeAllUserDebugItems
-        return abs(hand_pos[0] - center)
+        print("left: ", left, "\nright: ", right)
+        l = left[0]
+        r = right[0]
+        if hand_x >= l and hand_x <= r:
+            return 0
+        return min(abs(hand_x - l), abs(hand_x - r))
 
 
 
-    def get_fov(self, l=0.5):
+    def get_fov(self, l=0.25):
         # casts field of view from head 0.5m outward to define a line of sight -- will check that 0.5m is reasonable
         ee_pos, ee_orient = self.get_ee_pos_orient("head")
         rotation = np.array(p.getMatrixFromQuaternion(ee_orient))
