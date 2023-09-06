@@ -3,13 +3,13 @@ import time
 from assistive_gym.train import train
 
 #### Define dynamic configs ####
-PERSON_IDS = ['p001', 'p002',]
+PERSON_IDS = ['p001', 'p002','p003', 'p004', 'p005']
 # PERSON_IDS = ['p004']
-SMPL_FILES = ['s01', 's02', 's03', 's04', 's05']
-# SMPL_FILES = ['s01', 's02', 's03', 's04', 's05', 's06', 's07', 's08', 's09', 's10', 's11', 's12',
-#               's13', 's14', 's15', 's16', 's17', 's18', 's19', 's20', 's21', 's22', 's23', 's24', 's25', 's26',
-#               's27', 's28', 's29', 's30', 's31', 's32', 's33', 's34', 's35', 's36', 's37', 's38', 's39', 's40',
-#               's41', 's42', 's43', 's44', 's45']
+# SMPL_FILES = ['s01', 's02', 's03', 's04', 's05']
+SMPL_FILES = ['s01', 's02', 's03', 's04', 's05', 's06', 's07', 's08', 's09', 's10', 's11', 's12',
+              's13', 's14', 's15', 's16', 's17', 's18', 's19', 's20', 's21', 's22', 's23', 's24', 's25', 's26',
+              's27', 's28', 's29', 's30', 's31', 's32', 's33', 's34', 's35', 's36', 's37', 's38', 's39', 's40',
+              's41', 's42', 's43', 's44', 's45']
 # SMPL_FILES = [ 's44']
 # PERSON_IDS = [ 'p002' ]
 OBJECTS = [ 'cup', 'pill', 'cane']
@@ -25,7 +25,7 @@ ROBOT_IK = True
 END_EFFECTOR = 'right_hand'
 
 ### DEFINE MULTIPROCESS SETTING ###
-NUM_WORKERS = 4
+NUM_WORKERS = 1
 
 def get_dynamic_configs():
     configs =[]

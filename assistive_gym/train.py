@@ -81,7 +81,7 @@ COLLISION_OBJECT_RADIUS = {
 
 OBJECT_PALM_OFFSET = {
     "pill": 0.05,
-    "cup": 0.05,
+    "cup": 0.08,
     "cane": 0.05
 }
 

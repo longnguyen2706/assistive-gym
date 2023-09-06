@@ -153,7 +153,7 @@ class HumanComfortEnv(AssistiveEnv):
         human_pos = p.getBasePositionAndOrientation(self.human.body, physicsClientId=self.id)[0]
 
         self.human.set_global_orientation(smpl_data, human_pos)
-        self.human.set_joint_angles_with_smpl(smpl_data)
+        self.human.set_joint_angles_with_smpl(smpl_data, False)
 
         set_self_collisions(self.human.body, self.id)
         self.human.initial_self_collisions= self.human.check_self_collision()
