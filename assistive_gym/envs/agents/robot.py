@@ -157,7 +157,9 @@ class Robot(Agent):
             tool_collisions = []
             if tool is not None:
                 tool.reset_pos_orient()
-                tool_collisions = self.detect_tool_collisions(tool, collision_objects)  # TODO: refdctor
+                tool_collision_objects = collision_objects.copy()
+                tool_collision_objects[self] = None  # Need to add the robot to the collision objects to check for collisions
+                tool_collisions = self.detect_tool_collisions(tool, tool_collision_objects)  # TODO: refdctor
 
             robot_collisions = self.detect_robot_collisions(collision_objects)
 

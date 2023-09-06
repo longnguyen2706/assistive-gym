@@ -13,19 +13,19 @@ SMPL_FILES = ['s01', 's02', 's03', 's04', 's05', 's06', 's07', 's08', 's09', 's1
 # SMPL_FILES = [ 's44']
 # PERSON_IDS = [ 'p002' ]
 OBJECTS = [ 'cup', 'pill', 'cane']
-
+# OBJECTS = ['cane']
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
 ENV = 'HumanComfort-v1'
 SEED = 1001
 SAVE_DIR = 'trained_models'
-RENDER_GUI = True
+RENDER_GUI = False
 SIMULATE_COLLISION = False
 ROBOT_IK = True
 END_EFFECTOR = 'right_hand'
 
 ### DEFINE MULTIPROCESS SETTING ###
-NUM_WORKERS = 1
+NUM_WORKERS = 24
 
 def get_dynamic_configs():
     configs =[]

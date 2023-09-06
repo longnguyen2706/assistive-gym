@@ -382,7 +382,7 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
 
     if robot_ik_mode:
         if not has_valid_robot_ik:
-            cost += 1000
+            # cost += 1000
             print('No valid ik solution found ', robot_dist_to_target)
             cost+=100* robot_dist_to_target
         if robot_penetrations:
