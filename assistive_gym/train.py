@@ -389,7 +389,7 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
             # flatten list
             robot_penetrations = [abs(item) for sublist in robot_penetrations for item in sublist]
             # print(robot_penetrations)
-            cost +=10*sum(robot_penetrations)
+            cost +=100*sum(robot_penetrations)
 
     return cost, manipulibility, dist, energy_final, torque, reba
 

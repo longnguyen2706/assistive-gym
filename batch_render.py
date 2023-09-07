@@ -14,7 +14,7 @@ from assistive_gym.train import render, render_pose
 # PERSON_IDS = ['p001', 'p002', 'p003', 'p004', 'p005']
 # OBJECTS = ['cane', 'cup', 'pill']
 SMPL_FILES = [ 's01','s19', 's45']
-PERSON_IDS = ['p001', 'p002' ]
+PERSON_IDS = ['p002' ]
 OBJECTS = ['cane', 'cup', 'pill']
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
