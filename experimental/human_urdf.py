@@ -127,6 +127,7 @@ class HumanUrdf(Agent):
     def reset_controllable_joints(self, end_effector):
         if end_effector not in ['left_hand', 'right_hand']:
             raise ValueError("end_effector must be either 'left_hand' or 'right_hand'")
+        self.end_effector = end_effector
         self.controllable_joint_indices = left_arm_joint_indices if end_effector == 'left_hand' else right_arm_joint_indices
         self.controllable_joint_lower_limits = np.array([self.lower_limits[i] for i in self.controllable_joint_indices])
         self.controllable_joint_upper_limits = np.array([self.upper_limits[i] for i in self.controllable_joint_indices])

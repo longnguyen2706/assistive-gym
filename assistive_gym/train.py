@@ -22,7 +22,7 @@ from experimental.urdf_name_resolver import get_urdf_filepath, get_urdf_folderpa
 
 LOG = get_logger()
 
-class WorkerProcess(multiprocessing.Process):
+class SubEnvProcess(multiprocessing.Process):
     def __init__(self, task_queue, result_queue, env_config, conf):
         super().__init__()
         self.task_queue = task_queue
@@ -44,20 +44,21 @@ class WorkerProcess(multiprocessing.Process):
         if not self.env:
             env_name, person_id, smpl_file, handover_obj, coop = self.env_config
             self.env = make_env(env_name, person_id, smpl_file, handover_obj, coop)
+            # self.env.render()
+            self.env.reset()
         print ('joint_angles: ', joint_angles)
         robot_ik, env_object_ids, original_info, max_dynamics, handover_obj, handover_obj_config = self.conf
-        conf = (self.env, joint_angles, robot_ik, env_object_ids, original_info, max_dynamics, handover_obj, handover_obj_config)
+        conf = (self.env, np.array(joint_angles), robot_ik, env_object_ids, original_info, max_dynamics, handover_obj, handover_obj_config)
         cost, m, dist, energy, torque, reba = do_search(conf)
-        return (cost, m, dist, energy, torque, reba)
+        return (joint_angles, cost, m, dist, energy, torque, reba)
 
-class WorkerProcess2(multiprocessing.Process):
-    def __init__(self, task_queue, result_queue, env_config, conf):
+class MainEnvProcess(multiprocessing.Process):
+    def __init__(self, task_queue, result_queue, env_config):
         super().__init__()
         self.task_queue = task_queue
         self.result_queue = result_queue
         self.env_config = env_config
         self.env = None
-        self.conf = conf
 
     def run(self):
         while True:
@@ -72,9 +73,19 @@ class WorkerProcess2(multiprocessing.Process):
         if not self.env:
             env_name, person_id, smpl_file, handover_obj, coop = self.env_config
             self.env = make_env(env_name, person_id, smpl_file, handover_obj, coop)
-        if task == 'init':
-            return self.init_main_env(self.env)
 
+        type, data = task
+        if type == 'init':
+            print('init main env')
+            return init_main_env(self.env, 'cane')
+        if type == 'render_step':
+            print ('render')
+            env, human, robot = self.env, self.env.human, self.env.robot
+            human.set_joint_angles(human.controllable_joint_indices, data)
+            has_valid_robot_ik, _, _, _, _, robot_penetration, robot_dist_to_target = find_robot_ik_solution(env,
+                                                                                                             human.end_effector,
+                                                                                                             'cane') # TODO: fix
+            return True
         # print ('joint_angles: ', joint_angles)
         # robot_ik, env_object_ids, original_info, max_dynamics, handover_obj, handover_obj_config = self.conf
         # conf = (self.env, joint_angles, robot_ik, env_object_ids, original_info, max_dynamics, handover_obj, handover_obj_config)
@@ -477,13 +488,13 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
     if robot_ik_mode:
         if not has_valid_robot_ik:
             # cost += 1000
-            print('No valid ik solution found ', robot_dist_to_target)
+            # print('No valid ik solution found ', robot_dist_to_target)
             cost+=100* robot_dist_to_target
         if robot_penetrations:
             # flatten list
             robot_penetrations = [abs(item) for sublist in robot_penetrations for item in sublist]
             # print(robot_penetrations)
-            cost +=100*sum(robot_penetrations)
+            cost +=10*sum(robot_penetrations)
 
     return cost, manipulibility, dist, energy_final, torque, reba
 
@@ -829,7 +840,7 @@ def get_parallel_executor():
 def do_search(conf):
         env, s, robot_ik, env_object_ids, original_info, max_dynamics, handover_obj, handover_obj_config = conf
         human, end_effector = env.human, handover_obj_config.end_effector
-        print("s: ", s)
+        # print("s: ", s, 'human', human.controllable_joint_indices, 'end_effector', end_effector, 'handover_obj', handover_obj)
         # set angle directly
         human.set_joint_angles(human.controllable_joint_indices, s)  # force set joint angle
 
@@ -887,7 +898,7 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
           end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False, robot_ik=False, handover_obj=None):
     start_time = time.time()
     # # init
-    env = make_env(env_name, person_id, smpl_file, handover_obj, coop=True)
+    # env = make_env(env_name, person_id, smpl_file, handover_obj, coop=True)
     # # print ("person_id: ", person_id, smpl_file)
     # if render:
     #     env.render()
@@ -916,8 +927,19 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
     # draw_point(original_ee_pos, size=0.01, color=[0, 1, 0, 1])
     # original_info.original_ee_pos = original_ee_pos # TODO: refactor
 
+    main_task_queue = multiprocessing.Queue()
+    main_result_queue = multiprocessing.Queue()
+    env_config = (env_name, person_id, smpl_file, handover_obj, True)
+    main_env_process = MainEnvProcess(main_task_queue, main_result_queue, env_config)
+    main_env_process.start()
+    main_task_queue.put(('init', None))
+    init_result = main_result_queue.get()
+
     original_info, max_dynamics, env_object_ids, human_link_robot_collision, end_effector, handover_obj_config,\
-        controllable_joint_lower_limits, controllable_joint_upper_limits = init_main_env(env, handover_obj)
+        controllable_joint_lower_limits, controllable_joint_upper_limits = init_result
+        # init_main_env(env, handover_obj)
+
+
     timestep = 0
     mean_cost, mean_dist, mean_m, mean_energy, mean_torque, mean_evolution, mean_reba = [], [], [], [], [], [], []
 
@@ -932,18 +954,19 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
     #     ee_collision_body = human.add_collision_object_around_link(ee_link_idx, radius=ee_collision_radius) # TODO: ignore collision with hand
 
     smpl_name = os.path.basename(smpl_file)
-    p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_name), [0, 0, 1], textColorRGB=[1, 0, 0])
+    # p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_name), [0, 0, 1], textColorRGB=[1, 0, 0])
     # executor = get_parallel_executor()
     # headless_envs = make_headless_envs(env_name, person_id, smpl_file, handover_obj, coop=True)
     # print ("headless envs: ", headless_envs)
     # env.disconnect()
 
-    task_queue = multiprocessing.Queue()
-    result_queue = multiprocessing.Queue()
+
+    search_task_queue = multiprocessing.Queue()
+    search_result_queue = multiprocessing.Queue()
     env_config = (env_name, person_id, smpl_file, handover_obj, True)
     search_config = ( robot_ik, env_object_ids, original_info, max_dynamics, handover_obj, handover_obj_config)
-    workers = [WorkerProcess(task_queue, result_queue,env_config, search_config) for _ in range(2)]
-    for w in workers:
+    sub_env_workers = [SubEnvProcess(search_task_queue, search_result_queue, env_config, search_config) for _ in range(NUM_WORKERS)]
+    for w in sub_env_workers:
         w.start()
 
     while not optimizer.stop():
@@ -960,21 +983,26 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
         # results = executor.map(do_search, confs) # parallel
         # Enqueue tasks
         for s in solutions:
-            task_queue.put(s)
+            search_task_queue.put(s)
 
         # Collect results
+        best_cost = float('inf')
+        best_s = None
         for _ in solutions:
-            result = result_queue.get()
-            print (result)
-        # for result in results:
-            cost, dist, m, energy, torque, reba = result
+            result = search_result_queue.get()
+            s, cost, dist, m, energy, torque, reba = result
             # print (result)
             fitness_values.append(cost)
             dists.append(dist)
             manipus.append(m)
             energy_changes.append(energy)
             torques.append(torque)
+            if cost<best_cost:
+                best_cost= cost
+                best_s = s
 
+        main_task_queue.put(('render_step', best_s))
+        main_result_queue.get()
         optimizer.tell(solutions, fitness_values)
         # optimizer.result_pretty()
         LOG.info(
@@ -1004,8 +1032,19 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
     # cost, m, dist, energy, torque, reba = cost_fn(human, end_effector, optimizer.best.x, original_ee_pos, original_info,
     #                                         max_dynamics, new_self_collision, new_env_collision, has_valid_robot_ik, robot_penetrations,robot_dist_to_target,  angle_dist,
     #                                         handover_obj_config, robot_ik, dist_to_bedside)
+    # exit
+    for _ in range(NUM_WORKERS):
+        search_task_queue.put(None)
+    for w in sub_env_workers:
+        w.join()
     LOG.info(
         f"{bcolors.OKBLUE} Best cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
+
+    main_task_queue.put(('render_step', optimizer.best.x))
+    main_result_queue.get()
+    time.sleep(10)
+    main_task_queue.put(None)
+    main_env_process.join()
     # action = {
     #     "solution": optimizer.best.x,
     #     "cost": cost,
@@ -1036,10 +1075,11 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
     #
     # env.disconnect()
 
-    save_train_result(save_dir, env_name, person_id, smpl_file, actions)
+
+    # save_train_result(save_dir, env_name, person_id, smpl_file, actions)
 
     print("training time (s): ", time.time() - start_time)
-    return env, actions
+    return _, actions
 
 def save_train_result(save_dir, env_name, person_id, smpl_file, actions):
     save_dir = get_save_dir(save_dir, env_name, person_id, smpl_file)
