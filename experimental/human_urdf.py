@@ -185,6 +185,7 @@ class HumanUrdf(Agent):
 
         # enable force torque sensor
         for i in self.controllable_joint_indices:
+            print ("enabling force torque sensor for joint: ", i, self.body, physics_id)
             p.enableJointForceTorqueSensor(self.body, i, enableSensor=True, physicsClientId=physics_id)
 
         super(HumanUrdf, self).init(self.body, physics_id, np_random)

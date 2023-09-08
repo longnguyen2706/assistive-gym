@@ -1,3 +1,4 @@
+import concurrent
 import os, sys, multiprocessing, gym, ray, shutil, argparse, importlib, glob
 import pickle
 import time
@@ -24,11 +25,12 @@ LOG = get_logger()
 
 class OriginalHumanInfo:
     def __init__(self, original_angles: np.ndarray, original_link_positions: np.ndarray, original_self_collisions,
-                 original_env_collisions):
+                 original_env_collisions, original_ee_pos=None):
         self.link_positions = original_link_positions  # should be array of tuples that are the link positions
         self.angles = original_angles
         self.self_collisions = original_self_collisions
         self.env_collisions = original_env_collisions
+        self.original_ee_pos = original_ee_pos
 
 
 class MaximumHumanDynamics:
@@ -84,6 +86,8 @@ OBJECT_PALM_OFFSET = {
     "cup": 0.08,
     "cane": 0.05
 }
+
+NUM_WORKERS = 20
 
 class HandoverObjectConfig:
     def __init__(self, object_type: HandoverObject, weights: list, limits: list, end_effector: Optional[str]):
@@ -311,7 +315,8 @@ def cal_dist_to_bedside(env, end_effector):
         return 0 if ee_pos[0] < bed_xx else abs(ee_pos[0] - bed_xx)
 
 # TODO: better refactoring for seperating robot-ik/ non robot ik mode
-def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.ndarray, original_info: OriginalHumanInfo,
+def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.ndarray,
+            original_info: OriginalHumanInfo,
             max_dynamics: MaximumHumanDynamics,  new_self_collision, new_env_collision, has_valid_robot_ik, robot_penetrations, robot_dist_to_target, angle_dist,
             object_config: Optional[HandoverObjectConfig], robot_ik_mode: bool, dist_to_bedside: float):
 
@@ -728,13 +733,61 @@ def get_task_from_handover_object(object_name):
 def get_actions_dict_key(handover_obj, robot_ik):
     return handover_obj + "-robot_ik" if robot_ik else handover_obj + "-no_robot_ik"
 
+def get_parallel_executor():
+    executor = concurrent.futures.ProcessPoolExecutor(max_workers=NUM_WORKERS)
+    return executor
+
+def do_search(conf):
+        env, s, robot_ik, env_object_ids, original_info, max_dynamics, handover_obj, handover_obj_config = conf
+        human, end_effector = env.human, handover_obj_config.end_effector
+        print("s: ", s)
+        # set angle directly
+        human.set_joint_angles(human.controllable_joint_indices, s)  # force set joint angle
+
+        # check collision
+        env_collisions, self_collisions = human.check_env_collision(env_object_ids), human.check_self_collision()
+        new_self_collision, new_env_collision = detect_collisions(original_info, self_collisions, env_collisions, human,
+                                                                  end_effector)
+        # move_robot(env)
+        # cal dist to bedside
+        dist_to_bedside = cal_dist_to_bedside(env, end_effector)
+        if robot_ik:  # solve robot ik when doing training
+            has_valid_robot_ik, _, _, _, _, robot_penetration, robot_dist_to_target = find_robot_ik_solution(env, end_effector, handover_obj)
+        else:
+            ee_link_idx = human.human_dict.get_dammy_joint_id(end_effector)
+            ee_collision_radius = COLLISION_OBJECT_RADIUS[handover_obj]  # 20cm range
+            ee_collision_body = human.add_collision_object_around_link(ee_link_idx,
+                                                                       radius=ee_collision_radius)  # TODO: ignore collision with hand`
+
+            ee_collision_body_pos, ee_collision_body_orient = human.get_ee_collision_shape_pos_orient(end_effector,
+                                                                                                      ee_collision_radius)
+            p.resetBasePositionAndOrientation(ee_collision_body, ee_collision_body_pos, ee_collision_body_orient,
+                                              physicsClientId=env.id)
+            has_valid_robot_ik = True
+
+        cost, m, dist, energy, torque, reba = cost_fn(human, end_effector, s, original_info.original_ee_pos, original_info,
+                                                      max_dynamics, new_self_collision, new_env_collision,
+                                                      has_valid_robot_ik, robot_penetration, robot_dist_to_target,
+                                                      0, handover_obj_config, robot_ik, dist_to_bedside)
+        # restore joint angle
+        # human.set_joint_angles(human.controllable_joint_indices, original_info.angles)
+        return cost, m, dist, energy, torque, reba
+
+def make_headless_envs(env_name, person_id, smpl_file, handover_obj, coop = True): # headless
+    envs = []
+    for i in range (NUM_WORKERS):
+        env = make_env(env_name, person_id, smpl_file, handover_obj, coop)
+        envs.append(env)
+        print ('env_id: ', env.id)
+        env.reset()
+    return envs
 
 def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', person_id='p001',
           end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False, robot_ik=False, handover_obj=None):
     start_time = time.time()
-    # init
+    # # init
     env = make_env(env_name, person_id, smpl_file, handover_obj, coop=True)
-    print ("person_id: ", person_id, smpl_file)
+    # print ("person_id: ", person_id, smpl_file)
     if render:
         env.render()
     env.reset()
@@ -756,9 +809,11 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
     original_info = build_original_human_info(human, env_object_ids, end_effector)
     max_dynamics = build_max_human_dynamics(env, end_effector, original_info)
 
+
     # draw original ee pos
     original_ee_pos = human.get_pos_orient(human.human_dict.get_dammy_joint_id(end_effector), center_of_mass=True)[0]
     draw_point(original_ee_pos, size=0.01, color=[0, 1, 0, 1])
+    original_info.original_ee_pos = original_ee_pos # TODO: refactor
 
     timestep = 0
     mean_cost, mean_dist, mean_m, mean_energy, mean_torque, mean_evolution, mean_reba = [], [], [], [], [], [], []
@@ -774,54 +829,25 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
 
     smpl_name = os.path.basename(smpl_file)
     p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_name), [0, 0, 1], textColorRGB=[1, 0, 0])
-
+    executor = get_parallel_executor()
+    headless_envs = make_headless_envs(env_name, person_id, smpl_file, handover_obj, coop=True)
+    print ("headless envs: ", headless_envs)
     while not optimizer.stop():
         timestep += 1
         solutions = optimizer.ask()
         fitness_values, dists, manipus, energy_changes, torques = [], [], [], [], []
-        for s in solutions:
+        confs = []
 
-            if simulate_collision:
-                # step forward env
-                angle_dist, _, env_collisions, _ = step_forward(env, s, env_object_ids, end_effector)
-                self_collisions = human.check_self_collision()
-                new_self_collision, new_env_collision= detect_collisions(original_info, self_collisions, env_collisions, human, end_effector)
-                # cal dist to bedside
-                dist_to_bedside = cal_dist_to_bedside(env, end_effector)
-                cost, m, dist, energy, torque = cost_fn(human, end_effector, s, original_ee_pos, original_info,
-                                                        max_dynamics, new_self_collision, new_env_collision, has_valid_robot_ik,
-                                                        angle_dist, handover_obj_config, robot_ik, dist_to_bedside)
-                env.reset_human(is_collision=True)
-                LOG.info(
-                    f"{bcolors.OKGREEN}timestep: {timestep}, cost: {cost}, angle_dist: {angle_dist} , dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
-            else:
-                # set angle directly
-                human.set_joint_angles(human.controllable_joint_indices, s)  # force set joint angle
+        for i, s in enumerate(solutions):
+            conf = (headless_envs[i], s, robot_ik, env_object_ids, original_info, max_dynamics, handover_obj, handover_obj_config)
+            confs.append(conf)
+        print ('solutions: ', solutions)
+        print (confs)
+        results = executor.map(do_search, confs) # parallel
 
-                # check collision
-                env_collisions, self_collisions = human.check_env_collision(env_object_ids), human.check_self_collision()
-                new_self_collision, new_env_collision = detect_collisions(original_info, self_collisions, env_collisions, human, end_effector)
-                # move_robot(env)
-                # cal dist to bedside
-                dist_to_bedside = cal_dist_to_bedside(env, end_effector)
-                if robot_ik: # solve robot ik when doing training
-                    # if new_self_collision:
-                    #     has_valid_robot_ik = False
-                    # else:
-                    has_valid_robot_ik,_, _, _, _, robot_penetration, robot_dist_to_target= find_robot_ik_solution(env, end_effector, handover_obj)
-                else:
-                    ee_collision_body_pos, ee_collision_body_orient = human.get_ee_collision_shape_pos_orient(end_effector, ee_collision_radius)
-                    p.resetBasePositionAndOrientation(ee_collision_body, ee_collision_body_pos, ee_collision_body_orient, physicsClientId=env.id)
-                    has_valid_robot_ik = True
-
-                cost, m, dist, energy, torque, reba = cost_fn(human, end_effector, s, original_ee_pos, original_info,
-                                                        max_dynamics, new_self_collision, new_env_collision, has_valid_robot_ik, robot_penetration,robot_dist_to_target,
-                                                        0, handover_obj_config, robot_ik, dist_to_bedside)
-                # restore joint angle
-                human.set_joint_angles(human.controllable_joint_indices, original_info.angles)
-                # LOG.info(
-                #     f"{bcolors.OKGREEN}timestep: {timestep}, cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
-
+        for result in results:
+            cost, dist, m, energy, torque, reba = result
+            print (result)
             fitness_values.append(cost)
             dists.append(dist)
             manipus.append(m)

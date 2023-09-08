@@ -20,7 +20,7 @@ class HumanComfortEnv(AssistiveEnv):
         self.human = HumanUrdf()
 
         super(HumanComfortEnv, self).__init__(robot=self.robot, human=self.human, task='', obs_robot_len=len(self.robot.controllable_joint_indices), 
-                                         obs_human_len=len(self.human.controllable_joint_indices)) #hardcoded
+                                         obs_human_len=len(self.human.controllable_joint_indices), render=False) #hardcoded
         self.target_pos = np.array([0, 0, 0])
         self.smpl_file = None
         self.task = None # task = 'comfort_standing_up', 'comfort_taking_medicine',  'comfort_drinking'
