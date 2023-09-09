@@ -352,11 +352,6 @@ class HumanUrdf(Agent):
         _, ee_orient = self.get_ee_pos_orient(end_effector)
         rotation = np.array(p.getMatrixFromQuaternion(ee_orient))
         ray_dir = rotation.reshape(3, 3)[:, 1]
-<<<<<<< HEAD
-=======
-        # print("ray_dir: ", ray_dir)
->>>>>>> 17b50a9313b091be2771b6c163181fa64711eb21
-
         goal = [0, 0, 1]
         cosine = np.dot(ray_dir, goal)/(norm(ray_dir)*norm(goal))
         # print("Cosine Similarity:", cosine)
@@ -368,11 +363,6 @@ class HumanUrdf(Agent):
         _, ee_orient = self.get_ee_pos_orient(end_effector)
         rotation = np.array(p.getMatrixFromQuaternion(ee_orient))
         ray_dir = rotation.reshape(3, 3)[:, 2]
-<<<<<<< HEAD
-=======
-        # print("ray_dir: ", ray_dir)
->>>>>>> 17b50a9313b091be2771b6c163181fa64711eb21
-
         goal = [0, 0, 1]
         cosine = np.dot(ray_dir, goal)/(norm(ray_dir)*norm(goal))
         # print("Cosine Similarity:", cosine)
@@ -407,6 +397,30 @@ class HumanUrdf(Agent):
             return 0
         return min(abs(hand_x - l), abs(hand_x - r))
 
+    def get_eyeline_cone(self, end_effector, l=0.5):
+        ee_pos, ee_orient = self.get_ee_pos_orient("head")
+        rotation = np.array(p.getMatrixFromQuaternion(ee_orient))
+        ray_dir = rotation.reshape(3, 3)[:, 2]
+        end_cone = [ee_pos[0] + (ray_dir[0]*l), ee_pos[1] + (ray_dir[1]*l), ee_pos[2] + (ray_dir[2]*l)]
+        radius = 5
+        perp = self.get_orthoganol(ee_orient)
+        end_rad = [end_cone[0] + (perp[0]*radius), end_cone[1] + (perp[1]*radius), end_cone[2] + (perp[2]*radius)]
+        end_rad0 = [end_cone[0] + (perp[0]*-radius), end_cone[1] + (perp[1]*-radius), end_cone[2] + (perp[2]*-radius)]
+        perp = self.get_orthoganol(perp)
+        end_rad2 = [end_cone[0] + (perp[0]*radius), end_cone[1] + (perp[1]*radius), end_cone[2] + (perp[2]*radius)]
+        end_rad20 = [end_cone[0] + (perp[0]*-radius), end_cone[1] + (perp[1]*-radius), end_cone[2] + (perp[2]*-radius)]
+        
+        # ensure calculations were done correctly
+        p.addUserDebugLine(ee_pos, end_cone, [1, 0, 0]) 
+        p.addUserDebugLine(end_cone, end_rad, [0, 1, 0])
+        p.addUserDebugLine(end_cone, end_rad0, [0, 0, 1])
+        p.addUserDebugLine(end_cone, end_rad2, [0, 1, 0])
+        p.addUserDebugLine(end_cone, end_rad20, [0, 0, 1])
+        p.removeAllUserDebugItems()
+        # idea, using the angle made between the head normal and [1, 0, 0] --> if greater or less than a certain threshold we can force
+        # the hand in a certain direction or change how we model the cone of vision
+
+        return False
 
 
     def get_fov(self, l=0.25):
@@ -423,7 +437,42 @@ class HumanUrdf(Agent):
         end_right = [ee_pos[0] + (ray_dir[0]*l), ee_pos[1] + (ray_dir[1]*l), ee_pos[2] + (ray_dir[2]*l)]
         return [end_left, end_right]
 
+    def set_head_angle(self, l=0.25):
+        ee_pos, ee_orient = self.get_ee_pos_orient("head")
+        rotation = np.array(p.getMatrixFromQuaternion(ee_orient))
+        ray_dir = rotation.reshape(3, 3)[:, 2]
+        # head = np.array([ee_pos[0] + (ray_dir[0]*l), ee_pos[1] + (ray_dir[1]*l), ee_pos[2] + (ray_dir[2]*l)])
+        head_u = ray_dir / np.linalg.norm(ray_dir)
+        x = np.array([1, 0, 0])
+        x_u = x / np.linalg.norm(x)
+        angle = np.arccos(np.dot(head_u, x_u))
+        # based on this angle, we can force the hand in the desired direction
+        print("head anlge: ", angle)
 
+        #idea 1
+        end_norm = np.array([ee_pos[0] + (ray_dir[0]*l), ee_pos[1] + (ray_dir[1]*l), ee_pos[2] + (ray_dir[2]*l)])
+        ray_dir = [1, 0, 0]
+        end_l = np.array([end_norm[0] + (ray_dir[0]*l), end_norm[1] + (ray_dir[1]*l), end_norm[2] + (ray_dir[2]*l)])
+        end_r = np.array([end_norm[0] + (ray_dir[0]*-l), end_norm[1] + (ray_dir[1]*-l), end_norm[2] + (ray_dir[2]*-l)])
+        p.addUserDebugLine(ee_pos, end_norm, [1, 0 ,0])
+        p.addUserDebugLine(end_norm, end_l, [0, 1, 0]) # left is green
+        p.addUserDebugLine(end_norm, end_r, [0, 0, 1]) # right is blue
+        self.head_coords = [end_l, end_norm, end_r] 
+        self.head_angle = angle
+
+    def get_head_angle_range(self, end_effector, l=0.25):
+        end_l, end_norm, end_r = self.head_coords
+
+        hand_pos, _ = self.get_ee_pos_orient(end_effector)
+        hand = hand_pos[0]
+        # center = end_norm[0]
+
+        if hand > end_r[0] and hand < end_l[0]:
+            return 0
+            # return abs(0.5 * (hand - center)) # TRY LATER: add a slight bias toward the center
+        return min(hand - end_r[0], hand - end_l[0])
+
+    
     def rotate_3d(self, point, axis, angle_degrees):
         # Convert the angle to radians
         angle_rad = np.radians(angle_degrees)
@@ -443,7 +492,9 @@ class HumanUrdf(Agent):
         
         return np.dot(rotation_matrix, point)
 
+    def get_orthoganol(self, vec):
 
+        return [-vec[1], vec[0], 0]
 
     def cal_chain_manipulibility(self, joint_angles, ee: str):
         chain = self.chain[ee]

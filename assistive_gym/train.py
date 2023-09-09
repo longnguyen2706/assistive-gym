@@ -342,10 +342,13 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
     reba = human.get_reba_score(end_effector=ee_name)
     max_reba = 9.0
 
-    eye = human.get_eyeline_offset(end_effector=ee_name)
+    # eye = human.get_eyeline_offset(end_effector=ee_name)
+    # max_eye = 0.25
+
+    eye = human.get_head_angle_range(end_effector=ee_name)
     max_eye = 0.25
 
-    w = [1, 1, 4, 1, 1, 0, 0]
+    w = [1, 1, 4, 1, 1, 1, 0]
     cost = None
 
     if not object_config: # no object handover case
@@ -790,6 +793,8 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
 
     smpl_name = os.path.basename(smpl_file)
     p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_name), [0, 0, 1], textColorRGB=[1, 0, 0])
+    human.set_head_angle() # getting the head's left and right limits
+    print("head limits defined")
 
     while not optimizer.stop():
         timestep += 1
