@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import shutil
 
@@ -44,8 +45,8 @@ if __name__ == "__main__":
     # if not check_urdf_exist(args.person_id):
     #     generate_urdf(args)
     generate_urdf(args)
-    # _, _, realworld = train('HumanComfort-v1', 1001, args.smpl_file, args.person_id, 'right_hand',
-    #       'trained_models', True, False, True, 'pill')
-    # print("realworld: ", realworld)
+    _, _, realworld = train('HumanComfort-v1', 1001, args.smpl_file, args.person_id, 'right_hand',
+          'trained_models', True, False, True, 'pill')
+    print(realworld['wrt_pelvis'])
 
-    render('HumanComfort-v1', args.person_id, args.smpl_file, 'trained_models', 'pill', True)
+    # render('HumanComfort-v1', args.person_id, args.smpl_file, 'trained_models', 'pill', True)

@@ -6,6 +6,7 @@ from enum import Enum
 
 from torch.utils.hipify.hipify_python import bcolors
 
+from assistive_gym.envs.utils.debug_utils import axiscreator, add_debug_line_wrt_parent_frame
 from assistive_gym.envs.utils.log_utils import get_logger
 from typing import Set, Optional
 
@@ -719,6 +720,7 @@ def build_original_human_info(human, env_object_ids, end_effector) -> OriginalHu
     return original_info
 
 
+
 def get_task_from_handover_object(object_name):
     if not object_name:
         return None
@@ -729,7 +731,6 @@ def get_task_from_handover_object(object_name):
 
 def get_actions_dict_key(handover_obj, robot_ik):
     return handover_obj + "-robot_ik" if robot_ik else handover_obj + "-no_robot_ik"
-
 
 def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', person_id='p001',
           end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False, robot_ik=False, handover_obj=None):
@@ -820,9 +821,16 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
                                                         max_dynamics, new_self_collision, new_env_collision, has_valid_robot_ik, robot_penetration,robot_dist_to_target,
                                                         0, handover_obj_config, robot_ik, dist_to_bedside)
                 # restore joint angle
-                human.set_joint_angles(human.controllable_joint_indices, original_info.angles)
+                # human.set_joint_angles(human.controllable_joint_indices, original_info.angles)
                 # LOG.info(
                 #     f"{bcolors.OKGREEN}timestep: {timestep}, cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
+
+                # axiscreator(robot.body, robot.right_end_effector)
+                # robot_ee = robot.get_pos_orient(robot.right_end_effector, center_of_mass=True)
+                # robot_ee_transform = translate_wrt_human_pelvis(human, robot_ee[0], robot_ee[1])
+                #
+                # add_debug_line_wrt_parent_frame(robot_ee_transform[0], robot_ee_transform[1], human.body,
+                #                           human.human_dict.get_fixed_joint_id("pelvis"))
 
             fitness_values.append(cost)
             dists.append(dist)
@@ -864,14 +872,6 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
 
     ee_pos, ik_target_pos = find_ee_ik_goal(human, end_effector, handover_obj)
 
-    # ik_target_realworld_pos = translate_to_realworld(ik_target_pos)
-    # robot_realworld_pos = translate_to_realworld(robot_base_pos)
-    # realworld = {
-    #     'target_pos': ik_target_realworld_pos,
-    #     'robot_pos': robot_realworld_pos,
-    #     'robot_orient': robot_base_orient,
-    # }
-    #
     action = {
         "solution": optimizer.best.x,
         "cost": cost,
@@ -893,18 +893,18 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
             "side": robot_side
         },
         "wrt_pelvis": {
-            'pelvis': human.get_pos_orient(human.human_dict.get_dammy_joint_id("pelvis"), center_of_mass=True),
+            'pelvis': human.get_pos_orient(human.human_dict.get_fixed_joint_id("pelvis"), center_of_mass=True),
             "ee": {
                 'original': human.get_ee_pos_orient(end_effector),
                 'transform': translate_wrt_human_pelvis(human, human.get_ee_pos_orient(end_effector)[0], human.get_ee_pos_orient(end_effector)[1]),
             },
             "ik_target": {
-                'original': (tuple(ik_target_pos), tuple(gripper_orient)), # [pos, orient
-                'transform': translate_wrt_human_pelvis(human, tuple(ik_target_pos), tuple(gripper_orient)),
+                'original': [np.array(ik_target_pos), np.array(gripper_orient)],# [pos, orient
+                'transform': translate_wrt_human_pelvis(human, np.array(ik_target_pos), np.array(gripper_orient)),
             },
             'robot': {
-                'original': (tuple(robot_base_pos), tuple(robot_base_orient)),
-                'transform': translate_wrt_human_pelvis(human, tuple(robot_base_pos), tuple(robot_base_orient)),
+                'original': [np.array(robot_base_pos), np.array(robot_base_orient)],
+                'transform': translate_wrt_human_pelvis(human, np.array(robot_base_pos), np.array(robot_base_orient)),
             },
             'robot_joint_angles': robot_joint_angles
         }
@@ -927,16 +927,17 @@ def translate_to_realworld(cord):
     return np.array(cord) - np.array(bottom_left_tag)
 
 def translate_wrt_human_pelvis(human, pos, orient = None):
-    print ("pos: ", pos, "orient: ", orient)
-    pelvis_pos, pelvis_orient = human.get_pos_orient(human.human_dict.get_dammy_joint_id("pelvis"), center_of_mass=True)
+    # print ("pos: ", pos, "orient: ", orient)
+    pelvis_pos, pelvis_orient = human.get_pos_orient(human.human_dict.get_fixed_joint_id("pelvis"), center_of_mass=True)
+    print("pelvis_pos: ", pelvis_pos, "pelvis_orient: ", pelvis_orient)
     pelvis_pos_inv, pelvis_orient_inv = p.invertTransform(pelvis_pos, pelvis_orient, physicsClientId=human.id)
-    if not orient:
+    if len(orient) ==0:
         orient = [0, 0, 0, 1]
     else:
         orient = orient if len(orient) == 4 else human.get_quaternion(orient)
 
-    new_pos, new_orient = p.multiplyTransforms(pelvis_pos_inv, pelvis_orient_inv, pos, orient)
-    return new_pos, new_orient
+    new_pos, new_orient = p.multiplyTransforms( pelvis_pos_inv, pelvis_orient_inv, pos, orient)
+    return new_pos,new_orient
 
 
 def save_train_result(save_dir, env_name, person_id, smpl_file, actions):
