@@ -304,6 +304,7 @@ def cal_dist_to_bedside(env, end_effector):
     side = "right" if ee_pos[0] > bed_pos[0] else "left"
     bed_xx, bed_yy, bed_zz = bed_bb[1] if side == "right" else bed_bb[0]
     bed_xx = bed_xx + 0.1 if side == "right" else bed_xx - 0.1
+    print ('bed size: ', np.array(bed_bb[1]) - np.array(bed_bb[0]))
     # print ("bed_xx: ", bed_xx, "ee_pos: ", ee_pos, "side: ", side)
     if side == "right":
         return 0 if ee_pos[0] > bed_xx else abs(ee_pos[0] - bed_xx)
@@ -551,6 +552,11 @@ def move_robot(env): # for debugging purpose
 
     print ("tool mass: ", p.getDynamicsInfo(tool.body, -1)[0])
 
+def find_ee_ik_goal(human, end_effector, handover_obj):
+    ee_pos, ee_orient = human.get_ee_pos_orient(end_effector)
+    ee_norm_vec = human.get_ee_normal_vector(end_effector)
+    target_pos = np.array(ee_pos) + ee_norm_vec * OBJECT_PALM_OFFSET[handover_obj]  # need to depends on the size of the object as well
+    return ee_pos, target_pos
 
 def find_robot_ik_solution(env, end_effector:str, handover_obj: str):
     """
@@ -579,14 +585,10 @@ def find_robot_ik_solution(env, end_effector:str, handover_obj: str):
 
     robot_base_pos, robot_base_orient, side = find_robot_start_pos_orient(env, end_effector)
 
-    ee_pos, ee_orient = human.get_ee_pos_orient(end_effector)
-    ee_norm_vec = human.get_ee_normal_vector(end_effector)
-    target_pos = np.array(ee_pos) + ee_norm_vec * OBJECT_PALM_OFFSET[handover_obj]# need to depends on the size of the object as well
-    # TODO: remove
-    # target_pos = [0,0,1]
+    ee_pos, target_pos = find_ee_ik_goal(human, end_effector, handover_obj)
     p.addUserDebugLine(ee_pos, target_pos, [1, 0, 0], 5, 0.1)
 
-    _, _, best_poses = robot.position_robot_toc2(robot_base_pos, side, [(target_pos, None)],
+    best_position, best_orientation, best_joint_angles = robot.position_robot_toc2(robot_base_pos, side, [(target_pos, None)],
                                                  [(target_pos, None)], human,
                                                  base_euler_orient=robot_base_orient, attempts=5,
                                                  random_position=0.3, max_ik_iterations=50,
@@ -596,7 +598,7 @@ def find_robot_ik_solution(env, end_effector:str, handover_obj: str):
                                                  tool = tool)
 
     # TODO: reuse best_poses (ik solution) from toc instead of resolving ik
-    is_success, robot_joint_angles, penetrations, dist_to_target = robot.ik_random_restarts2(right=True, target_pos=target_pos,
+    is_success, robot_joint_angles, penetrations, dist_to_target, gripper_orient = robot.ik_random_restarts2(right=True, target_pos=target_pos,
                                                                target_orient=None, max_iterations=100,
                                                                randomize_limits=False,
                                                                collision_objects={furniture: None,
@@ -608,7 +610,7 @@ def find_robot_ik_solution(env, end_effector:str, handover_obj: str):
         robot.set_joint_angles(robot.right_arm_joint_indices, robot_joint_angles, use_limits=True)
         tool.reset_pos_orient()
 
-    return is_success, robot_joint_angles, robot_base_pos, robot_base_orient, side, penetrations, dist_to_target
+    return is_success, robot_joint_angles, best_position, best_orientation, side, penetrations, dist_to_target, gripper_orient
 
 
 def get_human_link_robot_collision(human, end_effector):
@@ -808,7 +810,7 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
                     # if new_self_collision:
                     #     has_valid_robot_ik = False
                     # else:
-                    has_valid_robot_ik,_, _, _, _, robot_penetration, robot_dist_to_target= find_robot_ik_solution(env, end_effector, handover_obj)
+                    has_valid_robot_ik,_, _, _, _, robot_penetration, robot_dist_to_target, _= find_robot_ik_solution(env, end_effector, handover_obj)
                 else:
                     ee_collision_body_pos, ee_collision_body_orient = human.get_ee_collision_shape_pos_orient(end_effector, ee_collision_radius)
                     p.resetBasePositionAndOrientation(ee_collision_body, ee_collision_body_pos, ee_collision_body_orient, physicsClientId=env.id)
@@ -848,7 +850,7 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
         self_collisions, env_collisions = human.check_self_collision(), human.check_env_collision(env_object_ids)
         new_self_collision, new_env_collision = detect_collisions(original_info, self_collisions, env_collisions, human, end_effector)
         if robot_ik:  # solve robot ik when doing training
-            has_valid_robot_ik, robot_joint_angles, robot_base_pos, robot_base_orient, robot_side, robot_penetrations, robot_dist_to_target= find_robot_ik_solution(env,end_effector, handover_obj)
+            has_valid_robot_ik, robot_joint_angles, robot_base_pos, robot_base_orient, robot_side, robot_penetrations, robot_dist_to_target, gripper_orient= find_robot_ik_solution(env,end_effector, handover_obj)
         else:
             has_valid_robot_ik = True
             ee_collision_body_pos, ee_collision_body_offset = human.get_ee_collision_shape_pos_orient(end_effector, ee_collision_radius)
@@ -859,6 +861,17 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
                                             handover_obj_config, robot_ik, dist_to_bedside)
     LOG.info(
         f"{bcolors.OKBLUE} Best cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
+
+    ee_pos, ik_target_pos = find_ee_ik_goal(human, end_effector, handover_obj)
+
+    # ik_target_realworld_pos = translate_to_realworld(ik_target_pos)
+    # robot_realworld_pos = translate_to_realworld(robot_base_pos)
+    # realworld = {
+    #     'target_pos': ik_target_realworld_pos,
+    #     'robot_pos': robot_realworld_pos,
+    #     'robot_orient': robot_base_orient,
+    # }
+    #
     action = {
         "solution": optimizer.best.x,
         "cost": cost,
@@ -878,6 +891,22 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
             "base_pos": robot_base_pos,
             "base_orient": robot_base_orient,
             "side": robot_side
+        },
+        "wrt_pelvis": {
+            'pelvis': human.get_pos_orient(human.human_dict.get_dammy_joint_id("pelvis"), center_of_mass=True),
+            "ee": {
+                'original': human.get_ee_pos_orient(end_effector),
+                'transform': translate_wrt_human_pelvis(human, human.get_ee_pos_orient(end_effector)[0], human.get_ee_pos_orient(end_effector)[1]),
+            },
+            "ik_target": {
+                'original': (tuple(ik_target_pos), tuple(gripper_orient)), # [pos, orient
+                'transform': translate_wrt_human_pelvis(human, tuple(ik_target_pos), tuple(gripper_orient)),
+            },
+            'robot': {
+                'original': (tuple(robot_base_pos), tuple(robot_base_orient)),
+                'transform': translate_wrt_human_pelvis(human, tuple(robot_base_pos), tuple(robot_base_orient)),
+            },
+            'robot_joint_angles': robot_joint_angles
         }
     }
 
@@ -887,12 +916,28 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
     # plot_cmaes_metrics(mean_cost, mean_dist, mean_m, mean_energy, mean_torque)
     # plot_mean_evolution(mean_evolution)
 
-    env.disconnect()
-
     save_train_result(save_dir, env_name, person_id, smpl_file, actions)
 
     print("training time (s): ", time.time() - start_time)
-    return env, actions
+    env.disconnect()
+    return env, actions, action
+
+def translate_to_realworld(cord):
+    bottom_left_tag = [-0.365, -1.1, 0.7]
+    return np.array(cord) - np.array(bottom_left_tag)
+
+def translate_wrt_human_pelvis(human, pos, orient = None):
+    print ("pos: ", pos, "orient: ", orient)
+    pelvis_pos, pelvis_orient = human.get_pos_orient(human.human_dict.get_dammy_joint_id("pelvis"), center_of_mass=True)
+    pelvis_pos_inv, pelvis_orient_inv = p.invertTransform(pelvis_pos, pelvis_orient, physicsClientId=human.id)
+    if not orient:
+        orient = [0, 0, 0, 1]
+    else:
+        orient = orient if len(orient) == 4 else human.get_quaternion(orient)
+
+    new_pos, new_orient = p.multiplyTransforms(pelvis_pos_inv, pelvis_orient_inv, pos, orient)
+    return new_pos, new_orient
+
 
 def save_train_result(save_dir, env_name, person_id, smpl_file, actions):
     save_dir = get_save_dir(save_dir, env_name, person_id, smpl_file)
@@ -996,7 +1041,7 @@ def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik
 
 
 def render_pose(env_name, person_id, smpl_file):
-    env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=None   , person_id=person_id)
+    env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=None, person_id=person_id)
     env.render()  # need to call reset after render
     env.reset()
 

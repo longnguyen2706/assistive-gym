@@ -142,6 +142,7 @@ class Robot(Agent):
         best_ik_angles = None
         best_ik_distance = 0
         best_collisions = []
+        best_gripper_orient = None
         for r in range(max_ik_random_restarts):
             target_joint_angles = self.ik(self.right_end_effector if right else self.left_end_effector, target_pos,
                                           target_orient,
@@ -185,7 +186,7 @@ class Robot(Agent):
                         np.linalg.norm(target_orient - np.array(gripper_orient)), 2, atol=success_threshold)):
                     self.set_joint_angles(self.right_arm_joint_indices if right else self.left_arm_joint_indices,
                                           target_joint_angles)
-                    return True, np.array(target_joint_angles),  collisions, np.linalg.norm(target_pos - np.array(gripper_pos))
+                    return True, np.array(target_joint_angles),  collisions, np.linalg.norm(target_pos - np.array(gripper_pos)), gripper_orient
             else:
                 # print("Failed to find IK solution")
                 self.set_joint_angles(self.right_arm_joint_indices if right else self.left_arm_joint_indices,
@@ -195,9 +196,10 @@ class Robot(Agent):
                 best_ik_angles = target_joint_angles
                 best_ik_distance = np.linalg.norm(target_pos - np.array(gripper_pos))
                 best_collisions = collisions
+                best_gripper_orient = gripper_orient
         # print (best_ik_angles, np.array(best_ik_angles).shape)
         # self.set_joint_angles(self.right_arm_joint_indices if right else self.left_arm_joint_indices, np.array(best_ik_angles))
-        return False, np.array(best_ik_angles), best_collisions, best_ik_distance
+        return False, np.array(best_ik_angles), best_collisions, best_ik_distance, best_gripper_orient
 
     def detect_tool_collisions(self, tool, collision_objects):
 
@@ -385,7 +387,7 @@ class Robot(Agent):
                         # Reset state in case anything was perturbed from the last iteration
                         human.set_joint_angles(human.controllable_joint_indices, human_angles)
                         # Find IK solution
-                        success, joint_positions_q_star, collisions, _= self.ik_random_restarts2(right, target_pos, target_orient,
+                        success, joint_positions_q_star, collisions, _, _= self.ik_random_restarts2(right, target_pos, target_orient,
                                                                                   max_iterations=max_ik_iterations,
                                                                                   max_ik_random_restarts=max_ik_random_restarts,
                                                                                   success_threshold=0.02,
