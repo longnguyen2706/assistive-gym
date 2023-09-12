@@ -16,7 +16,6 @@ from cmaes import CMA
 import pybullet as p
 import keyboard
 
-from assistive_gym.envs.utils.plot_utils import plot_cmaes_metrics, plot_mean_evolution
 from assistive_gym.envs.utils.point_utils import fibonacci_evenly_sampling_range_sphere, eulidean_distance
 from experimental.urdf_name_resolver import get_urdf_filepath, get_urdf_folderpath
 
@@ -82,7 +81,7 @@ COLLISION_OBJECT_RADIUS = {
 
 OBJECT_PALM_OFFSET = {
     "pill": 0.05,
-    "cup": 0.05,
+    "cup": 0.1,
     "cane": 0.05
 }
 
@@ -214,8 +213,6 @@ TODO:
 2. check collision and stop on collsion 
 3. check if the target angle is reached. break
 """
-
-
 def step_forward(env, x0, env_object_ids, end_effector="right_hand"):
     human = env.human
     # p.setJointMotorControlArray(human.body, jointIndices=human.controllable_joint_indices,
@@ -305,7 +302,7 @@ def cal_dist_to_bedside(env, end_effector):
     side = "right" if ee_pos[0] > bed_pos[0] else "left"
     bed_xx, bed_yy, bed_zz = bed_bb[1] if side == "right" else bed_bb[0]
     bed_xx = bed_xx + 0.1 if side == "right" else bed_xx - 0.1
-    print ('bed size: ', np.array(bed_bb[1]) - np.array(bed_bb[0]))
+    # print ('bed size: ', np.array(bed_bb[1]) - np.array(bed_bb[0]))
     # print ("bed_xx: ", bed_xx, "ee_pos: ", ee_pos, "side: ", side)
     if side == "right":
         return 0 if ee_pos[0] > bed_xx else abs(ee_pos[0] - bed_xx)
@@ -359,7 +356,7 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
                 + w[3] * torque / max_dynamics.torque + w[4] * mid_angle_displacement + w[5] * reba/max_reba +  w[6] * dist_to_bedside
                 + w[7] * wr_offset/max_wr_offset) / np.sum(w)
             # check angle
-            cost += 100 * (wr_offset > object_config.limits[0])
+            # cost += 100 * (wr_offset > object_config.limits[0])
 
         elif object_config.object_type in [HandoverObject.CUP, HandoverObject.CANE]:
             # cal wrist orient (cup and cane)
@@ -385,7 +382,7 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
     if robot_ik_mode:
         if not has_valid_robot_ik:
             cost += 1000
-            print('No valid ik solution found ', robot_dist_to_target)
+            # print('No valid ik solution found ', robot_dist_to_target)
             cost+=100* robot_dist_to_target
         if robot_penetrations:
             # flatten list
@@ -808,9 +805,6 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
                 # cal dist to bedside
                 dist_to_bedside = cal_dist_to_bedside(env, end_effector)
                 if robot_ik: # solve robot ik when doing training
-                    # if new_self_collision:
-                    #     has_valid_robot_ik = False
-                    # else:
                     has_valid_robot_ik,_, _, _, _, robot_penetration, robot_dist_to_target, _= find_robot_ik_solution(env, end_effector, handover_obj)
                 else:
                     ee_collision_body_pos, ee_collision_body_orient = human.get_ee_collision_shape_pos_orient(end_effector, ee_collision_radius)
@@ -896,7 +890,7 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
             'pelvis': human.get_pos_orient(human.human_dict.get_fixed_joint_id("pelvis"), center_of_mass=True),
             "ee": {
                 'original': human.get_ee_pos_orient(end_effector),
-                'transform': translate_wrt_human_pelvis(human, human.get_ee_pos_orient(end_effector)[0], human.get_ee_pos_orient(end_effector)[1]),
+                'transform': translate_wrt_human_pelvis(human, np.array(human.get_ee_pos_orient(end_effector)[0]), np.array(human.get_ee_pos_orient(end_effector)[1])),
             },
             "ik_target": {
                 'original': [np.array(ik_target_pos), np.array(gripper_orient)],# [pos, orient
@@ -926,10 +920,10 @@ def translate_to_realworld(cord):
     bottom_left_tag = [-0.365, -1.1, 0.7]
     return np.array(cord) - np.array(bottom_left_tag)
 
-def translate_wrt_human_pelvis(human, pos, orient = None):
-    # print ("pos: ", pos, "orient: ", orient)
+def translate_wrt_human_pelvis(human, pos, orient):
+    print ("pos: ", pos, "orient: ", orient)
     pelvis_pos, pelvis_orient = human.get_pos_orient(human.human_dict.get_fixed_joint_id("pelvis"), center_of_mass=True)
-    print("pelvis_pos: ", pelvis_pos, "pelvis_orient: ", pelvis_orient)
+    # print("pelvis_pos: ", pelvis_pos, "pelvis_orient: ", pelvis_orient)
     pelvis_pos_inv, pelvis_orient_inv = p.invertTransform(pelvis_pos, pelvis_orient, physicsClientId=human.id)
     if len(orient) ==0:
         orient = [0, 0, 0, 1]
@@ -1006,15 +1000,30 @@ def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik:bool
             handover_obj = key.split("-")[0]
             robot_ik = key.split("-")[1] == "robot_ik"
             print ("handover obj: ", handover_obj, "robot_ik: ", robot_ik)
-            render_result(env_name, action,  person_id, smpl_file, handover_obj, robot_ik)
+            robot_pose, robot_joint_angles = None, None
+            try:
+                robot_pose = action["wrt_pelvis"]["robot"]['original']
+                robot_joint_angles = action["wrt_pelvis"]["robot_joint_angles"]
+            except Exception as e:
+                print ("no robot pose found")
+
+            render_result(env_name, action,  person_id, smpl_file, handover_obj, robot_ik, robot_pose, robot_joint_angles)
     else:
         key = get_actions_dict_key(handover_obj, robot_ik)
         if key not in actions:
             raise Exception("no action found for ", key)
-        render_result(env_name, actions[key], person_id, smpl_file, handover_obj, robot_ik)
+        action = actions[key]
+        robot_pose, robot_joint_angles = None, None
+
+        try:
+            robot_pose = action["wrt_pelvis"]["robot"]['original']
+            robot_joint_angles = action["wrt_pelvis"]["robot_joint_angles"]
+        except Exception as e:
+            print("no robot pose found")
+        render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik,  robot_pose, robot_joint_angles)
 
 
-def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik:bool):
+def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik:bool, robot_pose=None, robot_joint_angles=None ):
     env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=handover_obj, person_id=person_id)
     env.render()  # need to call reset after render
     env.reset()
@@ -1025,7 +1034,16 @@ def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik
     env.human.reset_controllable_joints(action["end_effector"])
     env.human.set_joint_angles(env.human.controllable_joint_indices, action["solution"])
     if robot_ik:
-        find_robot_ik_solution(env, action["end_effector"], handover_obj)
+        print ("robot pose: ", robot_pose, "robot_joint_angles: ", robot_joint_angles)
+        if  robot_pose is None or robot_joint_angles is None:
+            find_robot_ik_solution(env, action["end_effector"], handover_obj)
+        else:
+            # TODO: fix this
+            # find_robot_ik_solution(env, action["end_effector"], handover_obj)
+            base_pos, base_orient, side = find_robot_start_pos_orient(env, action["end_effector"])
+            env.robot.set_base_pos_orient(robot_pose[0], robot_pose[1])
+            env.robot.set_joint_angles(env.robot.right_arm_joint_indices if side=='right' else env.robot.left_arm_joint_indices, robot_joint_angles)
+            env.tool.reset_pos_orient()
         # robot_settings = action["robot_settings"]
         # env.robot.set_base_pos_orient(robot_settings["base_pos"], robot_settings["base_orient"])
         # env.robot.set_joint_angles(env.robot.controllable_joint_indices, robot_settings["joint_angles"])

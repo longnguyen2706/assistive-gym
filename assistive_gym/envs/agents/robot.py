@@ -353,7 +353,7 @@ class Robot(Agent):
             # Randomize base position and orientation
             random_pos = np.array(
                 [self.np_random.uniform(-random_position if right_side else 0, 0 if right_side else random_position),
-                 self.np_random.uniform(-random_position, random_position), 0])
+                 self.np_random.uniform(-random_position*2, random_position), 0])
             random_orientation = self.get_quaternion([base_euler_orient[0], base_euler_orient[1],
                                                       base_euler_orient[2] + np.deg2rad(
                                                           self.np_random.uniform(-random_rotation, random_rotation))])
@@ -444,8 +444,8 @@ class Robot(Agent):
 
             human.set_joint_angles(human.controllable_joint_indices, human_angles)
 
-        if best_position is None:
-            return None, None, None
+        if best_position is None: # TODO: beter handling
+            return np.array(base_pos)+ random_pos, random_orientation, start_joint_poses # changed from None, None, None
         # Reset state in case anything was perturbed
         human.set_joint_angles(human.controllable_joint_indices, human_angles)
 
@@ -455,7 +455,7 @@ class Robot(Agent):
         for i, arm in enumerate(arms):
             self.set_joint_angles(self.right_arm_joint_indices if arm == 'right' else self.left_arm_joint_indices,
                                   best_start_joint_poses[i])
-        return best_position, best_orientation, best_start_joint_poses
+        return np.array(base_pos)+ best_position, best_orientation, best_start_joint_poses
 
     def joint_limited_weighting(self, q, lower_limits, upper_limits):
         phi = 0.5
