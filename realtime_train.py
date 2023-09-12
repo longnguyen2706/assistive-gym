@@ -38,15 +38,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Util script for human urdf generation and training')
     parser.add_argument('--ref-urdf-file', default='assistive_gym/envs/assets/human/ref_mesh.urdf',  help='Path to reference urdf file')
     parser.add_argument('--person-id', default='mane', help='Person id')
-    parser.add_argument('--smpl-file', default='/nethome/nnagarathinam6/Documents/joint_reaching_evaluation/BodyPressureTRI/networksscan5.pkl',
+    parser.add_argument('--smpl-file', default='/nethome/nnagarathinam6/Documents/joint_reaching_evaluation/BodyPressureTRI/networksscan7.pkl',
                         help='Path to smpl file')
     parser.add_argument('--gender', default='male', help='Gender')
     args = parser.parse_args()
     # if not check_urdf_exist(args.person_id):
     #     generate_urdf(args)
     generate_urdf(args)
-    _, _, realworld = train('HumanComfort-v1', 1001, args.smpl_file, args.person_id, 'right_hand',
-          'trained_models', True, False, True, 'pill')
-    print(realworld['wrt_pelvis'])
+    # _, _, realworld = train('HumanComfort-v1', 1001, args.smpl_file, args.person_id, 'right_hand',
+    #       'trained_models', True, False, True, 'pill')
+    # print(realworld['wrt_pelvis'])
 
-    # render('HumanComfort-v1', args.person_id, args.smpl_file, 'trained_models', 'pill', True)
+    render('HumanComfort-v1', args.person_id, args.smpl_file, 'trained_models', 'pill', True)
