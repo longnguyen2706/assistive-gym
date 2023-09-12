@@ -499,8 +499,10 @@ class HumanUrdf(Agent):
                 collision_pairs.update(check_collision(self.body, env_body))
         else:
             joint_indices = self.human_dict.get_real_link_indices(end_effector)
+            # print("joint_indices: ", joint_indices)
             for env_body in body_ids:
                 pairs = check_collision(self.body, env_body)
+                # print ("pairs: ", pairs)
                 for pair in pairs:
                     if  pair[0] in joint_indices or pair[1] in joint_indices:
                         collision_pairs.add( pair)

@@ -2,6 +2,7 @@ import concurrent
 import os, sys, multiprocessing, gym, ray, shutil, argparse, importlib, glob
 import pickle
 import time
+from copy import deepcopy
 from datetime import datetime
 from enum import Enum
 
@@ -23,13 +24,14 @@ from experimental.urdf_name_resolver import get_urdf_filepath, get_urdf_folderpa
 LOG = get_logger()
 
 class SubEnvProcess(multiprocessing.Process):
-    def __init__(self, task_queue, result_queue, env_config, conf):
+    def __init__(self, id, task_queue, result_queue, env_config, conf):
         super().__init__()
         self.task_queue = task_queue
         self.result_queue = result_queue
         self.env_config = env_config
         self.env = None
         self.conf = conf
+        self.debug_id  = id
 
     def run(self):
         while True:
@@ -45,9 +47,15 @@ class SubEnvProcess(multiprocessing.Process):
             env_name, person_id, smpl_file, handover_obj, coop = self.env_config
             self.env = make_env(env_name, person_id, smpl_file, handover_obj, coop)
             # self.env.render()
+            # self.env.render()
             self.env.reset()
-        print ('joint_angles: ', joint_angles)
-        robot_ik, env_object_ids, original_info, max_dynamics, handover_obj, handover_obj_config = self.conf
+        # print ('joint_angles: ', joint_angles)
+        robot_ik, _, original_info, max_dynamics, handover_obj, handover_obj_config = self.conf
+        # print (handover_obj_config.end_effector)
+        original_info, max_dynamics = deepcopy(original_info), deepcopy(max_dynamics)
+
+        env_object_ids = [self.env.furniture.body, self.env.plane.body]
+        # print ("pid: ", self.debug_id, env_object_ids, 'original info', original_info)
         conf = (self.env, np.array(joint_angles), robot_ik, env_object_ids, original_info, max_dynamics, handover_obj, handover_obj_config)
         cost, m, dist, energy, torque, reba = do_search(conf)
         return (joint_angles, cost, m, dist, energy, torque, reba)
@@ -74,12 +82,13 @@ class MainEnvProcess(multiprocessing.Process):
             env_name, person_id, smpl_file, handover_obj, coop = self.env_config
             self.env = make_env(env_name, person_id, smpl_file, handover_obj, coop)
 
+
         type, data = task
         if type == 'init':
             print('init main env')
             return init_main_env(self.env, 'cane')
         if type == 'render_step':
-            print ('render')
+            # print ('render')
             env, human, robot = self.env, self.env.human, self.env.robot
             human.set_joint_angles(human.controllable_joint_indices, data)
             has_valid_robot_ik, _, _, _, _, robot_penetration, robot_dist_to_target = find_robot_ik_solution(env,
@@ -93,14 +102,37 @@ class MainEnvProcess(multiprocessing.Process):
         # return (cost, m, dist, energy, torque, reba)
 
 def init_main_env(env, handover_obj):
-    start_time = time.time()
+    def translate_to_realworld(env, cord):
+        def find_corner(env):
+            bed = env.furniture
+            bed_pos, bed_orient = p.getBasePositionAndOrientation(bed.body, physicsClientId=env.id)
+            # get aabb
+            bed_aabb = p.getAABB(bed.body, physicsClientId=env.id)
+            print ('bed_aabb: ', bed_aabb)
+            p.setPhysicsEngineParameter(contactBreakingThreshold=0.00001)
+            bed_size = np.array(bed_aabb[1]) - np.array(bed_aabb[0])
+            # draw aabb box
+            p.addUserDebugLine(bed_aabb[0], bed_aabb[0] + np.array([bed_size[0], 0, 0]), [1, 0, 0], 5, physicsClientId=env.id)
+            p.addUserDebugLine(bed_aabb[0], bed_aabb[0] + np.array([0, bed_size[1], 0]), [0, 1, 0], 5, physicsClientId=env.id)
+            p.addUserDebugLine(bed_aabb[0], bed_aabb[0] + np.array([0, 0, bed_size[2]]), [0, 0, 1], 5, physicsClientId=env.id)
+
+            # some hardcode offset - to find the corner
+            corner = np.array(bed_aabb[0]) + np.array([0.5, 0.5, 0])  # TODO: change this
+            # draw corner
+            p.addUserDebugLine(corner, corner + np.array([0, 0, 1]), [1, 0, 0], 5, physicsClientId=env.id)
+            return corner
+
+        corner = find_corner(env)
+        return np.array(cord) - corner
+
     # # init
     # print ("person_id: ", person_id, smpl_file)
     if render:
         env.render()
     env.reset()
     # p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_file), [0, 0, 1], textColorRGB=[1, 0, 0])
-
+    translate_to_realworld(env, [0, 0, 0])
+    # time.sleep(100)
     human, robot, furniture, plane = env.human, env.robot, env.furniture, env.plane
 
     # choose end effector
@@ -121,6 +153,7 @@ def init_main_env(env, handover_obj):
     original_ee_pos = human.get_pos_orient(human.human_dict.get_dammy_joint_id(end_effector), center_of_mass=True)[0]
     draw_point(original_ee_pos, size=0.01, color=[0, 1, 0, 1])
     original_info.original_ee_pos = original_ee_pos  # TODO: refactor
+
 
     return original_info, max_dynamics, env_object_ids, human_link_robot_collision, end_effector, handover_obj_config, human.controllable_joint_lower_limits, human.controllable_joint_upper_limits
 class OriginalHumanInfo:
@@ -187,7 +220,7 @@ OBJECT_PALM_OFFSET = {
     "cane": 0.05
 }
 
-NUM_WORKERS = 20
+NUM_WORKERS = 12
 
 class HandoverObjectConfig:
     def __init__(self, object_type: HandoverObject, weights: list, limits: list, end_effector: Optional[str]):
@@ -348,8 +381,8 @@ def step_forward(env, x0, env_object_ids, end_effector="right_hand"):
         # print ("cur_joint_angles: ", cur_joint_angles)
         angle_dist = cal_angle_diff(cur_joint_angles, x0)
         count += 1
-        if count_new_collision(original_self_collisions, self_collision, human, end_effector, COLLISION_PENETRATION_THRESHOLD["self_collision"]) or count_new_collision(original_env_collisions,
-                                                                                                              env_collision, human, end_effector, COLLISION_PENETRATION_THRESHOLD["env_collision"]):
+        if find_new_penetrations(original_self_collisions, self_collision, human, end_effector, COLLISION_PENETRATION_THRESHOLD["self_collision"]) or find_new_penetrations(original_env_collisions,
+                                                                                                                                                                            env_collision, human, end_effector, COLLISION_PENETRATION_THRESHOLD["env_collision"]):
             LOG.info(f"{bcolors.FAIL}sim step: {count}, collision{bcolors.ENDC}")
             return angle_dist, self_collision, env_collision, True
 
@@ -369,7 +402,7 @@ def cal_angle_diff(cur, target):
 def cal_mid_angle(lower_bounds, upper_bounds):
     return (np.array(lower_bounds) + np.array(upper_bounds)) / 2
 
-def count_new_collision(old_collisions: Set, new_collisions: Set, human, end_effector, penetration_threshold) -> int:
+def find_new_penetrations(old_collisions: Set, new_collisions: Set, human, end_effector, penetration_threshold) -> int:
     # TODO: remove magic number (might need to check why self colllision happen in such case)
     # TODO: return number of collisions instead and use that to scale the cost
     link_ids = set(human.human_dict.get_real_link_indices(end_effector))
@@ -381,6 +414,7 @@ def count_new_collision(old_collisions: Set, new_collisions: Set, human, end_eff
         initial_collision_map[(o[0], o[1])]= o[2]
 
     collision_set = set() # list of collision that is new or has deep penetration
+    adjusted_penetrations = []
     for collision in new_collisions:
         link1, link2, penetration = collision
         if not link1 in link_ids and not link2 in link_ids:
@@ -388,16 +422,18 @@ def count_new_collision(old_collisions: Set, new_collisions: Set, human, end_eff
         # TODO: fix it, since link1 and link2 in collision from different object, so there is a slim chance of collision
         if (link1, link2) not in initial_collision_map or (link2, link1) not in initial_collision_map: #new collision:
             if abs(penetration) > penetration_threshold["new"]:  # magic number. we have penetration between spine4 and shoulder in pose 5
-                print ("new collision: ", collision)
+                # print ("new collision: ", collision)
                 collision_set.add((collision[0], collision[1]))
+                adjusted_penetrations.append(abs(penetration) - penetration_threshold["new"])
         else:
             # collision in old collision
             initial_depth = initial_collision_map[(link1, link2)] if (link1, link2) in initial_collision_map else initial_collision_map[(link2, link1)]
             if abs(penetration) > max(penetration_threshold["old"], initial_depth): # magic number. we have penetration between spine4 and shoulder in pose 5
-                print ("old collision with deep penetration: ", collision)
+                # print ("old collision with deep penetration: ", collision)
                 collision_set.add((link1, link2))
+                adjusted_penetrations.append(abs(penetration) - max(penetration_threshold["old"], initial_depth))
 
-    return len(collision_set)
+    return adjusted_penetrations
 
 def cal_dist_to_bedside(env, end_effector):
     human, bed = env.human, env.furniture
@@ -417,7 +453,7 @@ def cal_dist_to_bedside(env, end_effector):
 # TODO: better refactoring for seperating robot-ik/ non robot ik mode
 def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.ndarray,
             original_info: OriginalHumanInfo,
-            max_dynamics: MaximumHumanDynamics,  new_self_collision, new_env_collision, has_valid_robot_ik, robot_penetrations, robot_dist_to_target, angle_dist,
+            max_dynamics: MaximumHumanDynamics,  new_self_penetrations, new_env_penetrations, has_valid_robot_ik, robot_penetrations, robot_dist_to_target, angle_dist,
             object_config: Optional[HandoverObjectConfig], robot_ik_mode: bool, dist_to_bedside: float):
 
     # cal energy
@@ -443,7 +479,7 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
     reba = human.get_reba_score(end_effector=ee_name)
     max_reba = 9.0
 
-    w = [1, 1, 4, 1, 1, 0, 0]
+    w = [2, 2, 8, 2, 2, 0, 0]
     cost = None
 
     if not object_config: # no object handover case
@@ -462,7 +498,7 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
                 + w[3] * torque / max_dynamics.torque + w[4] * mid_angle_displacement + w[5] * reba/max_reba +  w[6] * dist_to_bedside
                 + w[7] * wr_offset/max_wr_offset) / np.sum(w)
             # check angle
-            cost += 100 * (wr_offset > object_config.limits[0])
+            # cost += 100 * (wr_offset > object_config.limits[0])
 
         elif object_config.object_type in [HandoverObject.CUP, HandoverObject.CANE]:
             # cal wrist orient (cup and cane)
@@ -480,21 +516,27 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
                 if object_config.object_type == HandoverObject.CANE:
                     cost += 100 * human.ray_cast_parallel(end_effector=ee_name)
 
-    if new_self_collision:
-        cost += 100 * new_self_collision
-    if new_env_collision:
-        cost += 100 * new_env_collision
-
+    self_penetration_cost, env_penetration_cost, ik_cost, robot_penetration_cost = 0, 0, 0, 0
+    if new_self_penetrations:
+        self_penetration_cost = 10* sum(new_self_penetrations)
+        cost += self_penetration_cost
+        # cost += 10*len(new_self_penetrations)
+    if new_env_penetrations:
+        env_penetration_cost = 10* sum(new_env_penetrations)
+        cost += env_penetration_cost
     if robot_ik_mode:
         if not has_valid_robot_ik:
             # cost += 1000
             # print('No valid ik solution found ', robot_dist_to_target)
-            cost+=100* robot_dist_to_target
+            ik_cost = robot_dist_to_target
+            cost+=ik_cost
         if robot_penetrations:
             # flatten list
             robot_penetrations = [abs(item) for sublist in robot_penetrations for item in sublist]
-            # print(robot_penetrations)
-            cost +=10*sum(robot_penetrations)
+            # print(robot_penetrations)]
+            robot_penetration_cost = 10* sum(robot_penetrations)
+            cost+=robot_penetration_cost
+    print('cost: ', cost, 'self_penetration_cost: ', self_penetration_cost, 'env_penetration_cost: ', env_penetration_cost, 'ik_cost: ', ik_cost, 'robot_penetration_cost: ', robot_penetration_cost)
 
     return cost, manipulibility, dist, energy_final, torque, reba
 
@@ -578,11 +620,11 @@ def max_energy_cost_fn(human, end_effector, original_link_positions):
 
 def detect_collisions(original_info: OriginalHumanInfo, self_collisions, env_collisions, human, end_effector):
     # check collision
-    new_self_collision = count_new_collision(original_info.self_collisions, self_collisions, human, end_effector, COLLISION_PENETRATION_THRESHOLD["self_collision"])
-    new_env_collision = count_new_collision(original_info.env_collisions, env_collisions, human, end_effector, COLLISION_PENETRATION_THRESHOLD["env_collision"])
-    LOG.debug(f"self collision: {new_self_collision}, env collision: {new_env_collision}")
-
-    return new_self_collision, new_env_collision
+    new_self_penetrations = find_new_penetrations(original_info.self_collisions, self_collisions, human, end_effector, COLLISION_PENETRATION_THRESHOLD["self_collision"])
+    new_env_penetrations = find_new_penetrations(original_info.env_collisions, env_collisions, human, end_effector, COLLISION_PENETRATION_THRESHOLD["env_collision"])
+    LOG.info(f"self penetration: {new_self_penetrations}, env penetration: {new_env_penetrations}")
+    # print(f"self penetration: {new_self_penetrations}, env penetration: {new_env_penetrations}")
+    return new_self_penetrations, new_env_penetrations
 
 
 def find_max_val(human, cost_fn, original_joint_angles, original_link_positions, end_effector="right_hand"):
@@ -637,10 +679,10 @@ def find_robot_start_pos_orient(env, end_effector="right_hand"):
 
     # new pos: side of the bed, near end effector, with z axis unchanged
     if side == "right":
-        pos = (bed_xx + robot_x_size / 2 + 0, ee_pos[1] + robot_y_size / 2, base_pos[2]) # TODO: change back to original 0.3
+        pos = (bed_xx + robot_x_size / 2 + 0.3, ee_pos[1], base_pos[2]) # TODO: change back to original 0.3
         orient = env.robot.get_quaternion([0, 0, -np.pi / 2])
     else:  # left
-        pos = (bed_xx - robot_x_size / 2 - 0, ee_pos[1] + robot_y_size/2, base_pos[2])
+        pos = (bed_xx - robot_x_size / 2 - 0.3, ee_pos[1], base_pos[2])
         orient = env.robot.get_quaternion([0, 0, np.pi / 2])
     return pos, orient, side
 
@@ -767,14 +809,15 @@ def get_handover_object_config(object_name, env) -> Optional[HandoverObjectConfi
         return None
 
     object_type = HandoverObject.from_string(object_name)
+    ee = 'left_hand'
     if object_name == "pill":
-        ee = choose_upward_hand(env.human)
+        # ee = choose_upward_hand(env.human)
         return HandoverObjectConfig(object_type, weights=[0], limits=[0.27], end_effector=ee) # original = 6
     elif object_name == "cup":
-        ee = choose_closer_bedside_hand(env)
+        # ee = choose_closer_bedside_hand(env)
         return HandoverObjectConfig(object_type, weights=[0], limits=[0.23], end_effector=ee)# original = 6
     elif object_name == "cane":
-        ee = choose_closer_bedside_hand(env)
+        # ee = choose_closer_bedside_hand(env)
         return HandoverObjectConfig(object_type, weights=[0], limits=[0.23], end_effector=ee)# original = 6
 
 
@@ -842,12 +885,15 @@ def do_search(conf):
         human, end_effector = env.human, handover_obj_config.end_effector
         # print("s: ", s, 'human', human.controllable_joint_indices, 'end_effector', end_effector, 'handover_obj', handover_obj)
         # set angle directly
+        human.reset_controllable_joints(end_effector)
         human.set_joint_angles(human.controllable_joint_indices, s)  # force set joint angle
 
         # check collision
-        env_collisions, self_collisions = human.check_env_collision(env_object_ids), human.check_self_collision()
-        new_self_collision, new_env_collision = detect_collisions(original_info, self_collisions, env_collisions, human,
+        env_collisions, self_collisions = human.check_env_collision(env_object_ids, end_effector), human.check_self_collision(end_effector)
+        new_self_penetrations, new_env_penetrations = detect_collisions(original_info, self_collisions, env_collisions, human,
                                                                   end_effector)
+        # print ('end_effector', end_effector)
+        # move_robot(env)
         # move_robot(env)
         # cal dist to bedside
         dist_to_bedside = cal_dist_to_bedside(env, end_effector)
@@ -866,7 +912,7 @@ def do_search(conf):
             has_valid_robot_ik = True
 
         cost, m, dist, energy, torque, reba = cost_fn(human, end_effector, s, original_info.original_ee_pos, original_info,
-                                                      max_dynamics, new_self_collision, new_env_collision,
+                                                      max_dynamics, new_self_penetrations, new_env_penetrations,
                                                       has_valid_robot_ik, robot_penetration, robot_dist_to_target,
                                                       0, handover_obj_config, robot_ik, dist_to_bedside)
         # restore joint angle
@@ -891,6 +937,8 @@ def do_search(conf):
 #     results = pool.map(make_env, configs)
 #     for num, result in enumerate(results):
 #         print('Done training for {} {}'.format(num, result.id))
+
+
 
 
 
@@ -965,7 +1013,7 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
     search_result_queue = multiprocessing.Queue()
     env_config = (env_name, person_id, smpl_file, handover_obj, True)
     search_config = ( robot_ik, env_object_ids, original_info, max_dynamics, handover_obj, handover_obj_config)
-    sub_env_workers = [SubEnvProcess(search_task_queue, search_result_queue, env_config, search_config) for _ in range(NUM_WORKERS)]
+    sub_env_workers = [SubEnvProcess(id, search_task_queue, search_result_queue, env_config, search_config) for id in range(NUM_WORKERS)]
     for w in sub_env_workers:
         w.start()
 
@@ -984,7 +1032,7 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
         # Enqueue tasks
         for s in solutions:
             search_task_queue.put(s)
-
+        print("solutions size: ", len(solutions))
         # Collect results
         best_cost = float('inf')
         best_s = None
@@ -1038,11 +1086,10 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
     for w in sub_env_workers:
         w.join()
     LOG.info(
-        f"{bcolors.OKBLUE} Best cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
+        f"{bcolors.OKBLUE} Best cost: {optimizer.best.f}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
 
     main_task_queue.put(('render_step', optimizer.best.x))
     main_result_queue.get()
-    time.sleep(10)
     main_task_queue.put(None)
     main_env_process.join()
     # action = {

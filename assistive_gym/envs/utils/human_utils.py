@@ -136,7 +136,7 @@ def change_dynamic_properties(human_id, link_ids):
                          angularDamping=1,
                          contactStiffness=1e3,
                          # contact stiffness need to be large otherwise the body will penetrate the ground
-                         contactDamping=1e10)  # contact damping need to be much larger than contact stiffness so that no bounciness
+                         contactDamping=1e6)  # 1e10contact damping need to be much larger than contact stiffness so that no bounciness
 
 
 def check_collision(body_id, other_body_id, include_penetration=True):
