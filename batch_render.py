@@ -4,7 +4,7 @@ from assistive_gym.train import render, render_pose
 
 #### Define dynamic configs ####
 # PERSON_IDS = [ 'p002']
-# SMPL_FILES = ['s05']
+SMPL_FILES = ['s01']
 # PERSON_IDS = ['p002']
 # SMPL_FILES = ['s05', 's20', 's45']
 # # SMPL_FILES = [ 's16', 's17', 's18', 's19', 's20']
@@ -13,9 +13,9 @@ from assistive_gym.train import render, render_pose
 # SMPL_FILES = [ 's01','s19', 's40']
 # PERSON_IDS = ['p001', 'p002', 'p003', 'p004', 'p005']
 # OBJECTS = ['cane', 'cup', 'pill']
-SMPL_FILES = [ 's01','s19', 's45']
-PERSON_IDS = ['p002' ]
-OBJECTS = ['cane', 'cup', 'pill']
+# SMPL_FILES = [ 's01','s19', 's45']
+PERSON_IDS = ['p001', 'p002' ]
+OBJECTS = ['cup']
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
 ENV = "HumanComfort-v1"
