@@ -180,17 +180,18 @@ def find_robot_start_pos_orient(env, end_effector="right_hand", initial_side = N
         # find robot base and bb
         robot_bb = p.getAABB(env.robot.body, physicsClientId=env.id)
         robot_x_size, robot_y_size, robot_z_size = np.subtract(robot_bb[1], robot_bb[0])
+        robot_x_size, robot_y_size, robot_z_size = np.subtract(robot_bb[1], robot_bb[0])
         # print("robot: ", robot_bb)
         base_pos = p.getBasePositionAndOrientation(env.robot.body, physicsClientId=env.id)[0]
 
     # new pos: side of the bed, near end effector, with z axis unchanged
     if side == "right":
         pos = (
-            bed_xx + robot_x_size / 2 + 0.3, ee_pos[1] + robot_y_size / 2,
+            bed_xx + robot_x_size / 2 + 0.3, ee_pos[1] ,
             base_pos[2])  # TODO: change back to original 0.3
         orient = env.robot.get_quaternion([0, 0, -np.pi / 2])
     else:  # left
-        pos = (bed_xx - robot_x_size / 2 - 0.3, ee_pos[1] + robot_y_size / 2, base_pos[2])
+        pos = ( bed_xx - robot_x_size / 2 - 0.3, ee_pos[1], base_pos[2])
         orient = env.robot.get_quaternion([0, 0, np.pi / 2])
     return pos, orient, side
 
@@ -377,19 +378,19 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
         env_penetration_cost = 10 * sum(new_env_penetrations)
         cost += env_penetration_cost
     if robot_ik_mode:
-        if not has_valid_robot_ik:
+        # if not has_valid_robot_ik:
             # cost += 1000
             # print('No valid ik solution found ', robot_dist_to_target)
-            ik_cost = robot_dist_to_target
-            cost += ik_cost
+        ik_cost = 10*robot_dist_to_target
+        cost += ik_cost
         if robot_penetrations:
             # flatten list
             robot_penetrations = [abs(item) for sublist in robot_penetrations for item in sublist]
             # print(robot_penetrations)]
-            robot_penetration_cost = 10 * sum(robot_penetrations)
+            robot_penetration_cost = 5 * sum(robot_penetrations)
             cost += robot_penetration_cost
     print('cost: ', cost, 'self_penetration_cost: ', self_penetration_cost, 'env_penetration_cost: ',
-          env_penetration_cost, 'ik_cost: ', ik_cost, 'robot_penetration_cost: ', robot_penetration_cost)
+    env_penetration_cost, 'ik_cost: ', ik_cost, 'robot_penetration_cost: ', robot_penetration_cost)
 
     return cost, manipulibility, dist, energy_final, torque
 

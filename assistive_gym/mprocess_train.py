@@ -81,10 +81,11 @@ class MainEnvProcess(multiprocessing.Process):
         if type == 'render_step':
             # print ('render')
             env, human, robot = self.env, self.env.human, self.env.robot
-            human.set_joint_angles(human.controllable_joint_indices, angle)
+
             # print('robot_setting: ', robot_setting.robot_side, robot_setting.robot_joint_angles)
             if len(robot_setting.robot_joint_angles) == 0:
                 return False
+            human.set_joint_angles(human.controllable_joint_indices, angle)
             render_robot(env, robot_setting)
             return True
 
@@ -228,10 +229,10 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
     x0 = np.array(original_info.angles)
     optimizer = init_optimizer(x0, 0.1, controllable_joint_lower_limits, controllable_joint_upper_limits)
 
+    best_cost, best_angle, best_robot_setting = float('inf'), None, None
     while timestep < MAX_ITERATION and not optimizer.stop():
         timestep += 1
         solutions = optimizer.ask()
-        best_cost, best_angle, best_robot_setting = float('inf'), None, None
         fitness_values, dists, manipus, energy_changes, torques = [], [], [], [], []
 
         for s in solutions:
@@ -239,7 +240,7 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
 
         for _ in solutions:
             result = sub_env_result_queue.get()
-            s, cost, dist, m, energy, torque, robot_setting = result
+            joint_angles, cost, dist, m, energy, torque, robot_setting = result
             # print (result)
             fitness_values.append(cost)
             dists.append(dist)
@@ -248,10 +249,10 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
             torques.append(torque)
             if cost < best_cost:
                 best_cost = cost
-                best_angle = s
+                best_angle = joint_angles
                 best_robot_setting = robot_setting
-            print(s, robot_setting)
-            main_env_task_queue.put(('render_step', s, robot_setting))
+            print('best_cost: ', best_cost)
+            main_env_task_queue.put(('render_step', joint_angles, robot_setting))
             main_env_result_queue.get()
         optimizer.tell(solutions, fitness_values)
 
@@ -270,7 +271,7 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
 
     main_env_result_queue.get()
     LOG.info(
-        f"{bcolors.OKBLUE} Best cost: {optimizer.best.f} {torque}{bcolors.ENDC}")
+        f"{bcolors.OKBLUE} Best cost: {optimizer.best.f} {best_cost} {bcolors.ENDC}")
     time.sleep(100)
     main_env_task_queue.put(None)
     main_env_process.join()
