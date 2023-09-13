@@ -14,6 +14,7 @@ from torch.utils.hipify.hipify_python import bcolors
 
 from assistive_gym.envs.utils.dto import HandoverObject, HandoverObjectConfig, MaximumHumanDynamics, OriginalHumanInfo
 from assistive_gym.envs.utils.log_utils import get_logger
+from assistive_gym.envs.utils.plot_utils import plot_cmaes_metrics, plot_mean_evolution
 from assistive_gym.envs.utils.point_utils import fibonacci_evenly_sampling_range_sphere, eulidean_distance
 from experimental.urdf_name_resolver import get_urdf_filepath, get_urdf_folderpath
 
@@ -788,7 +789,7 @@ def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik
         if robot_pose is None or robot_joint_angles is None:
             find_robot_ik_solution(env, action["end_effector"], handover_obj)
         else:
-            # TODO: fix this
+            # TODO: refactor - render_robot in mprocess_train
             # find_robot_ik_solution(env, action["end_effector"], handover_obj)
             base_pos, base_orient, side = find_robot_start_pos_orient(env, action["end_effector"])
             env.robot.set_base_pos_orient(robot_pose[0], robot_pose[1])
@@ -796,14 +797,9 @@ def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik
                 env.robot.right_arm_joint_indices if side == 'right' else env.robot.left_arm_joint_indices,
                 robot_joint_angles)
             env.tool.reset_pos_orient()
-        # robot_settings = action["robot_settings"]
-        # env.robot.set_base_pos_orient(robot_settings["base_pos"], robot_settings["base_orient"])
-        # env.robot.set_joint_angles(env.robot.controllable_joint_indices, robot_settings["joint_angles"])
-        # env.tool.reset_pos_orient()
-    # plot_cmaes_metrics(action['mean_cost'], action['mean_dist'], action['mean_m'], action['mean_energy'],
-    #                    action['mean_torque'])
-    # plot_mean_evolution(action['mean_evolution'])
-
+    plot_cmaes_metrics(action['mean_cost'], action['mean_dist'], action['mean_m'], action['mean_energy'],
+                       action['mean_torque'])
+    plot_mean_evolution(action['mean_evolution'])
     while True:
         keys = p.getKeyboardEvents()
         if ord('q') in keys:

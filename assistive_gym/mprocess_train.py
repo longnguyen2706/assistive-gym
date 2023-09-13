@@ -366,95 +366,6 @@ def save_train_result(save_dir, env_name, person_id, smpl_file, actions):
     pickle.dump(actions, open(os.path.join(save_dir, "actions.pkl"), "wb"))
 
 
-def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik: bool):
-    print("rendering person {} and smpl file {}".format(person_id, smpl_file))
-
-    save_dir = get_save_dir(save_dir, env_name, person_id, smpl_file)
-    actions = pickle.load(open(os.path.join(save_dir, "actions.pkl"), "rb"))
-    if not actions:
-        raise Exception("no actions found for person {} and smpl file {}".format(person_id, smpl_file))
-    if handover_obj == "all":
-        for key in actions.keys():
-            action = actions[key]
-            print("key: ", key)
-            handover_obj = key.split("-")[0]
-            robot_ik = key.split("-")[1] == "robot_ik"
-            print("handover obj: ", handover_obj, "robot_ik: ", robot_ik)
-            robot_pose, robot_joint_angles = None, None
-            try:
-                robot_pose = action["wrt_pelvis"]["robot"]['original']
-                robot_joint_angles = action["wrt_pelvis"]["robot_joint_angles"]
-            except Exception as e:
-                print("no robot pose found")
-
-            render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik, robot_pose,
-                          robot_joint_angles)
-    else:
-        key = get_actions_dict_key(handover_obj, robot_ik)
-        if key not in actions:
-            raise Exception("no action found for ", key)
-        action = actions[key]
-        robot_pose, robot_joint_angles = None, None
-
-        try:
-            robot_pose = action["wrt_pelvis"]["robot"]['original']
-            robot_joint_angles = action["wrt_pelvis"]["robot_joint_angles"]
-        except Exception as e:
-            print("no robot pose found")
-        render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik, robot_pose, robot_joint_angles)
-
-
-def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik: bool, robot_pose=None,
-                  robot_joint_angles=None):
-    env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=handover_obj, person_id=person_id)
-    env.render()  # need to call reset after render
-    env.reset()
-
-    smpl_name = os.path.basename(smpl_file).split(".")[0]
-    p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_name), [0, 0, 1], textColorRGB=[1, 0, 0])
-
-    env.human.reset_controllable_joints(action["end_effector"])
-    env.human.set_joint_angles(env.human.controllable_joint_indices, action["solution"])
-    if robot_ik:
-        print("robot pose: ", robot_pose, "robot_joint_angles: ", robot_joint_angles)
-        if robot_pose is None or robot_joint_angles is None:
-            find_robot_ik_solution(env, action["end_effector"], handover_obj)
-        else:
-            # TODO: fix this
-            # find_robot_ik_solution(env, action["end_effector"], handover_obj)
-            base_pos, base_orient, side = find_robot_start_pos_orient(env, action["end_effector"])
-            env.robot.set_base_pos_orient(robot_pose[0], robot_pose[1])
-            env.robot.set_joint_angles(
-                env.robot.right_arm_joint_indices if side == 'right' else env.robot.left_arm_joint_indices,
-                robot_joint_angles)
-            env.tool.reset_pos_orient()
-        # robot_settings = action["robot_settings"]
-        # env.robot.set_base_pos_orient(robot_settings["base_pos"], robot_settings["base_orient"])
-        # env.robot.set_joint_angles(env.robot.controllable_joint_indices, robot_settings["joint_angles"])
-        # env.tool.reset_pos_orient()
-    # plot_cmaes_metrics(action['mean_cost'], action['mean_dist'], action['mean_m'], action['mean_energy'],
-    #                    action['mean_torque'])
-    # plot_mean_evolution(action['mean_evolution'])
-
-    while True:
-        keys = p.getKeyboardEvents()
-        if ord('q') in keys:
-            break
-    env.disconnect()
-
-
-def render_pose(env_name, person_id, smpl_file):
-    env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=None, person_id=person_id)
-    env.render()  # need to call reset after render
-    env.reset()
-
-    while True:
-        keys = p.getKeyboardEvents()
-        if ord('q') in keys:
-            break
-    env.disconnect()
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='RL for Assistive Gym')
     # env
@@ -497,10 +408,10 @@ if __name__ == '__main__':
         if args.handover_obj == 'all':  # train all at once
             handover_objs = ['pill', 'cup', 'cane']
             for handover_obj in handover_objs:
-                train(args.env, args.seed, args.smpl_file, args.person_id, args.end_effector, args.save_dir,
+                mp_train(args.env, args.seed, args.smpl_file, args.person_id, args.end_effector, args.save_dir,
                       args.render_gui, args.simulate_collision, args.robot_ik, handover_obj)
         else:
-            _, actions = train(args.env, args.seed, args.smpl_file, args.person_id, args.end_effector, args.save_dir,
+            _, actions = mp_train(args.env, args.seed, args.smpl_file, args.person_id, args.end_effector, args.save_dir,
                                args.render_gui, args.simulate_collision, args.robot_ik, args.handover_obj)
 
     if args.render:

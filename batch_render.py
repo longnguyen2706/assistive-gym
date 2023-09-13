@@ -14,7 +14,7 @@ SMPL_FILES = ['s01']
 # PERSON_IDS = ['p001', 'p002', 'p003', 'p004', 'p005']
 # OBJECTS = ['cane', 'cup', 'pill']
 # SMPL_FILES = [ 's01','s19', 's45']
-PERSON_IDS = ['p001', 'p002' ]
+PERSON_IDS = ['p001' ]
 OBJECTS = ['cup']
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
