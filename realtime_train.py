@@ -52,4 +52,4 @@ if __name__ == "__main__":
           'trained_models', True, False, True, args.handover_object)
     # print(realworld['wrt_pelvis'])
 
-    render('HumanComfort-v1', args.person_id, args.smpl_file, 'trained_models', args.handover_object, True)
+    # render('HumanComfort-v1', args.person_id, args.smpl_file, 'trained_models', args.handover_object, True)

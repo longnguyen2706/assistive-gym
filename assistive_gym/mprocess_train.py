@@ -8,8 +8,8 @@ from assistive_gym.envs.utils.dto import RobotSetting, InitRobotSetting
 from assistive_gym.envs.utils.train_utils import *
 
 LOG = get_logger()
-NUM_WORKERS = 1
-MAX_ITERATION = 1
+NUM_WORKERS = 12
+MAX_ITERATION = 150
 RENDER_UI = True
 
 class SubEnvProcess(multiprocessing.Process):
@@ -88,9 +88,11 @@ class MainEnvProcess(multiprocessing.Process):
             render_robot(env, robot_setting)
             return True
         if type == 'get_human_robot_info':
-            env, human, robot = self.env, self.env.human, self.env.robot
 
-            ee_pos, ik_target_pos = find_ee_ik_goal(human, end_effector, handover_obj)
+            env, human, robot = self.env, self.env.human, self.env.robot
+            human.set_joint_angles(human.controllable_joint_indices, angle)
+            render_robot(env, robot_setting)
+            _, ik_target_pos = find_ee_ik_goal(human, end_effector, handover_obj)
 
             return {
                 'pelvis': human.get_pos_orient(human.human_dict.get_fixed_joint_id("pelvis"), center_of_mass=True),
@@ -346,13 +348,13 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
     #
     # env.disconnect()
 
-    save_train_result(save_dir, env_name, person_id, smpl_file, actions)
+    save_train_result(save_dir, env_name, person_id, smpl_file, actions, key)
 
     print("training time (s): ", time.time() - start_time)
     return action
 
 
-def save_train_result(save_dir, env_name, person_id, smpl_file, actions):
+def save_train_result(save_dir, env_name, person_id, smpl_file, actions, key):
     save_dir = get_save_dir(save_dir, env_name, person_id, smpl_file)
     os.makedirs(save_dir, exist_ok=True)
 
@@ -363,8 +365,9 @@ def save_train_result(save_dir, env_name, person_id, smpl_file, actions):
             for key in old_actions.keys():
                 if key not in actions.keys():
                     actions[key] = old_actions[key]
+
     pickle.dump(actions, open(os.path.join(save_dir, "actions.pkl"), "wb"))
-    # save as json
+
     dumped = json.dumps(actions[key]['wrt_pelvis'] , cls=NumpyEncoder)
     with open(os.path.join(save_dir, "results.json"), "w") as f:
         f.write(dumped)
