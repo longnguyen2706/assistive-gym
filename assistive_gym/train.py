@@ -355,7 +355,7 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
         cost = (w[0] * dist + w[1] * 1 / (manipulibility / max_dynamics.manipulibility) + w[
             2] * energy_final / max_dynamics.energy \
                 + w[3] * torque / max_dynamics.torque + w[4] * mid_angle_displacement + w[
-                    5] * reba / max_reba) / np.sum(w)
+                    5] * eye / max_) / np.sum(w)
     else:
         if object_config.object_type == HandoverObject.PILL:
             # cal wrist orient (pill)

@@ -460,12 +460,13 @@ class HumanUrdf(Agent):
         self.head_coords = [end_l, end_norm, end_r] 
         self.head_angle = angle
 
-    def get_head_angle_range(self, end_effector, l=0.25):
+    def get_head_angle_range(self, end_effector, l=0.25): # currently using
         end_l, end_norm, end_r = self.head_coords
 
         hand_pos, _ = self.get_ee_pos_orient(end_effector)
         hand = hand_pos[0]
         # center = end_norm[0]
+        print("right limit (lower): ", end_r[0], "\nleft limit (upper): ", end_l[0])
 
         if hand > end_r[0] and hand < end_l[0]:
             return 0
