@@ -8,8 +8,8 @@ from assistive_gym.envs.utils.train_utils import *
 
 LOG = get_logger()
 NUM_WORKERS = 1
-MAX_ITERATION = 10
-
+MAX_ITERATION = 500
+RENDER_UI = False
 
 class SubEnvProcess(multiprocessing.Process):
     def __init__(self, id, task_queue, result_queue, env_config, human_conf):
@@ -132,7 +132,7 @@ def init_main_env(env, handover_obj, end_effector):
     # if handover_obj_config and handover_obj_config.end_effector:  # reset the end effector based on the object
     #     human.reset_controllable_joints(handover_obj_config.end_effector)
     #     end_effector = handover_obj_config.end_effector
-
+    handover_obj_config.end_effector = end_effector
     human.reset_controllable_joints(end_effector)
     robot_base, robot_orient, robot_side = find_robot_start_pos_orient(env, end_effector)
     robot_setting = InitRobotSetting(robot_base, robot_orient, robot_side)
@@ -144,7 +144,7 @@ def init_main_env(env, handover_obj, end_effector):
     original_info = build_original_human_info(human, env_object_ids, end_effector)
     max_dynamics = build_max_human_dynamics(env, end_effector, original_info)
 
-    if render:
+    if RENDER_UI:
         env.render()
     env.reset()
     # draw original ee pos
@@ -305,9 +305,8 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
     _, _, best_dist, best_m, best_energy, best_torque, _ = result
     destroy_sub_env_process(sub_env_workers, sub_env_task_queue)
 
-    main_env_task_queue.put(('render_step', best_angle, best_robot_setting))
-
-    main_env_result_queue.get()
+    # main_env_task_queue.put(('render_step', best_angle, best_robot_setting))
+    # main_env_result_queue.get()
     LOG.info(
         f"{bcolors.OKBLUE} Best cost: {optimizer.best.f} {best_cost} {bcolors.ENDC}")
 
