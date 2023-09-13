@@ -1,4 +1,5 @@
 import importlib
+import json
 import os
 import pickle
 from datetime import datetime
@@ -892,3 +893,15 @@ def translate_bed_to_realworld(env, cord):
 
     corner = find_corner(env)
     return np.array(cord) - corner
+
+
+class NumpyEncoder(json.JSONEncoder):
+    """ Special json encoder for numpy types """
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)

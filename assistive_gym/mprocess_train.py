@@ -1,4 +1,5 @@
 import argparse
+import json
 import multiprocessing
 import time
 from copy import deepcopy
@@ -8,8 +9,8 @@ from assistive_gym.envs.utils.train_utils import *
 
 LOG = get_logger()
 NUM_WORKERS = 1
-MAX_ITERATION = 500
-RENDER_UI = False
+MAX_ITERATION = 1
+RENDER_UI = True
 
 class SubEnvProcess(multiprocessing.Process):
     def __init__(self, id, task_queue, result_queue, env_config, human_conf):
@@ -242,7 +243,7 @@ def destroy_main_env_process(main_env_process, main_env_task_queue):
 
 
 def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', person_id='p001',
-             end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False,
+             end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_physics=False,
              robot_ik=False, handover_obj=None):
     start_time = time.time()
     env_config = (env_name, person_id, smpl_file, handover_obj, end_effector, True)
@@ -335,7 +336,7 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
         "wrt_pelvis": human_robot_info
     }
 
-    print('result:', action)
+    print('human_robot_info:', human_robot_info)
 
     actions = {}
     key = get_actions_dict_key(handover_obj, robot_ik)
@@ -348,7 +349,7 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
     save_train_result(save_dir, env_name, person_id, smpl_file, actions)
 
     print("training time (s): ", time.time() - start_time)
-    return _, actions
+    return action
 
 
 def save_train_result(save_dir, env_name, person_id, smpl_file, actions):
@@ -363,6 +364,10 @@ def save_train_result(save_dir, env_name, person_id, smpl_file, actions):
                 if key not in actions.keys():
                     actions[key] = old_actions[key]
     pickle.dump(actions, open(os.path.join(save_dir, "actions.pkl"), "wb"))
+    # save as json
+    dumped = json.dumps(actions[key]['wrt_pelvis'] , cls=NumpyEncoder)
+    with open(os.path.join(save_dir, "results.json"), "w") as f:
+        f.write(dumped)
 
 
 if __name__ == '__main__':

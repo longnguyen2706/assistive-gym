@@ -7,6 +7,7 @@ import pybullet_data
 import pybullet as p
 
 from assistive_gym.envs.utils.urdf_utils import generate_human_mesh
+from assistive_gym.mprocess_train import mp_train
 from assistive_gym.train import train, render
 from experimental.urdf_name_resolver import get_urdf_folderpath, get_urdf_ref_filepath
 
@@ -41,12 +42,14 @@ if __name__ == "__main__":
     parser.add_argument('--smpl-file', default='/nethome/nnagarathinam6/Documents/joint_reaching_evaluation/BodyPressureTRI/networksscan7.pkl',
                         help='Path to smpl file')
     parser.add_argument('--gender', default='male', help='Gender')
+    parser.add_argument('--end-effector', default='right_hand', help='End effector')
+    parser.add_argument('--handover-object', default='pill', help='Handover object')
     args = parser.parse_args()
     # if not check_urdf_exist(args.person_id):
     #     generate_urdf(args)
     generate_urdf(args)
-    # _, _, realworld = train('HumanComfort-v1', 1001, args.smpl_file, args.person_id, 'right_hand',
-    #       'trained_models', True, False, True, 'pill')
+    result = mp_train('HumanComfort-v1', 1001, args.smpl_file, args.person_id, args.end_effector,
+          'trained_models', True, False, True, args.handover_object)
     # print(realworld['wrt_pelvis'])
 
-    render('HumanComfort-v1', args.person_id, args.smpl_file, 'trained_models', 'pill', True)
+    render('HumanComfort-v1', args.person_id, args.smpl_file, 'trained_models', args.handover_object, True)
