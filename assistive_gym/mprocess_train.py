@@ -3,14 +3,13 @@ import multiprocessing
 import time
 from copy import deepcopy
 
-import numpy
-
 from assistive_gym.envs.utils.dto import RobotSetting, InitRobotSetting
 from assistive_gym.envs.utils.train_utils import *
 
 LOG = get_logger()
-NUM_WORKERS = 10
-MAX_ITERATION = 500
+NUM_WORKERS = 1
+MAX_ITERATION = 10
+
 
 class SubEnvProcess(multiprocessing.Process):
     def __init__(self, id, task_queue, result_queue, env_config, human_conf):
@@ -33,8 +32,8 @@ class SubEnvProcess(multiprocessing.Process):
 
     def perform_task(self, joint_angles):
         if not self.env:
-            env_name, person_id, smpl_file, handover_obj, coop = self.env_config
-            self.env = make_env(env_name, person_id, smpl_file, handover_obj, coop)
+            env_name, person_id, smpl_file, handover_obj, end_effector, coop = self.env_config
+            self.env = make_env(env_name, person_id, smpl_file, handover_obj, end_effector, coop)
             # self.env.render()
             self.env.reset()
         # print ('joint_angles: ', joint_angles)
@@ -68,15 +67,15 @@ class MainEnvProcess(multiprocessing.Process):
             self.result_queue.put(result)
 
     def perform_task(self, task):
+        env_name, person_id, smpl_file, handover_obj, end_effector, coop = self.env_config
         if not self.env:
-            env_name, person_id, smpl_file, handover_obj, coop = self.env_config
             self.env = make_env(env_name, person_id, smpl_file, handover_obj, coop)
 
         type, angle, robot_setting = task
 
         if type == 'init':
             print('init main env')
-            return init_main_env(self.env, handover_obj)
+            return init_main_env(self.env, handover_obj, end_effector)
         if type == 'render_step':
             # print ('render')
             env, human, robot = self.env, self.env.human, self.env.robot
@@ -87,6 +86,31 @@ class MainEnvProcess(multiprocessing.Process):
             human.set_joint_angles(human.controllable_joint_indices, angle)
             render_robot(env, robot_setting)
             return True
+        if type == 'get_human_robot_info':
+            env, human, robot = self.env, self.env.human, self.env.robot
+
+            ee_pos, ik_target_pos = find_ee_ik_goal(human, end_effector, handover_obj)
+
+            return {
+                'pelvis': human.get_pos_orient(human.human_dict.get_fixed_joint_id("pelvis"), center_of_mass=True),
+                "ee": {
+                    'original': human.get_ee_pos_orient(end_effector),
+                    'transform': translate_wrt_human_pelvis(human, np.array(human.get_ee_pos_orient(end_effector)[0]),
+                                                            np.array(human.get_ee_pos_orient(end_effector)[1])),
+                },
+                "ik_target": {
+                    'original': [np.array(ik_target_pos), np.array(robot_setting.gripper_orient)],  # [pos, orient
+                    'transform': translate_wrt_human_pelvis(human, np.array(ik_target_pos),
+                                                            np.array(robot_setting.gripper_orient)),
+                },
+                'robot': {
+                    'original': [np.array(robot_setting.base_pos), np.array(robot_setting.base_orient)],
+                    'transform': translate_wrt_human_pelvis(human, np.array(robot_setting.base_pos),
+                                                            np.array(robot_setting.base_orient)),
+                },
+                'robot_joint_angles': robot_setting.robot_joint_angles
+            }
+
 
 def render_robot(env, robot_setting):
     # print('render robot', robot_setting.robot_joint_angles)
@@ -95,7 +119,9 @@ def render_robot(env, robot_setting):
         env.robot.right_arm_joint_indices if robot_setting.robot_side == 'right' else env.robot.left_arm_joint_indices,
         robot_setting.robot_joint_angles)
     env.tool.reset_pos_orient()
-def init_main_env(env, handover_obj):
+
+
+def init_main_env(env, handover_obj, end_effector):
     env.reset()
 
     # time.sleep(100)
@@ -103,10 +129,11 @@ def init_main_env(env, handover_obj):
 
     # choose end effector
     handover_obj_config = get_handover_object_config(handover_obj, env)
-    if handover_obj_config and handover_obj_config.end_effector:  # reset the end effector based on the object
-        human.reset_controllable_joints(handover_obj_config.end_effector)
-        end_effector = handover_obj_config.end_effector
+    # if handover_obj_config and handover_obj_config.end_effector:  # reset the end effector based on the object
+    #     human.reset_controllable_joints(handover_obj_config.end_effector)
+    #     end_effector = handover_obj_config.end_effector
 
+    human.reset_controllable_joints(end_effector)
     robot_base, robot_orient, robot_side = find_robot_start_pos_orient(env, end_effector)
     robot_setting = InitRobotSetting(robot_base, robot_orient, robot_side)
     # init collision check
@@ -149,9 +176,10 @@ def do_search(conf):
     # cal dist to bedside
     dist_to_bedside = cal_dist_to_bedside(env, end_effector)
     if robot_ik:  # solve robot ik when doing training
-        has_valid_robot_ik, robot_joint_angles, robot_base_pos, robot_base_orient, robot_side, robot_penetrations, robot_dist_to_target, gripper_orient = find_robot_ik_solution(env,
-                                                                                                         end_effector,
-                                                                                                         handover_obj, init_robot_setting)
+        has_valid_robot_ik, robot_joint_angles, robot_base_pos, robot_base_orient, robot_side, robot_penetrations, robot_dist_to_target, gripper_orient = find_robot_ik_solution(
+            env,
+            end_effector,
+            handover_obj, init_robot_setting)
     else:
         ee_link_idx = human.human_dict.get_dammy_joint_id(end_effector)
         ee_collision_radius = COLLISION_OBJECT_RADIUS[handover_obj]  # 20cm range
@@ -165,17 +193,17 @@ def do_search(conf):
         has_valid_robot_ik = True
 
     cost, m, dist, energy, torque = cost_fn(human, end_effector, s, original_info.original_ee_pos, original_info,
-                                                  max_dynamics, new_self_penetrations, new_env_penetrations,
-                                                  has_valid_robot_ik, robot_penetrations, robot_dist_to_target,
-                                                  0, handover_obj_config, robot_ik, dist_to_bedside)
-
+                                            max_dynamics, new_self_penetrations, new_env_penetrations,
+                                            has_valid_robot_ik, robot_penetrations, robot_dist_to_target,
+                                            0, handover_obj_config, robot_ik, dist_to_bedside)
 
     robot_setting = RobotSetting(robot_base_pos, robot_base_orient, robot_joint_angles, robot_side,
-                                      gripper_orient)
+                                 gripper_orient)
     # print ("sub process ", robot_setting.robot_joint_angles)
     # restore joint angle
     # human.set_joint_angles(human.controllable_joint_indices, original_info.angles)
     return cost, m, dist, energy, torque, robot_setting
+
 
 def init_main_env_process(env_config):
     # init main env process
@@ -187,6 +215,7 @@ def init_main_env_process(env_config):
 
     return main_env_process, main_env_task_queue, main_env_result_queue
 
+
 def init_sub_env_process(env_config, search_config):
     sub_env_task_queue = multiprocessing.Queue()
     sub_env_result_queue = multiprocessing.Queue()
@@ -197,6 +226,7 @@ def init_sub_env_process(env_config, search_config):
         w.start()
     return sub_env_workers, sub_env_task_queue, sub_env_result_queue
 
+
 def destroy_sub_env_process(sub_env_workers, sub_env_task_queue):
     # destroy sub env processes
     for _ in range(NUM_WORKERS):
@@ -204,11 +234,18 @@ def destroy_sub_env_process(sub_env_workers, sub_env_task_queue):
     for w in sub_env_workers:
         w.join()
 
+
+def destroy_main_env_process(main_env_process, main_env_task_queue):
+    # destroy main env process
+    main_env_task_queue.put(None)
+    main_env_process.join()
+
+
 def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', person_id='p001',
-          end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False,
-          robot_ik=False, handover_obj=None):
+             end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False,
+             robot_ik=False, handover_obj=None):
     start_time = time.time()
-    env_config = (env_name, person_id, smpl_file, handover_obj, True)
+    env_config = (env_name, person_id, smpl_file, handover_obj, end_effector, True)
 
     # init main env process
     main_env_process, main_env_task_queue, main_env_result_queue = init_main_env_process(env_config)
@@ -218,7 +255,8 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
         controllable_joint_lower_limits, controllable_joint_upper_limits, initial_robot_setting = init_result
 
     # init sub env processes
-    search_config = (robot_ik, env_object_ids, original_info, max_dynamics, handover_obj, handover_obj_config, initial_robot_setting)
+    search_config = (
+    robot_ik, env_object_ids, original_info, max_dynamics, handover_obj, handover_obj_config, initial_robot_setting)
     sub_env_workers, sub_env_task_queue, sub_env_result_queue = init_sub_env_process(env_config, search_config)
 
     timestep = 0
@@ -262,49 +300,53 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
         mean_energy.append(np.mean(energy_changes, axis=0))
         mean_torque.append(np.mean(torques, axis=0))
 
+    # get the kinematic result for best solution
+    sub_env_task_queue.put(best_angle)
+    _, _, best_dist, best_m, best_energy, best_torque, _ = result
     destroy_sub_env_process(sub_env_workers, sub_env_task_queue)
-    # LOG.info(
-    #     f"{bcolors.OKBLUE} Best cost: {optimizer.best.f}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
 
     main_env_task_queue.put(('render_step', best_angle, best_robot_setting))
 
     main_env_result_queue.get()
     LOG.info(
         f"{bcolors.OKBLUE} Best cost: {optimizer.best.f} {best_cost} {bcolors.ENDC}")
-    time.sleep(100)
-    main_env_task_queue.put(None)
-    main_env_process.join()
-    # action = {
-    #     "solution": optimizer.best.x,
-    #     "cost": cost,
-    #     "end_effector": end_effector,
-    #     "m": m,
-    #     "dist": dist,
-    #     "mean_energy": mean_energy,
-    #     "target": original_ee_pos,
-    #     "mean_cost": mean_cost,
-    #     "mean_dist": mean_dist,
-    #     "mean_m": mean_m,
-    #     "mean_evolution": mean_evolution,
-    #     "mean_torque": mean_torque,
-    #     "mean_reba": mean_reba,
-    #     "robot_settings": {
-    #         "joint_angles": robot_joint_angles,
-    #         "base_pos": robot_base_pos,
-    #         "base_orient": robot_base_orient,
-    #         "side": robot_side
-    #     }
-    # }
-    #
-    # actions = {}
-    # key = get_actions_dict_key(handover_obj, robot_ik)
-    # actions[key] = action
+
+    main_env_task_queue.put(('get_human_robot_info', best_angle, best_robot_setting))
+    human_robot_info = main_env_result_queue.get()
+
+    destroy_main_env_process(main_env_process, main_env_task_queue)
+
+    action = {
+        "solution": best_angle,
+        "cost": best_cost,
+        "end_effector": end_effector,
+        "m": best_m,
+        "dist": best_dist,
+        "energy": best_energy,
+        "torque": best_torque,
+        "mean_energy": mean_energy,
+        "target": original_info.original_ee_pos,
+        "mean_cost": mean_cost,
+        "mean_dist": mean_dist,
+        "mean_m": mean_m,
+        "mean_evolution": mean_evolution,
+        "mean_torque": mean_torque,
+        "mean_reba": mean_reba,
+        "initial_robot_settings": initial_robot_setting,
+        "wrt_pelvis": human_robot_info
+    }
+
+    print('result:', action)
+
+    actions = {}
+    key = get_actions_dict_key(handover_obj, robot_ik)
+    actions[key] = action
     # # plot_cmaes_metrics(mean_cost, mean_dist, mean_m, mean_energy, mean_torque)
     # # plot_mean_evolution(mean_evolution)
     #
     # env.disconnect()
 
-    # save_train_result(save_dir, env_name, person_id, smpl_file, actions)
+    save_train_result(save_dir, env_name, person_id, smpl_file, actions)
 
     print("training time (s): ", time.time() - start_time)
     return _, actions
