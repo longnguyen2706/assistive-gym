@@ -9,9 +9,8 @@ from assistive_gym.envs.utils.dto import RobotSetting, InitRobotSetting
 from assistive_gym.envs.utils.train_utils import *
 
 LOG = get_logger()
-NUM_WORKERS = 12
-MAX_ITERATION = 200
-
+NUM_WORKERS = 10
+MAX_ITERATION = 500
 
 class SubEnvProcess(multiprocessing.Process):
     def __init__(self, id, task_queue, result_queue, env_config, human_conf):
@@ -173,7 +172,7 @@ def do_search(conf):
 
     robot_setting = RobotSetting(robot_base_pos, robot_base_orient, robot_joint_angles, robot_side,
                                       gripper_orient)
-    print ("sub process ", robot_setting.robot_joint_angles)
+    # print ("sub process ", robot_setting.robot_joint_angles)
     # restore joint angle
     # human.set_joint_angles(human.controllable_joint_indices, original_info.angles)
     return cost, m, dist, energy, torque, robot_setting
@@ -227,7 +226,7 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
 
     # init optimizer
     x0 = np.array(original_info.angles)
-    optimizer = init_optimizer(x0, 0.1, controllable_joint_lower_limits, controllable_joint_upper_limits)
+    optimizer = init_optimizer(x0, 0.05, controllable_joint_lower_limits, controllable_joint_upper_limits)
 
     best_cost, best_angle, best_robot_setting = float('inf'), None, None
     while timestep < MAX_ITERATION and not optimizer.stop():

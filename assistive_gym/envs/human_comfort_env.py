@@ -106,7 +106,7 @@ class HumanComfortEnv(AssistiveEnv):
 
         bed_height, bed_base_height = self.furniture.get_heights(set_on_ground=True)
         min_pos, max_pos = p.getAABB(self.furniture.body, physicsClientId=self.id)
-        print("bed height ", bed_height, bed_base_height, "bed pos ", min_pos, max_pos)
+        # print("bed height ", bed_height, bed_base_height, "bed pos ", min_pos, max_pos)
         # reset human pose
         # disable self collision before dropping on bed
         num_joints = p.getNumJoints(self.human.body, physicsClientId=self.id)
@@ -114,7 +114,7 @@ class HumanComfortEnv(AssistiveEnv):
         smpl_data = load_smpl(self.smpl_file)
         self.human.set_joint_angles_with_smpl(smpl_data, False)
         height, base_height = self.human.get_heights()
-        print ("human height ", height, base_height, "bed height ", bed_height, bed_base_height)
+        # print ("human height ", height, base_height, "bed height ", bed_height, bed_base_height)
         self.human.set_global_orientation(smpl_data, [0, 0,  bed_height+0.2])
         # p.resetBasePositionAndOrientation(self.human.body, [0, 0,  bed_height] , [0, 0, 0, 1], physicsClientId=self.id)
 

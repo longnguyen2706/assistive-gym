@@ -187,11 +187,11 @@ def find_robot_start_pos_orient(env, end_effector="right_hand", initial_side = N
     # new pos: side of the bed, near end effector, with z axis unchanged
     if side == "right":
         pos = (
-            bed_xx + robot_x_size / 2 + 0.3, ee_pos[1] ,
+            bed_xx + robot_x_size / 2 + 0.1, ee_pos[1] ,
             base_pos[2])  # TODO: change back to original 0.3
         orient = env.robot.get_quaternion([0, 0, -np.pi / 2])
     else:  # left
-        pos = ( bed_xx - robot_x_size / 2 - 0.3, ee_pos[1], base_pos[2])
+        pos = ( bed_xx - robot_x_size / 2 - 0.1, ee_pos[1], base_pos[2])
         orient = env.robot.get_quaternion([0, 0, np.pi / 2])
     return pos, orient, side
 
@@ -348,7 +348,7 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
     mid_angle_displacement = cal_angle_diff(angle_config, mid_angle)
     # print("mid_angle_displacement: ", mid_angle_displacement)
 
-    w = [1, 1, 4, 1, 1]
+    w = [2, 2, 8, 2, 2]
     cost = None
 
     if not object_config:  # no object handover case
@@ -368,14 +368,14 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
                     + w[3] * torque / max_dynamics.torque + w[4] * mid_angle_displacement) / np.sum(w)
             if not robot_ik_mode:  # using raycast to calculate cost
                 pass
-
+    cost *=np.sum(w)
     self_penetration_cost, env_penetration_cost, ik_cost, robot_penetration_cost = 0, 0, 0, 0
     if new_self_penetrations:
-        self_penetration_cost = 10 * sum(new_self_penetrations)
+        self_penetration_cost = 100* sum(new_self_penetrations)
         cost += self_penetration_cost
         # cost += 10*len(new_self_penetrations)
     if new_env_penetrations:
-        env_penetration_cost = 10 * sum(new_env_penetrations)
+        env_penetration_cost = 100 * sum(new_env_penetrations)
         cost += env_penetration_cost
     if robot_ik_mode:
         # if not has_valid_robot_ik:
@@ -387,7 +387,7 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
             # flatten list
             robot_penetrations = [abs(item) for sublist in robot_penetrations for item in sublist]
             # print(robot_penetrations)]
-            robot_penetration_cost = 5 * sum(robot_penetrations)
+            robot_penetration_cost = 10 * sum(robot_penetrations)
             cost += robot_penetration_cost
     print('cost: ', cost, 'self_penetration_cost: ', self_penetration_cost, 'env_penetration_cost: ',
     env_penetration_cost, 'ik_cost: ', ik_cost, 'robot_penetration_cost: ', robot_penetration_cost)
