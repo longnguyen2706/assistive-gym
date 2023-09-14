@@ -1,18 +1,12 @@
-import os
-import time
+import numpy as np
+import pybullet as p
 
-from assistive_gym.envs.agents.pr2 import PR2
-from assistive_gym.envs.agents.sawyer import Sawyer
-from assistive_gym.envs.agents.stretch import Stretch
 from assistive_gym.envs.agents.stretch_dex import StretchDex
 from assistive_gym.envs.env import AssistiveEnv
 from assistive_gym.envs.utils.human_utils import set_self_collisions, disable_self_collisions
 from assistive_gym.envs.utils.urdf_utils import load_smpl
-from assistive_gym.envs.utils.human_urdf_dict import HumanUrdfDict
 from experimental.human_urdf import HumanUrdf
-from ergonomics.reba import RebaScore
-import numpy as np
-import pybullet as p
+
 
 class HumanComfortEnv(AssistiveEnv):
     def __init__(self):
@@ -81,7 +75,7 @@ class HumanComfortEnv(AssistiveEnv):
                 return human_obs
 
             return {'robot': robot_obs, 'human': human_obs}
-        return robot_obs
+        return robot_obsdrinking
 
     def reset_human(self, is_collision):
         if not is_collision:

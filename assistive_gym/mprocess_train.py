@@ -8,9 +8,9 @@ from assistive_gym.envs.utils.dto import RobotSetting, InitRobotSetting
 from assistive_gym.envs.utils.train_utils import *
 
 LOG = get_logger()
-NUM_WORKERS = 12
-MAX_ITERATION = 150
-RENDER_UI = True
+NUM_WORKERS = 1
+MAX_ITERATION = 500
+RENDER_UI = False
 
 class SubEnvProcess(multiprocessing.Process):
     def __init__(self, id, task_queue, result_queue, env_config, human_conf):
@@ -135,7 +135,8 @@ def init_main_env(env, handover_obj, end_effector):
     # if handover_obj_config and handover_obj_config.end_effector:  # reset the end effector based on the object
     #     human.reset_controllable_joints(handover_obj_config.end_effector)
     #     end_effector = handover_obj_config.end_effector
-    handover_obj_config.end_effector = end_effector
+    # reset the end effector based on the object
+    end_effector = handover_obj_config.end_effector
     human.reset_controllable_joints(end_effector)
     robot_base, robot_orient, robot_side = find_robot_start_pos_orient(env, end_effector)
     robot_setting = InitRobotSetting(robot_base, robot_orient, robot_side)
@@ -174,10 +175,8 @@ def do_search(conf):
                                                                     human,
                                                                     end_effector)
     # print ('end_effector', end_effector)
-    # move_robot(env)
-    # move_robot(env)
     # cal dist to bedside
-    dist_to_bedside = cal_dist_to_bedside(env, end_effector)
+    object_specific_cost = cal_object_specific_cost(env, handover_obj)
     if robot_ik:  # solve robot ik when doing training
         has_valid_robot_ik, robot_joint_angles, robot_base_pos, robot_base_orient, robot_side, robot_penetrations, robot_dist_to_target, gripper_orient = find_robot_ik_solution(
             env,
@@ -195,10 +194,10 @@ def do_search(conf):
                                           physicsClientId=env.id)
         has_valid_robot_ik = True
 
-    cost, m, dist, energy, torque = cost_fn(human, end_effector, s, original_info.original_ee_pos, original_info,
-                                            max_dynamics, new_self_penetrations, new_env_penetrations,
-                                            has_valid_robot_ik, robot_penetrations, robot_dist_to_target,
-                                            0, handover_obj_config, robot_ik, dist_to_bedside)
+    cost, m, dist, energy, torque = cost_func(human, end_effector, s, original_info.original_ee_pos, original_info,
+                                              max_dynamics, new_self_penetrations, new_env_penetrations,
+                                              has_valid_robot_ik, robot_penetrations, robot_dist_to_target,
+                                              0, handover_obj_config, robot_ik, object_specific_cost)
 
     robot_setting = RobotSetting(robot_base_pos, robot_base_orient, robot_joint_angles, robot_side,
                                  gripper_orient)
@@ -207,6 +206,13 @@ def do_search(conf):
     # human.set_joint_angles(human.controllable_joint_indices, original_info.angles)
     return cost, m, dist, energy, torque, robot_setting
 
+def cal_object_specific_cost(env, handover_object):
+    if handover_object == 'cup':
+        return get_gripper_z_angle(env, 'right', GRIPPER_Z_ANGLE_LIMIT['cup'])
+    elif handover_object == 'cane':
+        return cal_gripper_bedside_dist(env, 'right', GRIPPER_BEDSIDE_OFFSET['cane'])
+    else:
+        raise NotImplementedError("Not implemented for object {}".format(handover_object))
 
 def init_main_env_process(env_config):
     # init main env process

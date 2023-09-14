@@ -12,7 +12,7 @@ from assistive_gym.envs.utils.train_utils import *
 from experimental.urdf_name_resolver import get_urdf_filepath, get_urdf_folderpath
 
 LOG = get_logger()
-
+MAX_ITERATIONS = 100
 def train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', person_id='p001',
           end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False,
           robot_ik=False, handover_obj=None):
@@ -61,7 +61,7 @@ def train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', 
     smpl_name = os.path.basename(smpl_file)
     p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_name), [0, 0, 1], textColorRGB=[1, 0, 0])
 
-    while timestep < MAX_ITERATION and not optimizer.stop():
+    while timestep < MAX_ITERATIONS and not optimizer.stop():
         timestep += 1
         solutions = optimizer.ask()
         best_cost, best_angle, best_robot_setting = float('inf'), None, None
@@ -76,10 +76,10 @@ def train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', 
                                                                           env_collisions, human, end_effector)
                 # cal dist to bedside
                 dist_to_bedside = cal_dist_to_bedside(env, end_effector)
-                cost, m, dist, energy, torque = cost_fn(human, end_effector, s, original_ee_pos, original_info,
-                                                        max_dynamics, new_self_collision, new_env_collision,
-                                                        has_valid_robot_ik,
-                                                        angle_dist, handover_obj_config, robot_ik, dist_to_bedside)
+                cost, m, dist, energy, torque = cost_func(human, end_effector, s, original_ee_pos, original_info,
+                                                          max_dynamics, new_self_collision, new_env_collision,
+                                                          has_valid_robot_ik,
+                                                          angle_dist, handover_obj_config, robot_ik, dist_to_bedside)
                 env.reset_human(is_collision=True)
                 LOG.info(
                     f"{bcolors.OKGREEN}timestep: {timestep}, cost: {cost}, angle_dist: {angle_dist} , dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
@@ -105,11 +105,11 @@ def train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', 
                                                       ee_collision_body_orient, physicsClientId=env.id)
                     has_valid_robot_ik = True
 
-                cost, m, dist, energy, torque, reba = cost_fn(human, end_effector, s, original_ee_pos, original_info,
-                                                              max_dynamics, new_self_collision, new_env_collision,
-                                                              has_valid_robot_ik, robot_penetrations,
-                                                              robot_dist_to_target,
-                                                              0, handover_obj_config, robot_ik, dist_to_bedside)
+                cost, m, dist, energy, torque, reba = cost_func(human, end_effector, s, original_ee_pos, original_info,
+                                                                max_dynamics, new_self_collision, new_env_collision,
+                                                                has_valid_robot_ik, robot_penetrations,
+                                                                robot_dist_to_target,
+                                                                0, handover_obj_config, robot_ik, dist_to_bedside)
                 LOG.info(
                     f"{bcolors.OKGREEN}timestep: {timestep}, cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
                 if cost < best_cost:
