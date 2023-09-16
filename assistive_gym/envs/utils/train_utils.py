@@ -441,7 +441,7 @@ def cost_func(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.n
     print('cost: ', cost, 'object specific cost: ', o_specific_cost,  'self_penetration_cost: ', self_penetration_cost, 'env_penetration_cost: ',
     env_penetration_cost, 'ik_cost: ', ik_cost, 'robot_penetration_cost: ', robot_penetration_cost)
 
-    return cost, manipulibility, dist, energy_final, torque
+    return cost/100, manipulibility, dist, energy_final, torque
 
 
 def cal_energy_change(human, original_link_positions, end_effector):
@@ -728,7 +728,7 @@ def translate_wrt_human_pelvis(human, pos, orient):
 
 def init_optimizer(x0, sigma, lower_bounds, upper_bounds):  # for cmaes library
     opts = {}
-    opts['tolfun'] = 1e-2
+    opts['tolfun'] = 1e-2 * 2
     opts['tolx'] = 1e-2
 
     for i in range(x0.size):

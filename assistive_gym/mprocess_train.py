@@ -9,9 +9,9 @@ from assistive_gym.envs.utils.dto import RobotSetting, InitRobotSetting
 from assistive_gym.envs.utils.train_utils import *
 
 LOG = get_logger()
-NUM_WORKERS = 12
+NUM_WORKERS = 6
 MAX_ITERATION = 500
-RENDER_UI = True
+RENDER_UI = False
 
 
 class SubEnvProcess(multiprocessing.Process):
@@ -316,6 +316,7 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
     _, _, best_dist, best_m, best_energy, best_torque, _ = result
     destroy_sub_env_process(sub_env_workers, sub_env_task_queue)
 
+    # main_env_task_queue.put(('render_step', best_angle, best_robot_setting))
     # main_env_task_queue.put(('render_step', best_angle, best_robot_setting))
     # main_env_result_queue.get()
     LOG.info(
