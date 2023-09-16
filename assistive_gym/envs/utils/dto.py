@@ -47,7 +47,7 @@ class InitRobotSetting:
     def __init__(self, base_pos, base_orient, side):
         self.base_pos = base_pos
         self.base_orient = base_orient
-        self.side = side
+        self.robot_side = side
 class HandoverObjectConfig:
     def __init__(self, object_type: HandoverObject, weights: list, limits: list, end_effector: Optional[str]):
         self.object_type = object_type

@@ -1,6 +1,7 @@
 import argparse
 import json
 import multiprocessing
+import os
 import time
 from copy import deepcopy
 
@@ -8,9 +9,10 @@ from assistive_gym.envs.utils.dto import RobotSetting, InitRobotSetting
 from assistive_gym.envs.utils.train_utils import *
 
 LOG = get_logger()
-NUM_WORKERS = 1
+NUM_WORKERS = 12
 MAX_ITERATION = 500
-RENDER_UI = False
+RENDER_UI = True
+
 
 class SubEnvProcess(multiprocessing.Process):
     def __init__(self, id, task_queue, result_queue, env_config, human_conf):
@@ -176,7 +178,7 @@ def do_search(conf):
                                                                     end_effector)
     # print ('end_effector', end_effector)
     # cal dist to bedside
-    object_specific_cost = cal_object_specific_cost(env, handover_obj)
+    object_specific_cost = cal_object_specific_cost(env, handover_obj, init_robot_setting.robot_side, end_effector)
     if robot_ik:  # solve robot ik when doing training
         has_valid_robot_ik, robot_joint_angles, robot_base_pos, robot_base_orient, robot_side, robot_penetrations, robot_dist_to_target, gripper_orient = find_robot_ik_solution(
             env,
@@ -206,13 +208,13 @@ def do_search(conf):
     # human.set_joint_angles(human.controllable_joint_indices, original_info.angles)
     return cost, m, dist, energy, torque, robot_setting
 
-def cal_object_specific_cost(env, handover_object):
+def cal_object_specific_cost(env, handover_object, bedside, end_effector):
     if handover_object == 'cup':
-        return get_gripper_z_angle(env, 'right', GRIPPER_Z_ANGLE_LIMIT['cup'])
+        return get_gripper_z_angle_cost(env, bedside, GRIPPER_Z_ANGLE_LIMIT['cup'])
     elif handover_object == 'cane':
-        return cal_gripper_bedside_dist(env, 'right', GRIPPER_BEDSIDE_OFFSET['cane'])
+        return cal_ee_bedside_dist_cost(env, bedside, end_effector, GRIPPER_BEDSIDE_OFFSET['cane'])
     else:
-        raise NotImplementedError("Not implemented for object {}".format(handover_object))
+        return 0
 
 def init_main_env_process(env_config):
     # init main env process

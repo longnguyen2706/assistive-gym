@@ -8,6 +8,7 @@ from typing import Set, Optional
 import gym
 import numpy as np
 import pybullet as p
+import yaml
 from cma import CMA, CMAEvolutionStrategy
 from cmaes import CMA
 from deprecation import deprecated
@@ -53,7 +54,7 @@ GRIPPER_Z_ANGLE_LIMIT = {
 GRIPPER_BEDSIDE_OFFSET = {
     "pill": None,
     "cup": None,
-    "cane": 0.1
+    "cane": 0.05
 }
 
 objectTaskMapping = {
@@ -62,6 +63,14 @@ objectTaskMapping = {
     HandoverObject.CANE: "comfort_standing_up"
 }
 
+YAML_FILE= os.path.join(os.getcwd(), 'params/param_1509.yaml')
+def load_yaml(yaml_file):
+    with open(yaml_file) as f:
+        params = yaml.safe_load(f)
+    print (params)
+    return params
+
+PARAMS = load_yaml(YAML_FILE)
 
 def create_point(point, size=0.01, color=[1, 0, 0, 1]):
     sphere = p.createCollisionShape(p.GEOM_SPHERE, radius=size)
@@ -108,7 +117,7 @@ def find_robot_ik_solution(env, end_effector: str, handover_obj: str, init_robot
     if not init_robot_setting:
         robot_base_pos, robot_base_orient, side = find_robot_start_pos_orient(env, end_effector)
     else:
-        robot_base_pos, robot_base_orient, side = init_robot_setting.base_pos, init_robot_setting.base_orient, init_robot_setting.side
+        robot_base_pos, robot_base_orient, side = init_robot_setting.base_pos, init_robot_setting.base_orient, init_robot_setting.robot_side
 
     ee_pos, target_pos = find_ee_ik_goal(human, end_effector, handover_obj)
     # p.addUserDebugLine(ee_pos, target_pos, [1, 0, 0], 5, 0.1)
@@ -196,7 +205,6 @@ def find_robot_start_pos_orient(env, end_effector="right_hand", initial_side = N
         # find robot base and bb
         robot_bb = p.getAABB(env.robot.body, physicsClientId=env.id)
         robot_x_size, robot_y_size, robot_z_size = np.subtract(robot_bb[1], robot_bb[0])
-        robot_x_size, robot_y_size, robot_z_size = np.subtract(robot_bb[1], robot_bb[0])
         # print("robot: ", robot_bb)
         base_pos = p.getBasePositionAndOrientation(env.robot.body, physicsClientId=env.id)[0]
 
@@ -234,8 +242,9 @@ def get_eyeline_side(human):
     # z_angle= find_angle(z_axis, normal_vec)
     # norm_vec = np.cross(z_axis, normal_vec)
     # p.addUserDebugLine(head_pos, head_pos + norm_vec*10, [0, 1, 0], 5, 10)
-    unsigned_z_angle = np.arccos(np.dot(z_axis, normal_vec))
-    z_angle = unsigned_z_angle if np.dot(z_axis, normal_vec)>0 else -unsigned_z_angle
+    # unsigned_z_angle = np.arccos(np.dot(z_axis, normal_vec))
+    # z_angle = unsigned_z_angle if np.dot(z_axis, normal_vec)>0 else -unsigned_z_angle
+    z_angle = get_angle_with_z_axis(rotation_matrix)
     print ("normal vec", normal_vec, "z angle: ", z_angle)
     return "right" if z_angle > np.pi/6 else "left" if z_angle < -np.pi/6 else None
 
@@ -398,48 +407,36 @@ def cost_func(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.n
     mid_angle_displacement = cal_angle_diff(angle_config, mid_angle)
     # print("mid_angle_displacement: ", mid_angle_displacement)
 
-    w = [2, 2, 8, 2, 2]
+    object = 'default' if not object_config else  object_type_to_name(object_config.object_type)
+    w= PARAMS[object]['weights']
     cost = 0
     o_specific_cost , self_penetration_cost, env_penetration_cost, ik_cost, robot_penetration_cost = 0, 0, 0, 0, 0
-    if not object_config:  # no object handover case
-        cost += (w[0] * dist + w[1] * 1 / (manipulibility / max_dynamics.manipulibility) + w[
-            2] * energy_final / max_dynamics.energy \
-                + w[3] * torque / max_dynamics.torque + w[4] * mid_angle_displacement)
-    else:
-        # cal cost
-        cost += (w[0] * dist + w[1] * 1 / (manipulibility / max_dynamics.manipulibility) + w[
-            2] * energy_final / max_dynamics.energy \
-                + w[3] * torque / max_dynamics.torque + w[4] * mid_angle_displacement)
 
-        if object_config.object_type == HandoverObject.PILL:
-            # do nothing here
-            pass
-        elif object_config.object_type== HandoverObject.CUP:
-            o_specific_cost= 10* object_specific_cost
-
-        elif object_config.object_type==HandoverObject.CANE:
-            o_specific_cost = 0* object_specific_cost
-
+    cost += (w['dist'] * dist + w['manipulibility'] * 1 / (manipulibility / max_dynamics.manipulibility) + w[
+        'energy'] * energy_final / max_dynamics.energy \
+            + w['torque'] * torque / max_dynamics.torque + w['mid_angle'] * mid_angle_displacement)
+    if object != 'default':
+        o_specific_cost = w['special_cost'] * object_specific_cost
         cost+= o_specific_cost
 
     if new_self_penetrations:
-        self_penetration_cost = 100* sum(new_self_penetrations)
+        self_penetration_cost = w['self_penetration'] * sum(new_self_penetrations)
         cost += self_penetration_cost
         # cost += 10*len(new_self_penetrations)
     if new_env_penetrations:
-        env_penetration_cost = 100 * sum(new_env_penetrations)
+        env_penetration_cost = w['env_penetration']  * sum(new_env_penetrations)
         cost += env_penetration_cost
     if robot_ik_mode:
         # if not has_valid_robot_ik:
             # cost += 1000
             # print('No valid ik solution found ', robot_dist_to_target)
-        ik_cost = 10*robot_dist_to_target
+        ik_cost = w['ik_dist'] *robot_dist_to_target
         cost += ik_cost
         if robot_penetrations:
             # flatten list
             robot_penetrations = [abs(item) for sublist in robot_penetrations for item in sublist]
             # print(robot_penetrations)]
-            robot_penetration_cost = 10 * sum(robot_penetrations)
+            robot_penetration_cost = w['robot_penetration'] * sum(robot_penetrations)
             cost += robot_penetration_cost
     print('cost: ', cost, 'object specific cost: ', o_specific_cost,  'self_penetration_cost: ', self_penetration_cost, 'env_penetration_cost: ',
     env_penetration_cost, 'ik_cost: ', ik_cost, 'robot_penetration_cost: ', robot_penetration_cost)
@@ -558,7 +555,7 @@ def count_new_collision(old_collisions: Set, new_collisions: Set, human, end_eff
 
 def cal_angle_diff(cur, target):
     # print ("cur: ", len(cur), 'target: ', len(target))
-    diff = np.sqrt(np.sum(np.square(np.array(cur) - np.array(target)))) / len(cur)
+    diff = np.sqrt(np.sum(np.square(np.array(cur) - np.array(target)))/len(cur))
     # print ("diff: ", diff)
     return diff
 
@@ -846,7 +843,7 @@ def render_pose(env_name, person_id, smpl_file):
     env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=None, person_id=person_id)
     env.render()  # need to call reset after render
     env.reset()
-
+    eyeline_side = get_eyeline_side(env.human)
     while True:
         keys = p.getKeyboardEvents()
         if ord('q') in keys:
@@ -900,8 +897,14 @@ def find_new_penetrations(old_collisions: Set, new_collisions: Set, human, end_e
 
     return adjusted_penetrations
 
+def get_angle_with_z_axis(rot_matrix):
+    vec_z = rot_matrix[:, 2] / np.linalg.norm(rot_matrix[:, 2])
+    rad_angle =  np.arccos(np.dot(vec_z, np.array([0, 0, 1])))
+    # determine the sign
+    vec_z_proj_x = np.dot(vec_z,  np.array([1, 0, 0]))
+    return rad_angle if vec_z_proj_x >= 0 else -rad_angle
 
-def get_gripper_z_angle(env, side, offset):
+def get_gripper_z_angle_cost(env, side, offset):
     '''
     get the z angle of the gripper in radian
     :param robot:
@@ -913,11 +916,11 @@ def get_gripper_z_angle(env, side, offset):
     # find gripper orientation
     gripper_pos, gripper_orient = robot.get_pos_orient( robot.right_end_effector if right else robot.left_end_effector)
     rot_matrix = np.array(p.getMatrixFromQuaternion(np.array(gripper_orient))).reshape(3, 3)
-    z_axis = rot_matrix[:, 2]/ np.linalg.norm(rot_matrix[:, 2])
     # target_pos = np.array(gripper_pos) + z_axis * 2
     # p.addUserDebugLine(gripper_pos, target_pos, [1, 0, 0], 5)
     # p.addUserDebugLine(gripper_pos, gripper_pos + np.array([0, 0, 2]), [0, 1, 0], 5)
-    angle = np.arccos(np.dot(rot_matrix[:, 2], np.array([0, 0, 1])))
+    angle = get_angle_with_z_axis(rot_matrix)
+
     # print("z_axis", z_axis)
     # print ("angle", angle)
     lower_limit, upper_limit =  offset[0]* np.pi/180.0, offset[1]* np.pi/180.0
@@ -926,20 +929,21 @@ def get_gripper_z_angle(env, side, offset):
     else:
         return abs(angle - lower_limit) if angle<0 else abs(angle - upper_limit)
 
-def cal_gripper_bedside_dist(env, side, offset): # TODO: duplicate code with cal_distance_to_bed
-    robot, bed = env.robot, env.furniture
-    
+def cal_ee_bedside_dist_cost(env, side, end_effector, offset): # TODO: duplicate code with cal_distance_to_bed
+    human, bed = env.human, env.furniture
+
     bed_bb = p.getAABB(bed.body, physicsClientId=env.id)
     right = True if side == 'right' else False
-    gripper_pos, gripper_orient = robot.get_pos_orient(robot.right_end_effector if right else robot.left_end_effector)
-    bed_xx, _, _ = bed_bb[1] if side == "right" else bed_bb[0]
-    bed_xx = bed_xx + offset if side == "right" else bed_xx - offset
+    ee_pos, _ = human.get_ee_pos_orient(end_effector)
+    bed_xx, _, _ = bed_bb[1] if right else bed_bb[0]
+    bed_xx = bed_xx + offset if right else bed_xx - offset
     # print ('bed size: ', np.array(bed_bb[1]) - np.array(bed_bb[0]))
-    # print ("bed_xx: ", bed_xx, "ee_pos: ", ee_pos, "side: ", side)
-    if side == "right":
-        return abs(gripper_pos[0] - bed_xx)*0.1 if gripper_pos[0] > bed_xx else abs(gripper_pos[0] - bed_xx)
+    print ("bed_xx: ", bed_xx, "ee_pos: ", ee_pos, "side: ", side)
+    if right:
+        return abs(ee_pos[0] - bed_xx)*0.1 if ee_pos[0] > bed_xx else abs(ee_pos[0] - bed_xx)
     else:
-        return abs(gripper_pos[0] - bed_xx)*0.1 if gripper_pos[0] < bed_xx else abs(gripper_pos[0] - bed_xx)
+        return abs(ee_pos[0] - bed_xx)*0.1 if ee_pos[0] < bed_xx else abs(ee_pos[0] - bed_xx)
+
 
 @deprecated
 def translate_bed_to_realworld(env, cord):
@@ -968,22 +972,6 @@ def translate_bed_to_realworld(env, cord):
     corner = find_corner(env)
     return np.array(cord) - corner
 
-@deprecated
-def cal_dist_to_bedside(env, end_effector, offset):
-    human, bed = env.human, env.furniture
-    ee_pos, _ = human.get_ee_pos_orient(end_effector)
-
-    bed_bb = p.getAABB(bed.body, physicsClientId=env.id)
-    bed_pos = p.getBasePositionAndOrientation(bed.body, physicsClientId=env.id)[0]
-    side = "right" if ee_pos[0] > bed_pos[0] else "left"
-    bed_xx, bed_yy, bed_zz = bed_bb[1] if side == "right" else bed_bb[0]
-    bed_xx = bed_xx + offset if side == "right" else bed_xx - offset
-    # print ('bed size: ', np.array(bed_bb[1]) - np.array(bed_bb[0]))
-    # print ("bed_xx: ", bed_xx, "ee_pos: ", ee_pos, "side: ", side)
-    if side == "right":
-        return 0 if ee_pos[0] > bed_xx else abs(ee_pos[0] - bed_xx)
-    else:
-        return 0 if ee_pos[0] < bed_xx else abs(ee_pos[0] - bed_xx)
 class NumpyEncoder(json.JSONEncoder):
     """ Special json encoder for numpy types """
     def default(self, obj):
