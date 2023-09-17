@@ -5,13 +5,15 @@ import numpy as np
 
 from assistive_gym.train import render, render_pose, make_env
 from assistive_gym.envs.utils.human_urdf_dict import HumanUrdfDict
-# from error.error_estimation import mpjpe
+from error.error_estimation import mpjpe
 from error.heatmap_plot import build_map_pkl
+from assistive_gym.envs.utils.smpl_geom import generate_geom2
+from assistive_gym.envs.utils.urdf_utils import SMPLData, load_smpl
 
     
 
-SMPL_FILES = [ 's01']
-PERSON_IDS = ['p001', 'p002' ]
+PERSON_IDS = ['p001', 'p002']
+SMPL_FILES = [ 's01', 's02', 's03']
 OBJECTS = ['cane', 'cup', 'pill']
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
@@ -42,17 +44,10 @@ def do_render(config):
     render(ENV, p, s, SAVE_DIR, o, ROBOT_IK)
 
 def render_result(env_name, person_id, smpl_file, pose_id='00'):
+    print("person_id: ", person_id, "smpl_file: ", smpl_file)
     env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=None, person_id=person_id)
     env.render()  # need to call reset after render
     env.reset()
-
-    # smpl_name = os.path.basename(smpl_file).split(".")[0]
-    # p.addUserDebugText("person: {}, smpl: {}".format(person_id,smpl_name), [0, 0, 1], textColorRGB=[1, 0, 0])
-
-    # loading the pose and render in sim
-    # actions = pkl.load(open(smpl_file, "rb"))
-    # print("actions: ", actions)
-    # env.human.set_joint_angles(env.human.controllable_joint_indices, action)
 
     # collect joint angles to write to pkl file
     humanURDF = HumanUrdfDict()
@@ -63,31 +58,30 @@ def render_result(env_name, person_id, smpl_file, pose_id='00'):
     data = []
     for joint in joints:
         data.append(np.array(env.human.get_link_positions_id(humanURDF.get_dammy_joint_id(joint))))
-        print("data: ", data)
+        print(joint, ": ", env.human.get_link_positions_id(humanURDF.get_dammy_joint_id(joint)))
+
 
     env.disconnect()
     
-    print("data: ", data)
-    
-    # saving to pickle file for comparison
-    save = "error/" + str(person_id) + "_" + str(pose_id) + ".pkl"
-    # os.makedirs(save, exist_ok=True)
-    pkl.dump(data, open(save, "wb"))
-    print("file saved")
-    # time.sleep(5)
-
     # env.disconnect()
-    slp_body = pkl.load(open("error/p1_s1/s01.pkl", "rb"))
-    # slp_body = slp_body['body_pose']
-    print("\n\nslp_body: ", slp_body)
-    s_body = [np.array([0, 0, 0])] # pre-add pelvis?
-    i = 0
-    while i + 2 < len(slp_body):
-        s_body.append(np.array([slp_body[i], slp_body[i + 1], slp_body[i + 2]]))
-        i+=3
-    # print("s_body: ", s_body)
-    # build_map_pkl([], 0, 0, 0, body_pts=s_body, ag_body_pts=data, go=False)
-    build_map_pkl([], 0, 0, 0, body_pts=s_body, go=False)
+    slp_body = pkl.load(open("error/" + person_id + "/" + pose_id + ".pkl", "rb"))
+    smpl_path = "examples/data/SMPL_FEMALE.pkl"
+    smpl_data = SMPLData(slp_body['body_pose'], slp_body['betas'], slp_body['global_orient'])
+    
+    _, joint_pos, _ = generate_geom2(smpl_path, smpl_data, "assistive_gym/error/error_geom")
+    s_body = []
+    joints = ["L_Hip", "Pelvis", "R_Hip", "L_Shoulder", # 0 - 3
+        "Neck", "R_Shoulder", "L_Elbow", "R_Elbow", # 4 - 7
+        "L_Hand", "R_Hand", "L_Knee", "R_Knee", # 8 - 11
+        "L_Ankle", "R_Ankle", "Spine1", "Spine2", "Spine3"] # 12 - 16
+    for joint in joints:
+        s_body.append(joint_pos[joint])
+    build_map_pkl([], 0, 0, 0, smpl_ag_body_pts=s_body, ag_body_pts=data, go=False)
+
+    file_w = open("error/mpjpe_values.txt", "a")
+    file_w.write(person_id + "/" + pose_id + ".pkl: " + str(mpjpe(s_body, data)))
+    file_w.close()
+    print("mpjpe: ", mpjpe(s_body, data))
 
 
 
@@ -95,13 +89,13 @@ if __name__ == '__main__':
     configs = get_dynamic_configs()
 
     displayed = set()
-    p, smpl, o, s = configs[0]
-    render_result(ENV, p, smpl, pose_id=s)
+    # p, smpl, o, s = configs[0]
+    # render_result(ENV, p, smpl, pose_id=s)
 
-    # for config in configs:
-    #     p, smpl, o, s = config
-    #     if (p, smpl) not in displayed:
-    #         displayed.add((p, s))
-    #     render_result(ENV, p, smpl, pose_id=s)
+    for config in configs:
+        p, smpl, o, s = config
+        if (p, smpl) not in displayed:
+            displayed.add((p, s))
+        render_result(ENV, p, smpl, pose_id=s)
 
 # Note for me: in env.human.get_link_positions(), try loading in the joints in the order prespecific in error_estimation.py
