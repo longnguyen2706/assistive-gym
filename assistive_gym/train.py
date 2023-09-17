@@ -346,9 +346,10 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
     # max_eye = 0.25
 
     eye = human.get_head_angle_range(end_effector=ee_name)
-    max_eye = 0.25
+    max_eye = 0.15
+    print("eye: ", eye)
 
-    w = [1, 1, 4, 1, 1, 1, 0]
+    w = [1, 1, 4, 1, 1, 1, ]
     cost = None
 
     if not object_config: # no object handover case
@@ -357,33 +358,26 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
                 + w[3] * torque / max_dynamics.torque + w[4] * mid_angle_displacement + w[
                     5] * eye / max_) / np.sum(w)
     else:
-        if object_config.object_type == HandoverObject.PILL:
-            # cal wrist orient (pill)
-            wr_offset = human.get_vertical_offset(end_effector=ee_name)
-            max_wr_offset = 1
-            w = w + object_config.weights
-            # cal cost
-            cost = (w[0] * dist + w[1] * 1 / (manipulibility / max_dynamics.manipulibility) + w[2] * energy_final / max_dynamics.energy \
-                + w[3] * torque / max_dynamics.torque + w[4] * mid_angle_displacement + w[5] * eye/max_eye +  w[6] * dist_to_bedside
-                + w[7] * wr_offset/max_wr_offset) / np.sum(w)
-            # check angle
-            cost += 100 * (wr_offset > object_config.limits[0])
+        # cal cost
+        cost = (w[0] * dist + w[1] * 1 / (manipulibility / max_dynamics.manipulibility) + w[2] * energy_final / max_dynamics.energy \
+            + w[3] * torque / max_dynamics.torque + w[4] * mid_angle_displacement + w[5] * eye/max_eye) / np.sum(w)
+    
 
-        elif object_config.object_type in [HandoverObject.CUP, HandoverObject.CANE]:
-            # cal wrist orient (cup and cane)
-            cup_wr_offset = abs(human.get_parallel_offset(end_effector=ee_name)-1)
-            max_cup = 1
-            w = w + object_config.weights
-            # cal cost
-            cost = (w[0] * dist + w[1] * 1 / (manipulibility / max_dynamics.manipulibility) + w[2] * energy_final / max_dynamics.energy \
-                + w[3] * torque / max_dynamics.torque + w[4] * mid_angle_displacement + w[5] * reba/max_reba
-                + w[7] * cup_wr_offset/max_cup + w[6] * dist_to_bedside) / np.sum(w)
-            if not robot_ik_mode: # using raycast to calculate cost
-                # check angles and raycasts
-                cost += 100 * cup_wr_offset > object_config.limits[0]
-                cost += 100 * human.ray_cast_perpendicular(end_effector=ee_name, ray_length=0.1)
-                if object_config.object_type == HandoverObject.CANE:
-                    cost += 100 * human.ray_cast_parallel(end_effector=ee_name)
+        # elif object_config.object_type in [HandoverObject.CUP, HandoverObject.CANE]:
+        #     # cal wrist orient (cup and cane)
+        #     cup_wr_offset = abs(human.get_parallel_offset(end_effector=ee_name)-1)
+        #     max_cup = 1
+        #     w = w + object_config.weights
+        #     # cal cost
+        #     cost = (w[0] * dist + w[1] * 1 / (manipulibility / max_dynamics.manipulibility) + w[2] * energy_final / max_dynamics.energy \
+        #         + w[3] * torque / max_dynamics.torque + w[4] * mid_angle_displacement + w[5] * reba/max_reba
+        #         + w[7] * cup_wr_offset/max_cup + w[6] * dist_to_bedside) / np.sum(w)
+        #     if not robot_ik_mode: # using raycast to calculate cost
+        #         # check angles and raycasts
+        #         cost += 100 * cup_wr_offset > object_config.limits[0]
+        #         cost += 100 * human.ray_cast_perpendicular(end_effector=ee_name, ray_length=0.1)
+        #         if object_config.object_type == HandoverObject.CANE:
+        #             cost += 100 * human.ray_cast_parallel(end_effector=ee_name)
 
     if new_self_collision:
         cost += 100 * new_self_collision
@@ -763,9 +757,9 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
 
     # choose end effector
     handover_obj_config = get_handover_object_config(handover_obj, env)
-    if handover_obj_config and handover_obj_config.end_effector: # reset the end effector based on the object
-        human.reset_controllable_joints(handover_obj_config.end_effector)
-        end_effector = handover_obj_config.end_effector
+    # if handover_obj_config and handover_obj_config.end_effector: # reset the end effector based on the object
+    #     human.reset_controllable_joints(handover_obj_config.end_effector)
+    #     # end_effector = handover_obj_config.end_effector
 
     # init collision check
     env_object_ids = [furniture.body, plane.body]  # set env object for collision check
@@ -1017,7 +1011,7 @@ def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik
 
 
 def render_pose(env_name, person_id, smpl_file):
-    env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=None   , person_id=person_id)
+    env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=None, person_id=person_id)
     env.render()  # need to call reset after render
     env.reset()
 

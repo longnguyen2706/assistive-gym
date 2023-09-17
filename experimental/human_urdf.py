@@ -389,7 +389,7 @@ class HumanUrdf(Agent):
         ee_pos, _ = self.get_ee_pos_orient("head")
         p.addUserDebugLine(ee_pos, left, [0, 1, 0])
         p.addUserDebugLine(ee_pos, right, [1, 0, 0])
-        p.removeAllUserDebugItems
+        p.createVisualShape(p.GEOM_SPHERE, radius=0.1)
         print("left: ", left, "\nright: ", right)
         l = left[0]
         r = right[0]
@@ -437,7 +437,7 @@ class HumanUrdf(Agent):
         end_right = [ee_pos[0] + (ray_dir[0]*l), ee_pos[1] + (ray_dir[1]*l), ee_pos[2] + (ray_dir[2]*l)]
         return [end_left, end_right]
 
-    def set_head_angle(self, l=0.25):
+    def set_head_angle(self, l=0.375):
         ee_pos, ee_orient = self.get_ee_pos_orient("head")
         rotation = np.array(p.getMatrixFromQuaternion(ee_orient))
         ray_dir = rotation.reshape(3, 3)[:, 2]
@@ -460,15 +460,15 @@ class HumanUrdf(Agent):
         self.head_coords = [end_l, end_norm, end_r] 
         self.head_angle = angle
 
-    def get_head_angle_range(self, end_effector, l=0.25): # currently using
+    def get_head_angle_range(self, end_effector): # currently using
         end_l, end_norm, end_r = self.head_coords
 
         hand_pos, _ = self.get_ee_pos_orient(end_effector)
         hand = hand_pos[0]
         # center = end_norm[0]
-        print("right limit (lower): ", end_r[0], "\nleft limit (upper): ", end_l[0])
+        # print("right limit (lower): ", end_r[0], "\nleft limit (upper): ", end_l[0])
 
-        if hand > end_r[0] and hand < end_l[0]:
+        if hand >= end_r[0] and hand <= end_l[0]:
             return 0
             # return abs(0.5 * (hand - center)) # TRY LATER: add a slight bias toward the center
         return min(hand - end_r[0], hand - end_l[0])
@@ -562,6 +562,15 @@ class HumanUrdf(Agent):
                 link_positions.append(pos)
 
         return link_positions
+
+    def get_link_positions_id(self, link_id, center_of_mass=True):
+        link_positions = []
+        for i in [link_id]:
+                pos, orient = self.get_pos_orient(i, center_of_mass=center_of_mass)
+                link_positions.append(pos)
+        return link_positions
+
+
 
     def inverse_dynamic(self, end_effector_name=None):
         # inverse dynamics will return the torque for base 7 DOF + all joints DOF (in our case of floating base + 23 joints, it will be 76)
