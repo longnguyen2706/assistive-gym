@@ -234,7 +234,7 @@ def build_map_pkl(func_data, points, func_max, func_min, body_pts=None, bp_body_
     # plot the body points then draw them (from Louis ag model)
     if ag_body_pts is not None:
         i = 0
-        hip = ag_body_pts[4] # using neck instead // not renaming for time
+        hip = ag_body_pts[1] # using pelvis instead // not renaming for time
         for body_point in ag_body_pts:
             body_point = np.array(body_point) - np.array(hip)
             body_point = body_point[0]
@@ -294,7 +294,7 @@ def build_map_pkl(func_data, points, func_max, func_min, body_pts=None, bp_body_
     
     if smpl_ag_body_pts is not None:
         i = 0
-        hip = smpl_ag_body_pts[4] # using neck instead, not renaming for time
+        hip = smpl_ag_body_pts[1] # using pelvis instead, not renaming for time
         for body_point in smpl_ag_body_pts:
             body_point = np.array(body_point) - np.array(hip)
             # body_point = body_point[0]
@@ -352,6 +352,7 @@ def build_map_pkl(func_data, points, func_max, func_min, body_pts=None, bp_body_
             z = build_body_line(smpl_ag_body_pts, right_leg, 2, sub=hip)[0]
             ax.plot(x, y, z, color='black')
     
+    # CURRENTLY UNUSED
     if slp_body_pts is not None:
         i = 0
         hip = slp_body_pts[0]
@@ -411,6 +412,7 @@ def build_map_pkl(func_data, points, func_max, func_min, body_pts=None, bp_body_
             z = build_body_line(slp_body_pts, right_leg, 2, sub=hip)[0]
             ax.plot(x, y, z, color='black')    
     
+    ## CURRENTLY UNUSED
     # plot the body points then draw them (SMPL)
     if body_pts is not None:
         i = 0

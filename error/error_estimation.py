@@ -46,8 +46,8 @@ joint_map = [lhip, rhip, lshoulder, neck, rshoulder, leblow, relbow, lwrist, rwr
 def mpjpe(smpl_body, ag_body):
     s = 0
     i = 0
-    smpl_neck = smpl_body[4]
-    ag_neck = ag_body[4]
+    smpl_neck = smpl_body[0] # this is the pelvis
+    ag_neck = ag_body[0]
     for joint in joint_map:
         smpl = smpl_body[joint[0]] - smpl_neck
         ag = ag_body[joint[1]] - ag_neck
@@ -85,21 +85,5 @@ def sum_squared_errors(bp_body, opt_body):
         sum = sum + (add * add)
     return sum
 
-
-if __name__ == '__main__':
-    f = open("error/p1_s1/p001_s01.pkl", 'rb')
-    ag = pkl.load(f)
-    print("\nassistive_gym model: ", ag)
-    b = open("error/p1_s1/s01.pkl", 'rb')
-    bp = pkl.load(b)
-    print("\nbody pressure model: ", bp)
-    print("### models loaded ###")
-    bp_body = bp['body_pose']
-    # ag_body = ag['simulated_human_positions']
-    # print("almost done")
-    # sse = sum_squared_errors(smpl_body, real_body)
-    # se = squared_errors(smpl_body, real_body)
-    # print("squared errors: ", se)
-    # print("done")
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/

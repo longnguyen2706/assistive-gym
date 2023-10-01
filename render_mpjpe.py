@@ -12,9 +12,9 @@ from assistive_gym.envs.utils.urdf_utils import SMPLData, load_smpl
 
     
 
-PERSON_IDS = ['p001', 'p002']
+PERSON_IDS = ['p002']
 SMPL_FILES = [ 's01', 's02', 's03']
-OBJECTS = ['cane', 'cup', 'pill']
+OBJECTS = [None]
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
 ENV = "HumanComfort-v1"
@@ -57,8 +57,11 @@ def render_result(env_name, person_id, smpl_file, pose_id='00'):
         "left_ankle", "right_ankle", "spine_2", "spine_3", "spine_4"] # 12 - 16
     data = []
     for joint in joints:
-        data.append(np.array(env.human.get_link_positions_id(humanURDF.get_dammy_joint_id(joint))))
-        print(joint, ": ", env.human.get_link_positions_id(humanURDF.get_dammy_joint_id(joint)))
+        if joint == "pelvis": data.append(np.array(env.human.get_link_positions_id(0, center_of_mass=False)))
+        else:
+            print("joint: ", joint, " -> dammy joint id: ", humanURDF.get_dammy_joint_id(joint))
+            data.append(np.array(env.human.get_link_positions_id(humanURDF.get_dammy_joint_id(joint), center_of_mass=False)))
+            print(joint, ": ", env.human.get_link_positions_id(humanURDF.get_dammy_joint_id(joint)))
 
 
     env.disconnect()
