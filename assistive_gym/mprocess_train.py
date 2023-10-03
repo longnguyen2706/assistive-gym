@@ -9,9 +9,9 @@ from assistive_gym.envs.utils.dto import RobotSetting, InitRobotSetting
 from assistive_gym.envs.utils.train_utils import *
 
 LOG = get_logger()
-NUM_WORKERS = 6
-MAX_ITERATION = 500
-RENDER_UI = False
+NUM_WORKERS = 12
+MAX_ITERATION = 150
+RENDER_UI = True
 
 
 class SubEnvProcess(multiprocessing.Process):
@@ -74,7 +74,7 @@ class MainEnvProcess(multiprocessing.Process):
         if not self.env:
             self.env = make_env(env_name, person_id, smpl_file, handover_obj, coop)
 
-        type, angle, robot_setting = task
+        type, angle, robot_setting, chosen_end_effector = task
 
         if type == 'init':
             print('init main env')
@@ -94,7 +94,7 @@ class MainEnvProcess(multiprocessing.Process):
             env, human, robot = self.env, self.env.human, self.env.robot
             human.set_joint_angles(human.controllable_joint_indices, angle)
             render_robot(env, robot_setting)
-            _, ik_target_pos = find_ee_ik_goal(human, end_effector, handover_obj)
+            _, ik_target_pos = find_ee_ik_goal(human, chosen_end_effector, handover_obj)
 
             return {
                 'pelvis': human.get_pos_orient(human.human_dict.get_fixed_joint_id("pelvis"), center_of_mass=True),
@@ -260,7 +260,7 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
 
     # init main env process
     main_env_process, main_env_task_queue, main_env_result_queue = init_main_env_process(env_config)
-    main_env_task_queue.put(('init', None, None))
+    main_env_task_queue.put(('init', None, None, None))
     init_result = main_env_result_queue.get()
     original_info, max_dynamics, env_object_ids, human_link_robot_collision, end_effector, handover_obj_config, \
         controllable_joint_lower_limits, controllable_joint_upper_limits, initial_robot_setting = init_result
@@ -299,8 +299,8 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
                 best_cost = cost
                 best_angle = joint_angles
                 best_robot_setting = robot_setting
-            print('best_cost: ', best_cost)
-            main_env_task_queue.put(('render_step', joint_angles, robot_setting))
+            # print('best_cost: ', best_cost)
+            main_env_task_queue.put(('render_step', joint_angles, robot_setting, None))
             main_env_result_queue.get()
         optimizer.tell(solutions, fitness_values)
 
@@ -322,7 +322,7 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
     LOG.info(
         f"{bcolors.OKBLUE} Best cost: {optimizer.best.f} {best_cost} {bcolors.ENDC}")
 
-    main_env_task_queue.put(('get_human_robot_info', best_angle, best_robot_setting))
+    main_env_task_queue.put(('get_human_robot_info', best_angle, best_robot_setting, end_effector))
     human_robot_info = main_env_result_queue.get()
 
     destroy_main_env_process(main_env_process, main_env_task_queue)

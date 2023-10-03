@@ -47,7 +47,7 @@ OBJECT_PALM_OFFSET = {
 
 GRIPPER_Z_ANGLE_LIMIT = {
     "pill": None,
-    "cup": [-20, 20],
+    "cup": [-10, 10],
     "cane": None
 }
 
@@ -67,7 +67,7 @@ YAML_FILE= os.path.join(os.getcwd(), 'params/param_1509.yaml')
 def load_yaml(yaml_file):
     with open(yaml_file) as f:
         params = yaml.safe_load(f)
-    print (params)
+    # print ("yaml params: ", params)
     return params
 
 PARAMS = load_yaml(YAML_FILE)
@@ -237,15 +237,15 @@ def get_eyeline_side(human):
     normal_vec = rotation_matrix[:, 2]/np.linalg.norm(rotation_matrix[:, 2])
 
     # draw for debug
-    p.addUserDebugLine(head_pos, head_pos + normal_vec*10, [1, 0, 0], 5, 10)
-    z_axis = np.array([0, 0, 1])
+    # p.addUserDebugLine(head_pos, head_pos + normal_vec*10, [1, 0, 0], 5, 10)
+    # z_axis = np.array([0, 0, 1])
     # z_angle= find_angle(z_axis, normal_vec)
     # norm_vec = np.cross(z_axis, normal_vec)
     # p.addUserDebugLine(head_pos, head_pos + norm_vec*10, [0, 1, 0], 5, 10)
     # unsigned_z_angle = np.arccos(np.dot(z_axis, normal_vec))
     # z_angle = unsigned_z_angle if np.dot(z_axis, normal_vec)>0 else -unsigned_z_angle
     z_angle = get_angle_with_z_axis(rotation_matrix)
-    print ("normal vec", normal_vec, "z angle: ", z_angle)
+    # print ("normal vec", normal_vec, "z angle: ", z_angle)
     return "right" if z_angle > np.pi/6 else "left" if z_angle < -np.pi/6 else None
 
 def get_handover_object_config(object_name, env) -> Optional[HandoverObjectConfig]:
@@ -259,7 +259,7 @@ def get_handover_object_config(object_name, env) -> Optional[HandoverObjectConfi
     if object_name is None:  # case: no handover object
         return HandoverObjectConfig(None, weights=[0], limits=[0], end_effector=ee)  # original = 6
     # TODO: revise the hand choice
-    print ("object name: ", object_name)
+    # print ("object name: ", object_name)
     object_type = HandoverObject.from_string(object_name)
     if object_name == "pill":
         return HandoverObjectConfig(object_type, weights=[0], limits=[0.27], end_effector=ee)  # original = 6
@@ -438,8 +438,8 @@ def cost_func(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.n
             # print(robot_penetrations)]
             robot_penetration_cost = w['robot_penetration'] * sum(robot_penetrations)
             cost += robot_penetration_cost
-    print('cost: ', cost, 'object specific cost: ', o_specific_cost,  'self_penetration_cost: ', self_penetration_cost, 'env_penetration_cost: ',
-    env_penetration_cost, 'ik_cost: ', ik_cost, 'robot_penetration_cost: ', robot_penetration_cost)
+    print('cost: ', cost/100, 'object specific cost: ', o_specific_cost/100,  'self_penetration_cost: ', self_penetration_cost/100, 'env_penetration_cost: ',
+    env_penetration_cost/100, 'ik_cost: ', ik_cost/100, 'robot_penetration_cost: ', robot_penetration_cost/100)
 
     return cost/100, manipulibility, dist, energy_final, torque
 
@@ -540,7 +540,7 @@ def count_new_collision(old_collisions: Set, new_collisions: Set, human, end_eff
         if (link1, link2) not in initial_collision_map or (link2, link1) not in initial_collision_map:  # new collision:
             if abs(penetration) > penetration_threshold[
                 "new"]:  # magic number. we have penetration between spine4 and shoulder in pose 5
-                print("new collision: ", collision)
+                # print("new collision: ", collision)
                 collision_set.add((collision[0], collision[1]))
         else:
             # collision in old collision
@@ -548,7 +548,7 @@ def count_new_collision(old_collisions: Set, new_collisions: Set, human, end_eff
                 initial_collision_map[(link2, link1)]
             if abs(penetration) > max(penetration_threshold["old"],
                                       initial_depth):  # magic number. we have penetration between spine4 and shoulder in pose 5
-                print("old collision with deep penetration: ", collision)
+                # print("old collision with deep penetration: ", collision)
                 collision_set.add((link1, link2))
 
     return len(collision_set)
@@ -602,7 +602,7 @@ def cal_torque_magnitude(human, end_effector):
     for i in range(0, len(torques), 3):
         torque = np.sqrt(np.sum(np.square(torques[i:i + 3])))
         torque_magnitude += torque
-    LOG.debug(f"torques: {torques}, torque magnitude: {torque_magnitude}")
+    # LOG.debug(f"torques: {torques}, torque magnitude: {torque_magnitude}")
     return torque_magnitude
 
 
@@ -623,7 +623,7 @@ def get_max_torque(env, end_effector="right_hand"):
     human = env.human
     human.set_joint_angles(human.controllable_joint_indices, len(human.controllable_joint_indices) * [0])
     torque = cal_torque_magnitude(human, end_effector)
-    print("max torque: ", torque)
+    # print("max torque: ", torque)
     return torque
 
 
@@ -651,7 +651,7 @@ def move_robot(env):  # for debugging purpose
         robot.control(robot.right_arm_joint_indices, np.array(target_joint_angles), 0.1, 100)
         p.stepSimulation()
 
-    print("tool mass: ", p.getDynamicsInfo(tool.body, -1)[0])
+    # print("tool mass: ", p.getDynamicsInfo(tool.body, -1)[0])
 
 
 def get_human_link_robot_collision(human, end_effector):
@@ -684,7 +684,7 @@ def choose_upper_hand(human):
     left_pos = human.get_link_positions(True, end_effector_name="left_hand")
     right_shoulder_z = right_pos[1][2]
     left_shoulder_z = left_pos[1][2]
-    print("right_shoulder_z: ", right_shoulder_z, "\nleft_shoudler_z: ", left_shoulder_z)
+    # print("right_shoulder_z: ", right_shoulder_z, "\nleft_shoudler_z: ", left_shoulder_z)
     diff = right_shoulder_z - left_shoulder_z
     if diff > 0.2:
         return "right_hand"
@@ -697,7 +697,7 @@ def choose_upper_hand(human):
 def choose_closer_bedside_hand(env):
     right_dist = cal_dist_to_bedside(env, "right_hand")
     left_dist = cal_dist_to_bedside(env, "left_hand")
-    print("right_dist: ", right_dist, "\nleft_dist: ", left_dist)
+    # print("right_dist: ", right_dist, "\nleft_dist: ", left_dist)
     return "right_hand" if right_dist < left_dist else "left_hand"
 
 
@@ -713,7 +713,7 @@ def build_original_human_info(human, env_object_ids, end_effector) -> OriginalHu
 
 
 def translate_wrt_human_pelvis(human, pos, orient):
-    print("pos: ", pos, "orient: ", orient)
+    # print("pos: ", pos, "orient: ", orient)
     pelvis_pos, pelvis_orient = human.get_pos_orient(human.human_dict.get_fixed_joint_id("pelvis"), center_of_mass=True)
     # print("pelvis_pos: ", pelvis_pos, "pelvis_orient: ", pelvis_orient)
     pelvis_pos_inv, pelvis_orient_inv = p.invertTransform(pelvis_pos, pelvis_orient, physicsClientId=human.id)
@@ -728,7 +728,7 @@ def translate_wrt_human_pelvis(human, pos, orient):
 
 def init_optimizer(x0, sigma, lower_bounds, upper_bounds):  # for cmaes library
     opts = {}
-    opts['tolfun'] = 1e-2 * 2
+    opts['tolfun'] = 1e-2
     opts['tolx'] = 1e-2
 
     for i in range(x0.size):
@@ -754,8 +754,8 @@ def init_optimizer2(x0, sigma, lower_bounds, upper_bounds):  # for cma library
     bounds = [[l, u] for l, u in zip(lower_bounds, upper_bounds)]
     bounds = np.array(bounds)
     # print ("bounds: ", bounds.shape, x0.shape, x0.size)
-    print("bounds: ", bounds)
-    print("x0: ", x0)
+    # print("bounds: ", bounds)
+    # print("x0: ", x0)
     for i in range(x0.size):
         if x0[i] < bounds[i][0]:
             x0[i] = bounds[i][0]
@@ -775,10 +775,10 @@ def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik: boo
     if handover_obj == "all":
         for key in actions.keys():
             action = actions[key]
-            print("key: ", key)
+            # print("key: ", key)
             handover_obj = key.split("-")[0]
             robot_ik = key.split("-")[1] == "robot_ik"
-            print("handover obj: ", handover_obj, "robot_ik: ", robot_ik)
+            # print("handover obj: ", handover_obj, "robot_ik: ", robot_ik)
             robot_pose, robot_joint_angles = None, None
             try:
                 robot_pose = action["wrt_pelvis"]["robot"]['original']
@@ -815,7 +815,7 @@ def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik
     env.human.reset_controllable_joints(action["end_effector"])
     env.human.set_joint_angles(env.human.controllable_joint_indices, action["solution"])
     if robot_ik:
-        print("robot pose: ", robot_pose, "robot_joint_angles: ", robot_joint_angles)
+        # print("robot pose: ", robot_pose, "robot_joint_angles: ", robot_joint_angles)
         if robot_pose is None or robot_joint_angles is None:
             find_robot_ik_solution(env, action["end_effector"], handover_obj)
         else:
@@ -938,7 +938,7 @@ def cal_ee_bedside_dist_cost(env, side, end_effector, offset): # TODO: duplicate
     bed_xx, _, _ = bed_bb[1] if right else bed_bb[0]
     bed_xx = bed_xx + offset if right else bed_xx - offset
     # print ('bed size: ', np.array(bed_bb[1]) - np.array(bed_bb[0]))
-    print ("bed_xx: ", bed_xx, "ee_pos: ", ee_pos, "side: ", side)
+    # print ("bed_xx: ", bed_xx, "ee_pos: ", ee_pos, "side: ", side)
     if right:
         return abs(ee_pos[0] - bed_xx)*0.1 if ee_pos[0] > bed_xx else abs(ee_pos[0] - bed_xx)
     else:
@@ -952,7 +952,7 @@ def translate_bed_to_realworld(env, cord):
         bed_pos, bed_orient = p.getBasePositionAndOrientation(bed.body, physicsClientId=env.id)
         # get aabb
         bed_aabb = p.getAABB(bed.body, physicsClientId=env.id)
-        print('bed_aabb: ', bed_aabb)
+        # print('bed_aabb: ', bed_aabb)
         p.setPhysicsEngineParameter(contactBreakingThreshold=0.00001)
         bed_size = np.array(bed_aabb[1]) - np.array(bed_aabb[0])
         # draw aabb box

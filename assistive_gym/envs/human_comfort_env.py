@@ -85,7 +85,7 @@ class HumanComfortEnv(AssistiveEnv):
             smpl_data = load_smpl(self.smpl_file)
             self.human.set_joint_angles_with_smpl(smpl_data)
             height, base_height = self.human.get_heights()
-            print("human height ", height, base_height, "bed height ", bed_height, bed_base_height)
+            # print("human height ", height, base_height, "bed height ", bed_height, bed_base_height)
             self.human.set_global_orientation(smpl_data, [0, 0, bed_height])
             self.human.set_gravity(0, 0, -9.81)
             p.setPhysicsEngineParameter(numSubSteps=4, numSolverIterations=10, physicsClientId=self.id)
