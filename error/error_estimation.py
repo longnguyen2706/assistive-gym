@@ -48,9 +48,9 @@ def mpjpe(smpl_body, ag_body):
     i = 0
     smpl_neck = smpl_body[0] # this is the pelvis
     ag_neck = ag_body[0]
-    for joint in joint_map:
-        smpl = smpl_body[joint[0]] - smpl_neck
-        ag = ag_body[joint[1]] - ag_neck
+    for i,s_joint in enumerate(smpl_body):
+        smpl = s_joint - smpl_neck
+        ag = ag_body[i] - ag_neck
         s += np.abs(np.linalg.norm(smpl - ag))
         i += 1
     return s/i

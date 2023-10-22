@@ -13,9 +13,9 @@ from assistive_gym.train import render, render_pose
 # SMPL_FILES = [ 's01','s19', 's40']
 # PERSON_IDS = ['p001', 'p002', 'p003', 'p004', 'p005']
 # OBJECTS = ['cane', 'cup', 'pill']
-SMPL_FILES = [ 's01','s19', 's45']
-PERSON_IDS = ['p001', 'p002' ]
-OBJECTS = ['cane', 'cup', 'pill']
+SMPL_FILES = ['s19']
+PERSON_IDS = ['p001']
+OBJECTS = ['pill']
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
 ENV = "HumanComfort-v1"
@@ -42,6 +42,7 @@ def get_dynamic_configs():
 def do_render(config):
     p, s, o = config
     print (p, s, o)
+    print("save dir: ", SAVE_DIR)
     render(ENV, p, s, SAVE_DIR,o, ROBOT_IK)
 
 if __name__ == '__main__':
@@ -52,5 +53,6 @@ if __name__ == '__main__':
         p, s, o = config
         if (p, s) not in displayed:
             displayed.add((p, s))
-            render_pose(ENV, p, s)
-        do_render(config)
+            do_render(config)
+            # render_pose(ENV, p, s)
+        # do_render(config)

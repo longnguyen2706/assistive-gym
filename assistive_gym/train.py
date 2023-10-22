@@ -345,19 +345,28 @@ def cost_fn(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.nda
     # eye = human.get_eyeline_offset(end_effector=ee_name)
     # max_eye = 0.25
 
-    eye = human.get_head_angle_range(end_effector=ee_name)
-    max_eye = 0.15
-    print("eye: ", eye)
+    # eye = human.get_head_angle_range(end_effector=ee_name)
+    # max_eye = 0.15
 
-    w = [1, 1, 4, 1, 1, 1, ]
+    # = [0, 1, 2, 3, 4, 5] # index references
     cost = None
 
     if not object_config: # no object handover case
+        w = [1, 1, 4, 1, 1]
         cost = (w[0] * dist + w[1] * 1 / (manipulibility / max_dynamics.manipulibility) + w[
             2] * energy_final / max_dynamics.energy \
-                + w[3] * torque / max_dynamics.torque + w[4] * mid_angle_displacement + w[
-                    5] * eye / max_) / np.sum(w)
+                + w[3] * torque / max_dynamics.torque + w[4] * mid_angle_displacement) / np.sum(w)
+    elif object_config.object_type in [HandoverObject.CUP]:
+        # cal cost
+        print("cup --> no eyeline being used")
+        w = [1, 1, 4, 1, 1]
+        cost = (w[0] * dist + w[1] * 1 / (manipulibility / max_dynamics.manipulibility) + w[2] * energy_final / max_dynamics.energy \
+            + w[3] * torque / max_dynamics.torque + w[4] * mid_angle_displacement) / np.sum(w)
     else:
+        w = [1, 1, 4, 1, 1, 1.5]
+        eye = human.visibility(ee_name)
+        max_eye = np.pi
+        print("eye: ", eye)
         # cal cost
         cost = (w[0] * dist + w[1] * 1 / (manipulibility / max_dynamics.manipulibility) + w[2] * energy_final / max_dynamics.energy \
             + w[3] * torque / max_dynamics.torque + w[4] * mid_angle_displacement + w[5] * eye/max_eye) / np.sum(w)
@@ -787,8 +796,8 @@ def train(env_name, seed=0,  smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl',
 
     smpl_name = os.path.basename(smpl_file)
     p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_name), [0, 0, 1], textColorRGB=[1, 0, 0])
-    human.set_head_angle() # getting the head's left and right limits
-    print("head limits defined")
+    # human.set_head_angle() # getting the head's left and right limits
+    # print("head limits defined")
 
     while not optimizer.stop():
         timestep += 1

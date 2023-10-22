@@ -54,7 +54,10 @@ def render_result(env_name, person_id, smpl_file, pose_id='00'):
     joints = ["left_hip", "pelvis", "right_hip", "left_shoulder", # 0 - 3
         "neck", "right_shoulder", "left_elbow", "right_elbow", # 4 - 7
         "left_hand", "right_hand", "left_knee", "right_knee", # 8 - 11
-        "left_ankle", "right_ankle", "spine_2", "spine_3", "spine_4"] # 12 - 16
+        "left_ankle", "right_ankle", "spine_2", "spine_3", "spine_4", # 12 - 16
+        "left_foot", "right_foot", "head", "left_clavicle", "right_clavicle",  # 17 - 21
+        "left_lowarm", "right_lowarm" # 22 - 23
+    ]
     data = []
     for joint in joints:
         if joint == "pelvis": data.append(np.array(env.human.get_link_positions_id(0, center_of_mass=False)))
@@ -76,7 +79,10 @@ def render_result(env_name, person_id, smpl_file, pose_id='00'):
     joints = ["L_Hip", "Pelvis", "R_Hip", "L_Shoulder", # 0 - 3
         "Neck", "R_Shoulder", "L_Elbow", "R_Elbow", # 4 - 7
         "L_Hand", "R_Hand", "L_Knee", "R_Knee", # 8 - 11
-        "L_Ankle", "R_Ankle", "Spine1", "Spine2", "Spine3"] # 12 - 16
+        "L_Ankle", "R_Ankle", "Spine1", "Spine2", "Spine3", # 12 - 16
+        "L_Foot", "R_Foot", "Head", "L_Collar", "R_Collar", # 17 - 21
+        "L_Wrist", "R_Wrist" # 22 - 23
+    ]
     for joint in joints:
         s_body.append(joint_pos[joint])
     build_map_pkl([], 0, 0, 0, smpl_ag_body_pts=s_body, ag_body_pts=data, go=False)
@@ -84,7 +90,7 @@ def render_result(env_name, person_id, smpl_file, pose_id='00'):
     file_w = open("error/mpjpe_values.txt", "a")
     file_w.write(person_id + "/" + pose_id + ".pkl: " + str(mpjpe(s_body, data)))
     file_w.close()
-    print("mpjpe: ", mpjpe(s_body, data))
+    print("\n\nmpjpe: ", mpjpe(s_body, data))
 
 
 

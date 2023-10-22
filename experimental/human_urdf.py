@@ -422,7 +422,6 @@ class HumanUrdf(Agent):
 
         return False
 
-
     def get_fov(self, l=0.25):
         # casts field of view from head 0.5m outward to define a line of sight -- will check that 0.5m is reasonable
         ee_pos, ee_orient = self.get_ee_pos_orient("head")
@@ -472,6 +471,27 @@ class HumanUrdf(Agent):
             return 0
             # return abs(0.5 * (hand - center)) # TRY LATER: add a slight bias toward the center
         return min(hand - end_r[0], hand - end_l[0])
+
+    def visibility(self, end_effector):
+        # inspired by [] - may have to offset 90deg due to straight = perp to the ground
+        head_pos, head_or = self.get_ee_pos_orient("head")
+        rotation = np.array(p.getMatrixFromQuaternion(head_or))
+        head_dir = rotation.reshape(3, 3)[:, 2]
+        hand_pos, _ = self.get_ee_pos_orient(end_effector)
+        x_obj_dir = np.array([- head_pos[0] + hand_pos[0], - head_pos[1] + hand_pos[1], - head_pos[2] + hand_pos[2]])
+        # for debugging
+        end_head_pos = np.array(head_pos) + (np.array(head_dir) * 0.25)
+        p.addUserDebugLine(head_pos, end_head_pos, [1,0,0]) # red head orientation vector
+        p.addUserDebugLine(head_pos, hand_pos, [0, 1, 0]) # green head to hand vec
+        # time.sleep(2)
+        p.removeAllUserDebugItems()
+
+        head_dir = np.array(head_dir) / np.linalg.norm(head_dir)
+        x_obj_dir = np.array(x_obj_dir) / np.linal.norm(x_obj_dir)
+
+        # not including orientation of object as of now
+        vis = np.arccos(np.dot(head_dir, x_obj_dir))
+        return abs(vis)
 
     
     def rotate_3d(self, point, axis, angle_degrees):
