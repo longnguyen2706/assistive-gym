@@ -3,22 +3,22 @@ import time
 from assistive_gym.train import render, render_pose
 
 #### Define dynamic configs ####
-# PERSON_IDS = [ 'p002']
-# SMPL_FILES = ['s05']
-# PERSON_IDS = ['p002']
-# SMPL_FILES = ['s05', 's20', 's45']
-# # SMPL_FILES = [ 's16', 's17', 's18', 's19', 's20']
-# PERSON_IDS = ['p001', 'p002', 'p003', 'p004', 'p005']
-# OBJECTS = ['cane', 'cup', 'pill']
-# SMPL_FILES = [ 's01','s19', 's40']
-# PERSON_IDS = ['p001', 'p002', 'p003', 'p004', 'p005']
-# OBJECTS = ['cane', 'cup', 'pill']
-SMPL_FILES = ['s19']
-PERSON_IDS = ['p001']
-OBJECTS = ['pill']
+
+# SMPL_FILES = ['s19']
+# PERSON_IDS = ['p001']
+# OBJECTS = ['pill']
+# PERSON_IDS = [ 'p001']
+
+PERSON_IDS = ['p001', 'p002']
+SMPL_FILES = ['s01', 's08', 's13', 's18', 's19', 's20', 's24', 's30', 's36', 's40', 's44']
+
+# SMPL_FILES = [ 's44']
+# PERSON_IDS = [ 'p001', 'p002']
+# SMPL_FILES = [ 's19', 's20', 's44', 's45']
+OBJECTS = ['cane', 'cup', 'pill']
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
-ENV = "HumanComfort-v1"
+ENV = "HumanComfort-v1_param_1509_yaml"
 SEED = 1001
 SAVE_DIR = 'trained_models'
 SIMULATE_COLLISION = False
