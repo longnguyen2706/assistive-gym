@@ -96,20 +96,22 @@ class HumanComfortEnv(AssistiveEnv):
         super(HumanComfortEnv, self).reset()
 
         # magic happen here - now call agent.init()
-        self.build_assistive_env("realsize_bed")
+        # self.build_assistive_env('wheelchair')
+        self.build_assistive_env('officechair')
 
         bed_height, bed_base_height = self.furniture.get_heights(set_on_ground=True)
         min_pos, max_pos = p.getAABB(self.furniture.body, physicsClientId=self.id)
-        # print("bed height ", bed_height, bed_base_height, "bed pos ", min_pos, max_pos)
-        # reset human pose
+
         # disable self collision before dropping on bed
         num_joints = p.getNumJoints(self.human.body, physicsClientId=self.id)
         disable_self_collisions(self.human.body, num_joints, self.id)
         smpl_data = load_smpl(self.smpl_file)
         self.human.set_joint_angles_with_smpl(smpl_data, False)
         height, base_height = self.human.get_heights()
-        # print ("human height ", height, base_height, "bed height ", bed_height, bed_base_height)
-        self.human.set_global_orientation(smpl_data, [0, 0,  bed_height+0.2])
+        print("\n\nrotating human by 90 deg to fit chair")
+        smpl_data.global_orient[0][0] += np.pi / 4
+        self.human.set_global_orientation(smpl_data, [0, -0.2,  bed_height+0.2])
+        # self.human.set_global_orientation(smpl_data, [0, -0.1,  0.5])
         # p.resetBasePositionAndOrientation(self.human.body, [0, 0,  bed_height] , [0, 0, 0, 1], physicsClientId=self.id)
 
         self.robot.set_gravity(0, 0, -9.81)
@@ -146,7 +148,8 @@ class HumanComfortEnv(AssistiveEnv):
         # enable self collision and reset joint angle after dropping on bed
         human_pos = p.getBasePositionAndOrientation(self.human.body, physicsClientId=self.id)[0]
 
-        self.human.set_global_orientation(smpl_data, human_pos)
+        # REMOVED: the resetting of global orientation - it may be messing a bit with the chair interaction
+        # self.human.set_global_orientation(smpl_data, human_pos)
         self.human.set_joint_angles_with_smpl(smpl_data, False)
 
         set_self_collisions(self.human.body, self.id)
