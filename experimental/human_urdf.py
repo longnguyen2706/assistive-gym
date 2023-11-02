@@ -483,17 +483,23 @@ class HumanUrdf(Agent):
         x_obj_dir = np.array([- head_pos[0] + hand_pos[0], - head_pos[1] + hand_pos[1], - head_pos[2] + hand_pos[2]])
         # for debugging
         end_head_pos = np.array(head_pos) + (np.array(head_dir) * 0.25)
-        p.addUserDebugLine(head_pos, end_head_pos, [1,0,0]) # red head orientation vector
-        p.addUserDebugLine(head_pos, hand_pos, [0, 1, 0]) # green head to hand vec
-        # time.sleep(2)
-        p.removeAllUserDebugItems()
+        # print("head pos: ", head_pos, "   head end pos: ", end_head_pos, " head_dir: ", head_dir, "\nend effector: ", end_effector, "   hand_pos: ", hand_pos, "   hand_dir: ", x_obj_dir)
+        p.addUserDebugLine(head_pos, end_head_pos, [1, 0, 0], lineWidth=2.0) # red head orientation vector
+        p.addUserDebugLine(head_pos, hand_pos, [0, 1, 0], lineWidth=2.0) # green head to hand vec
 
         head_dir = np.array(head_dir) / np.linalg.norm(head_dir)
         x_obj_dir = np.array(x_obj_dir) / np.linalg.norm(x_obj_dir)
+        print("\n############\nend effector: ", end_effector, "\nhead_dir: ", head_dir)
+        print("object dir: ", x_obj_dir)
 
         # not including orientation of object as of now
         vis = np.arccos(np.dot(head_dir, x_obj_dir))
-        return abs(vis)
+
+        # attempting a different type of return
+        diff = head_dir - x_obj_dir # both have already been normalized
+        print("mag of difference: ", np.linalg.norm(diff))
+        # typically return abs(vis)
+        return np.linalg.norm(diff)
 
     
     def rotate_3d(self, point, axis, angle_degrees):

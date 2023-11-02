@@ -4,16 +4,18 @@ from assistive_gym.mprocess_train import mp_train
 from assistive_gym.train import train
 
 #### Define dynamic configs ####
-PERSON_IDS = ['p001', 'p002']
-# SMPL_FILES = ['s19', 's05']
-# PERSON_IDS = ['p004']
-SMPL_FILES = ['s01', 's10', 's12', 's16', 's17', 's18', 's19', 's20', 's21', 's22',
-              's30', 's31', 's32', 's36', 's37', 's38', 's39', 's40', 's44', 's45']
-# PERSON_IDS = [ 'p002' ]
+# OCTOBER 25st TRAINING
+# PERSON_IDS = ['p001', 'p002']
+# SMPL_FILES = ['s01', 's10', 's12', 's16', 's17', 's18', 's19', 's20', 's21', 's22',
+#               's30', 's31', 's32', 's36', 's37', 's38', 's39', 's40', 's44', 's45']
+
+PERSON_IDS = ['p001']
+SMPL_FILES = ['s31']
+
 OBJECTS = ['pill']
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
-ENV = 'HumanComfort-v1_2510'
+ENV = 'HumanComfort-v1_1031'
 SEED = 1001
 SAVE_DIR = 'trained_models'
 RENDER_GUI = True
@@ -22,7 +24,7 @@ ROBOT_IK = True
 END_EFFECTOR = 'right_hand'
 
 ### DEFINE MULTIPROCESS SETTING ###
-NUM_WORKERS = 18
+NUM_WORKERS = 1
 
 def get_dynamic_configs():
     configs =[]

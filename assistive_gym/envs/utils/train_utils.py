@@ -2,6 +2,7 @@ import importlib
 import json
 import os
 import pickle
+import time
 from datetime import datetime
 from typing import Set, Optional
 
@@ -408,8 +409,10 @@ def cost_func(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.n
     mid_angle_displacement = cal_angle_diff(angle_config, mid_angle)
     # print("mid_angle_displacement: ", mid_angle_displacement)
 
+
     visibility = human.visibility(ee_name)
     max_visibility = np.pi
+
 
     object = 'default' if not object_config else  object_type_to_name(object_config.object_type)
     w= PARAMS[object]['weights']
@@ -819,6 +822,7 @@ def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik
 
     env.human.reset_controllable_joints(action["end_effector"])
     env.human.set_joint_angles(env.human.controllable_joint_indices, action["solution"])
+
     if robot_ik:
         # print("robot pose: ", robot_pose, "robot_joint_angles: ", robot_joint_angles)
         if robot_pose is None or robot_joint_angles is None:
@@ -837,10 +841,12 @@ def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik
     #                    action['mean_torque'])
     # plot_mean_evolution(action['mean_evolution'])
 
+    print("press 'w' to end second render")
     while True:
         keys = p.getKeyboardEvents()
-        if ord('q') in keys:
+        if ord('w') in keys:
             break
+
     env.disconnect()
 
 

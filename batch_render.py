@@ -10,22 +10,26 @@ from assistive_gym.train import render, render_pose
 #               's13', 's14', 's15', 's16', 's17', 's18', 's19', 's20', 's21', 's22', 's23', 's24', 's25', 's26',
 #               's27', 's28', 's29', 's30', 's31', 's32', 's33', 's34', 's35', 's36', 's37', 's38', 's39', 's40',
 #               's41', 's42', 's43', 's44', 's45']
-PERSON_IDS = ['p001', 'p002']
-SMPL_FILES = ['s01', 's10', 's12', 's16', 's17', 's18', 's19', 's20', 's21', 's22',
-              's30', 's31', 's32', 's36', 's37', 's38', 's39', 's40', 's44', 's45']
-# SMPL_FILES = [ 'S01']
-# SMPL_FILES = [ 's44']
-# PERSON_IDS = [ 'p001', 'p002']
-# SMPL_FILES = [ 's19', 's20', 's44', 's45']
+# FROM Oct 25 and 31st
+# PERSON_IDS = ['p001', 'p002']
+# SMPL_FILES = ['s01', 's10', 's12', 's16', 's17', 's18', 's19', 's20', 's21', 's22',
+#               's30', 's31', 's32', 's36', 's37', 's38', 's39', 's40', 's44', 's45']
+
+PERSON_IDS = ['p002']
+SMPL_FILES = ['s19']
+
+
+
 OBJECTS = ['pill']
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
 ENV = "HumanComfort-v1_2510"
+# ENV = 'HumanComfort-v1_1031'
 SEED = 10011
 SAVE_DIR = 'trained_models'
 SIMULATE_COLLISION = False
 ROBOT_IK = True
-END_EFFECTOR = 'right_hand'
+END_EFFECTOR = 'left_hand'
 
 ### DEFINE MULTIPROCESS SETTING ###
 NUM_WORKERS = 1

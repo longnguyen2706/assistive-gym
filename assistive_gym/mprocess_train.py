@@ -11,7 +11,7 @@ from assistive_gym.envs.utils.train_utils import *
 LOG = get_logger()
 NUM_WORKERS = 1
 MAX_ITERATION = 500
-RENDER_UI = False
+RENDER_UI = True
 
 
 # env that run in parallel, in background
