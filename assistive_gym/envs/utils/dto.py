@@ -97,7 +97,7 @@ class SearchResult:
 class MainEnvInitResult:
     def __init__(self, original_info: OriginalHumanInfo, max_dynamics: MaximumHumanDynamics, env_object_ids,
                  human_link_robot_collision, end_effector, handover_obj_config,
-                 joint_lower_limits, joint_upper_limits, robot_setting: InitRobotSetting):
+                 joint_lower_limits, joint_upper_limits, robot_setting: InitRobotSetting, smpl_data=None, angles=[]):
         self.original_info = original_info
         self.max_dynamics = max_dynamics
         self.env_object_ids = env_object_ids
@@ -107,6 +107,8 @@ class MainEnvInitResult:
         self.joint_lower_limits = joint_lower_limits
         self.joint_upper_limits = joint_upper_limits
         self.robot_setting = robot_setting
+        self.smpl_data = smpl_data
+        self.angles = angles
 
 
 class MainEnvProcessTaskType(Enum):

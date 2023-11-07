@@ -119,7 +119,7 @@ class HumanUrdf(Agent):
         robot_joints = self.human_dict.get_joint_ids(robot_joint_name)
         # print ("joint name: ", smpl_joint_name, " angles: ", smpl_angles*180/np.pi)
         self.set_joint_angles(robot_joints, smpl_angles, use_limits=use_limits)
-
+    
     def set_global_orientation(self, smpl_data: SMPLData, pos):
         set_global_orientation(self.body, smpl_data.global_orient, pos)
 
@@ -311,7 +311,36 @@ class HumanUrdf(Agent):
         for _ in range(5):  # 5 is the number of skip steps
             p.stepSimulation(physicsClientId=self.id)
 
+    def align_chair(self):
+        p.removeAllUserDebugItems()
+        norm = [0, 0, 1] # want no z variation
+        lh_pos, lh_orient = self.get_ee_pos_orient("left_hip")
+        rh_pos, rh_orient = self.get_ee_pos_orient("right_hip")
 
+        lh_rot = np.array(p.getMatrixFromQuaternion(lh_orient))
+        lh_dir = lh_rot.reshape(3, 3)[:, 1]
+
+        rh_rot = np.array(p.getMatrixFromQuaternion(rh_orient))
+        rh_dir = rh_rot.reshape(3, 3)[:, 1]
+
+        # lines for debugging
+        p.addUserDebugLine(lh_pos, lh_dir, [0, 1, 0]) # green
+        p.addUserDebugLine(rh_pos, rh_dir, [1, 0, 0]) # red
+
+        # remove x component
+        lh_dir[0] = 0
+        rh_dir[0] = 0
+
+        # normalize
+        lh_dir = lh_dir / np.linalg.norm(lh_dir)
+        rh_dir = rh_dir / np.linalg.norm(rh_dir)
+        
+        # find and return the smaller of the two angles (this will be the x-rotation to align with the chair seat)
+        l_ang = np.arccos(np.dot(norm, lh_dir))
+        r_ang = np.arccos(np.dot(norm, rh_dir))
+        return min((l_ang, r_ang)) - np.pi/2 # hips should be 90 deg off from the chair base
+    
+    
     def get_reba_score(self, end_effector="right_hand"):
         human_dict = HumanUrdfDict()
         rebaScore = RebaScore()
@@ -378,7 +407,6 @@ class HumanUrdf(Agent):
         wrist_orientation = p.getLinkState(self.body, wrist_ind)[1]
         array = p.getEulerFromQuaternion(wrist_orientation)
         return array[2]
-
     
     def get_eyeline_offset(self, end_effector):
         fov = self.get_fov()
