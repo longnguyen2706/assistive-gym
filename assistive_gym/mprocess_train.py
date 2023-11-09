@@ -12,7 +12,7 @@ from assistive_gym.envs.seated_pose_env import SeatedPoseEnv
 LOG = get_logger()
 NUM_WORKERS = 1
 MAX_ITERATION = 500
-RENDER_UI = True
+RENDER_UI = False
 
 
 # env that run in parallel, in background
@@ -150,7 +150,7 @@ def init_main_env(env, handover_obj, end_effector):
 
     if RENDER_UI:
         env.render()
-    smpl_data, angles= env.reset()
+    smpl_data, angles = env.reset()
     # draw original ee pos
     original_ee_pos = human.get_pos_orient(human.human_dict.get_dammy_joint_id(end_effector), center_of_mass=True)[0]
     draw_point(original_ee_pos, size=0.01, color=[0, 1, 0, 1])
@@ -382,12 +382,14 @@ def mp_load(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl'
     main_env_process, main_env_task_queue, main_env_result_queue = init_main_env_process(env_config)
     main_env_task_queue.put(MainEnvProcessInitTask())
     init_result: MainEnvInitResult = main_env_result_queue.get()
-    print("sleep")
-    time.sleep(5)
     destroy_main_env_process(main_env_process, main_env_task_queue)
-    print("env make")
-    env = SeatedPoseEnv(mesh=True)
-    env.reset_mesh(smpl_data=init_result.smpl_data, angles=init_result.angles)
+    print("new env make")
+    mesh_env = SeatedPoseEnv(mesh=True)
+    mesh_env.render()
+    mesh_env.reset_mesh(smpl_data=init_result.smpl_data, angles=init_result.angles)
+    
+    mesh_env.disconnect()
+
     return 0
 
 

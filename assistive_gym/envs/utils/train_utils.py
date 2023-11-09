@@ -816,6 +816,8 @@ def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik
     env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=handover_obj, person_id=person_id)
     env.render()  # need to call reset after render
     env.reset()
+    # print("action[end_effector]", action["end_effector"])
+    action["end_effector"] = "left_hand"
 
     smpl_name = os.path.basename(smpl_file).split(".")[0]
     p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_name), [0, 0, 1], textColorRGB=[1, 0, 0])
@@ -841,10 +843,10 @@ def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik
     #                    action['mean_torque'])
     # plot_mean_evolution(action['mean_evolution'])
 
-    print("press 'w' to end second render")
+    # print("press 'w' to end second render")
     while True:
         keys = p.getKeyboardEvents()
-        if ord('w') in keys:
+        if ord('q') in keys:
             break
 
     env.disconnect()

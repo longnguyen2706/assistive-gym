@@ -8,6 +8,7 @@ import pybullet as p
 from keras.models import load_model
 
 from .human_creation import HumanCreation
+from assistive_gym.envs.agents.human_mesh import HumanMesh
 from .util import Util
 from .agents import agent, human, robot, panda, tool, furniture
 from .agents.agent import Agent
@@ -116,9 +117,10 @@ class AssistiveEnv(gym.Env):
         self.forces = []
         self.task_success = 0
 
-    def build_assistive_env(self, furniture_type=None, fixed_human_base=True, human_impairment='random', gender='random'):
+    def build_assistive_env(self, furniture_type=None, fixed_human_base=True, human_impairment='random', gender='random', human_angles=None, smpl_data=None):
         # Build plane, furniture, robot, human, etc. (just like world creation)
         # Load the ground plane
+        print("self.human: ", self.human)
         plane = p.loadURDF(os.path.join(self.directory, 'plane', 'plane.urdf'), physicsClientId=self.id)
         self.plane.init(plane, self.id, self.np_random, indices=-1)
         # Randomly set friction of the ground
@@ -135,6 +137,18 @@ class AssistiveEnv(gym.Env):
                 self.human.init(self.human_creation, self.human_limits_model, fixed_human_base, human_impairment, gender, self.config, self.id, self.np_random)
                 if self.human.controllable or self.human.impairment == 'tremor':
                     self.agents.append(self.human)
+            elif isinstance(self.human, HumanMesh):
+                print("found HumanMesh, initializing")
+                if human_angles is None: human_angles = [(self.human.j_left_hip_x, -90), (self.human.j_right_hip_x, -90), 
+                                                        (self.human.j_left_knee_x, 70), (self.human.j_right_knee_x, 70), 
+                                                        (self.human.j_left_shoulder_z, -60), (self.human.j_right_shoulder_z, 60), 
+                                                        (self.human.j_left_elbow_y, -90), (self.human.j_right_elbow_y, 90)]
+                height = ((np.random.rand(1)) / 2.5) + 1.5 # height ranges from 1.5 to 1.9
+                body_shape = smpl_data.betas
+                self.human.init(self.directory, self.id, self.np_random, gender='random', height=height, body_shape=body_shape,
+                                joint_angles=human_angles, position=smpl_data.transl, orientation=smpl_data.global_orient)
+                print("human initialized")
+                self.agents.append(self.human)
             else: # human urdf
                 self.human.init(self.id, self.np_random)
                 self.agents.append(self.human)

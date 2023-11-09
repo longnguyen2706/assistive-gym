@@ -87,7 +87,6 @@ class HumanMesh(Agent):
         # Create SMPL-X model
         model_folder = os.path.join(directory, 'smpl_models')
         model = smplx.create(model_folder, model_type='smplx', gender=self.gender)
-
         # Define body shape
         if type(body_shape) == str:
             params_filename = os.path.join(model_folder, 'human_params', body_shape)
@@ -100,13 +99,12 @@ class HumanMesh(Agent):
             betas = torch.Tensor(body_shape)
             # betas = torch.Tensor(np.zeros((1, 10)))
         # betas = torch.Tensor(np.zeros((1, 10)))
-
         # Set human body pose
+        print("joint_angles: ", joint_angles)
         if body_pose is None:
             body_pose = np.zeros((1, model.NUM_BODY_JOINTS*3))
             for joint_index, angle in joint_angles:
                 body_pose[0, joint_index] = np.deg2rad(angle)
-
         # Generate standing human mesh and determine default height of the mesh
         output = model(betas=betas, body_pose=torch.Tensor(np.zeros((1, model.NUM_BODY_JOINTS*3))), return_verts=True)
         vertices = output.vertices.detach().cpu().numpy().squeeze()
@@ -141,17 +139,18 @@ class HumanMesh(Agent):
         return out_mesh, vertices, joints
 
     def init(self, directory, id, np_random, gender='female', height=None, body_shape=None, joint_angles=[], position=[0, 0, 0], orientation=[0, 0, 0], skin_color='random', specular_color=[0.1, 0.1, 0.1], body_pose=None, out_mesh=None, vertices=None, joints=None):
+        print("entered initilializer")
         if out_mesh is None:
             # Create mesh
             out_mesh, vertices, joints = self.create_smplx_body(directory, id, np_random, gender, height, body_shape, joint_angles, position, orientation, body_pose)
-
+        print("finished smplx_body")
         model_folder = os.path.join(directory, 'smpl_models')
         self.skin_color = skin_color
         if self.skin_color == 'random':
             hsv = list(colorsys.rgb_to_hsv(0.8, 0.6, 0.4))
             hsv[-1] = np_random.uniform(0.4, 0.8)
             self.skin_color = list(colorsys.hsv_to_rgb(*hsv)) + [1.0]
-
+        print("skin color")
         if self.right_arm_vertex_indices is None:
             self.right_arm_vertex_indices = np.loadtxt(os.path.join(model_folder, 'right_arm_vertex_indices.csv'), delimiter=',', dtype=np.int)
 

@@ -1,7 +1,10 @@
 import time
+from datetime import date, datetime
 import numpy as np
 import pybullet as p
+import cv2
 
+from gym.utils import seeding
 from assistive_gym.envs.agents.stretch_dex import StretchDex
 from assistive_gym.envs.env import AssistiveEnv
 from assistive_gym.envs.utils.human_utils import set_self_collisions, disable_self_collisions
@@ -74,17 +77,41 @@ class SeatedPoseEnv(AssistiveEnv):
         angles = self.human.get_joint_angles(inds)
         return angles
 
-    def set_all_human_angles(self, angles, mesh=True):
-        if not mesh:
-            raise Exception("Please define function to handle non mesh humans")
+    def config_mesh_angles(self, angles):
         dic = HumanUrdfDict()
         dict = dic.joint_xyz_dict
-        
+        ind = {}
+        i = 0
+        for joint in dict: 
+            ind[joint] = angles[i]
+            i += 1
+
+        print("ind dictionatry: ", ind)    
+
         h = self.human
-        [h.j_left_hip_x, h.j_left_hip_y, h.j_left_hip_z, h.j_left_knee_x, h.j_left_knee_y, h.j_left_knee_z,
-         h.j_left_ankle_x, h.j_left_ankle_y, h.j_left_ankle_z, h.j_right_hip_x, h.j_right_hip_y, h.j_right_hip_z, 
-         h.j_right_knee_x, h.j_right_knee_y, h.j_right_knee_z, h.j_right_ankle_x, h.j_right_ankle_y, h.j_right_ankle_z, 
-         ]
+        angles_matched = [(h.j_left_hip_x, ind["left_hip_x"]), (h.j_left_hip_y, ind["left_hip_y"]), (h.j_left_hip_z, ind["left_hip_z"]), 
+                  (h.j_right_hip_x, ind["right_hip_x"]), (h.j_right_hip_y, ind["right_hip_y"]), (h.j_right_hip_z, ind["right_hip_z"]), 
+                  (h.j_left_knee_x, ind["left_knee_x"]), (h.j_left_knee_y, ind["left_knee_y"]), (h.j_left_knee_z, ind["left_knee_z"]),
+                  (h.j_right_knee_x, ind["right_knee_x"]), (h.j_right_knee_y, ind["right_knee_y"]), (h.j_right_knee_z, ind["right_knee_z"]), 
+                  (h.j_left_ankle_x, ind["left_ankle_x"]), (h.j_left_ankle_y, ind["left_ankle_y"]), (h.j_left_ankle_z, ind["left_ankle_z"]),
+                  (h.j_right_ankle_x, ind["right_ankle_x"]), (h.j_right_ankle_z, ind["right_ankle_z"]), (h.j_right_ankle_z, ind["right_ankle_z"]), 
+                  (h.j_left_shoulder_x, ind["left_shoulder_x"]), (h.j_left_shoulder_y, ind["left_shoulder_y"]), (h.j_left_shoulder_z, ind["left_shoulder_z"]), 
+                  (h.j_right_shoulder_x, ind["right_shoulder_x"]), (h.j_right_shoulder_y, ind["right_shoulder_y"]), (h.j_right_shoulder_z, ind["right_shoulder_z"]), 
+                  (h.j_left_elbow_x, ind["left_elbow_x"]), (h.j_left_elbow_y, ind["left_elbow_y"]), (h.j_left_elbow_z, ind["left_elbow_z"]), 
+                  (h.j_right_elbow_x, ind["right_elbow_x"]), (h.j_right_elbow_y, ind["right_elbow_y"]), (h.j_right_elbow_z, ind["right_elbow_z"]), 
+                  (h.j_left_wrist_x, ind["left_lowarm_x"]), (h.j_left_wrist_y, ind["left_lowarm_y"]), (h.j_left_wrist_z, ind["left_lowarm_z"]), 
+                  (h.j_right_wrist_x, ind["right_lowarm_x"]), (h.j_right_wrist_y, ind["right_lowarm_y"]),(h.j_right_wrist_z, ind["right_lowarm_z"]),
+                  ]
+        # NEED head, neck relationship and spine 
+        '''
+        My guess -> upper neck = head, lower neck = neck, clavicle = pec, upper_chest, chest (or Upper neck!) = spine (2, 3, 4) 
+        '''
+        # [h.j_left_hip_x, h.j_left_hip_y, h.j_left_hip_z, h.j_left_knee_x, h.j_left_knee_y, h.j_left_knee_z,
+        #  h.j_left_ankle_x, h.j_left_ankle_y, h.j_left_ankle_z, h.j_right_hip_x, h.j_right_hip_y, h.j_right_hip_z, 
+        #  h.j_right_knee_x, h.j_right_knee_y, h.j_right_knee_z, h.j_right_ankle_x, h.j_right_ankle_y, h.j_right_ankle_z, 
+        #  ]
+
+        return angles_matched
     
     def reset_human(self, is_collision):
         if not is_collision:
@@ -101,6 +128,11 @@ class SeatedPoseEnv(AssistiveEnv):
             for _ in range(100):
                 p.stepSimulation(physicsClientId=self.id)
 
+    def reset_human_mesh(self):
+        # place the human in the chair with predefined orientation
+        chair_seat_position = np.array([0, 0.05, 0.6]) # EDIT THIS
+        self.human.set_base_pos_orient(self.furniture.get_base_pos_orient()[0] + chair_seat_position - self.human.get_vertex_positions(self.human.bottom_index), self.human.get_base_pos_orient()[1])
+    
     def reset(self):
         super(SeatedPoseEnv, self).reset()
 
@@ -170,10 +202,35 @@ class SeatedPoseEnv(AssistiveEnv):
         return smpl_data, angles
     
     def reset_mesh(self, smpl_data, angles): 
-        print("Human type: ", type(self.human))
+        self.setup_camera()
         super(SeatedPoseEnv, self).reset()
+        angles = self.config_mesh_angles(angles)
+        print("smpl_data: ", smpl_data)
+        print("angles: ", angles)
         # magic happen here - now call agent.init()
-        self.build_assistive_env('diningchair')
-        self.set_all_human_angles(angles)
+        self.build_assistive_env('diningchair', human_angles=angles, smpl_data=smpl_data)
+        bed_height, _ = self.furniture.get_heights(set_on_ground=True)
+        self.human.set_base_pos_orient([0.2, 0.2, bed_height+0.1], [np.pi, 0, 0])
+        print("env_built")
+        p.setTimeStep(1/240., physicsClientId=self.id)
+
+        # Enable rendering
+        p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1, physicsClientId=self.id)
+        # drop human on bed
+        while True:
+            p.stepSimulation(physicsClientId=self.id)
+            keys = p.getKeyboardEvents()
+            if ord('q') in keys:
+                break
+        img, depth = self.get_camera_image_depth()
+        print("image taken")
+        fn = date.today().strftime("%b-%d-%Y") + "_" + datetime.now().strftime("%H%M")
+        rgb_fn = "images/" + fn + "_rgb.png"
+        depth_fn = "images/" + fn + "_depth.png"
+        cv2.imwrite(rgb_fn, img)
+        cv2.imwrite(depth_fn, depth)
+        print("images_saved")
+        return
+        # self.set_all_human_angles(angles)
 
 

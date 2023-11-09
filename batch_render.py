@@ -14,17 +14,18 @@ from assistive_gym.train import render, render_pose
 # PERSON_IDS = ['p001', 'p002']
 # SMPL_FILES = ['s01', 's10', 's12', 's16', 's17', 's18', 's19', 's20', 's21', 's22',
 #               's30', 's31', 's32', 's36', 's37', 's38', 's39', 's40', 's44', 's45']
-
 PERSON_IDS = ['p002']
-SMPL_FILES = ['s19']
+# SMPL_FILES = ['s10', 's13', 's28', 's35', 's45']
 
+SMPL_FILES = ['s41', 's35']
 
 
 OBJECTS = ['pill']
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
-ENV = "HumanComfort-v1_2510"
+# ENV = "HumanComfort-v1_2510"
 # ENV = 'HumanComfort-v1_1031'
+ENV = 'HumanComfort-v1-1107'
 SEED = 10011
 SAVE_DIR = 'trained_models'
 SIMULATE_COLLISION = False
