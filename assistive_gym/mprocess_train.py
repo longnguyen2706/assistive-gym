@@ -12,7 +12,7 @@ from assistive_gym.envs.seated_pose_env import SeatedPoseEnv
 LOG = get_logger()
 NUM_WORKERS = 1
 MAX_ITERATION = 500
-RENDER_UI = False
+RENDER_UI = True
 
 
 # env that run in parallel, in background
@@ -384,7 +384,7 @@ def mp_load(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl'
     init_result: MainEnvInitResult = main_env_result_queue.get()
     destroy_main_env_process(main_env_process, main_env_task_queue)
     print("new env make")
-    mesh_env = SeatedPoseEnv(mesh=True)
+    mesh_env = SeatedPoseEnv(mesh=True, robot=False)
     mesh_env.render()
     mesh_env.reset_mesh(smpl_data=init_result.smpl_data, angles=init_result.angles)
     

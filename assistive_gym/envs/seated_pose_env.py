@@ -1,8 +1,11 @@
 import time
 from datetime import date, datetime
 import numpy as np
+import pickle as pk
 import pybullet as p
 import cv2
+import os
+import torch
 
 from gym.utils import seeding
 from assistive_gym.envs.agents.stretch_dex import StretchDex
@@ -16,8 +19,9 @@ from experimental.human_urdf import HumanUrdf
 
 
 class SeatedPoseEnv(AssistiveEnv):
-    def __init__(self, mesh=False):
-        self.robot = StretchDex('wheel_right')
+    def __init__(self, mesh=False, robot=True):
+        self.robot = None
+        if robot: self.robot = StretchDex('wheel_right')
         if mesh: self.human = HumanMesh()
         else: self.human = HumanUrdf()
 
@@ -86,8 +90,6 @@ class SeatedPoseEnv(AssistiveEnv):
             ind[joint] = angles[i]
             i += 1
 
-        print("ind dictionatry: ", ind)    
-
         h = self.human
         angles_matched = [(h.j_left_hip_x, ind["left_hip_x"]), (h.j_left_hip_y, ind["left_hip_y"]), (h.j_left_hip_z, ind["left_hip_z"]), 
                   (h.j_right_hip_x, ind["right_hip_x"]), (h.j_right_hip_y, ind["right_hip_y"]), (h.j_right_hip_z, ind["right_hip_z"]), 
@@ -133,6 +135,39 @@ class SeatedPoseEnv(AssistiveEnv):
         chair_seat_position = np.array([0, 0.05, 0.6]) # EDIT THIS
         self.human.set_base_pos_orient(self.furniture.get_base_pos_orient()[0] + chair_seat_position - self.human.get_vertex_positions(self.human.bottom_index), self.human.get_base_pos_orient()[1])
     
+    def write_human_pkl(self, smpl_data):
+        # get template smpl pkl file
+        dir = os.getcwd()
+        fpath = dir + '/examples/data/saved_seated_poses/template.pkl'
+        template = pk.load(open(fpath, 'rb'))
+        
+        # reassign smpl parameters in template file
+        template['global_orient'] = np.array(smpl_data.global_orient)
+        template['betas'] = np.array(smpl_data.betas)
+
+        # index the urdf joints in the correct order and overwrite template
+        humanDict = HumanUrdfDict()
+        joints = ['left_hip', 'right_hip', 'spine_2', 'left_knee', 'right_knee', 'spine_3', 'left_ankle',
+                   'right_ankle', 'spine_4', 'left_foot', 'right_foot', 'neck', 'left_clavicle', 'right_clavicle', 'head', 
+                   'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow', 'left_lowarm', 'right_lowarm', 'left_hand',
+                   'right_hand']
+        ordered_inds = []
+        for joint in joints: 
+                i = humanDict.joint_dict[joint]
+                ordered_inds.append(i)
+                ordered_inds.append(i + 1)
+                ordered_inds.append(i + 2)
+        angles = self.human.get_joint_angles(ordered_inds)
+        all_angles = angles
+        template['body_pose'] = torch.FloatTensor(all_angles)
+        
+        # write new file
+        new_fn = date.today().strftime("%b-%d-%Y") + "_" + datetime.now().strftime("%H%M") + ".pkl"
+        new_fpath = dir + '/examples/data/saved_seated_poses/' + new_fn
+        pk.dump(template, open(new_fpath, 'ab'))
+        print("human saved")
+
+    
     def reset(self):
         super(SeatedPoseEnv, self).reset()
 
@@ -146,7 +181,6 @@ class SeatedPoseEnv(AssistiveEnv):
         disable_self_collisions(self.human.body, num_joints, self.id)
         smpl_data = load_smpl(self.smpl_file)
         self.human.set_joint_angles_with_smpl(smpl_data, False)
-        # height, base_height = self.human.get_heights()
         new_x_or = self.human.align_chair()
         print("rotating: ", new_x_or)
         smpl_data.global_orient[0][0] += new_x_or
@@ -154,8 +188,6 @@ class SeatedPoseEnv(AssistiveEnv):
 
         init_pelvis = self.human.get_ee_pos_orient("pelvis")
         self.human.set_global_orientation(smpl_data, [0, -0.05,  bed_height+0.2])
-        # self.human.set_global_orientation(smpl_data, [0, -0.1,  0.5])
-        # p.resetBasePositionAndOrientation(self.human.body, [0, 0,  bed_height] , [0, 0, 0, 1], physicsClientId=self.id)
 
         self.robot.set_gravity(0, 0, -9.81)
         self.human.set_gravity(0, 0, -9.81)
@@ -190,28 +222,35 @@ class SeatedPoseEnv(AssistiveEnv):
         # # REMOVED: the resetting of global orientation - it may be messing a bit with the chair interaction
         # self.human.set_global_orientation(smpl_data, human_pos)
         self.human.set_joint_angles_with_smpl(smpl_data, False)
-        fin_pelvis = self.human.get_ee_pos_orient("pelvis")
-        transl = np.array(fin_pelvis[0]) - np.array(init_pelvis[0])
 
         set_self_collisions(self.human.body, self.id)
         self.human.initial_self_collisions= self.human.check_self_collision()
 
         self.init_env_variables()
-        smpl_data.transl = np.array(smpl_data.transl) + transl
+        smpl_data.transl = self.human.get_ee_pos_orient("spine_4")[0]
+        # smpl_data.transl = self.human.get_base_pos_orient()[0]
         angles = self.get_all_human_angles()
+        p.addUserDebugText("final pose", [0, 0, 2], [1, 0, 0]) # red text
+        self.write_human_pkl(smpl_data)
+        time.sleep(10)
+        p.removeAllUserDebugItems()
         return smpl_data, angles
     
     def reset_mesh(self, smpl_data, angles): 
-        self.setup_camera()
+        self.setup_camera([0, -1, 1.25])
         super(SeatedPoseEnv, self).reset()
         angles = self.config_mesh_angles(angles)
-        print("smpl_data: ", smpl_data)
-        print("angles: ", angles)
         # magic happen here - now call agent.init()
         self.build_assistive_env('diningchair', human_angles=angles, smpl_data=smpl_data)
         bed_height, _ = self.furniture.get_heights(set_on_ground=True)
-        self.human.set_base_pos_orient([0.2, 0.2, bed_height+0.1], [np.pi, 0, 0])
-        print("env_built")
+        # RESET: human
+        pos = list(smpl_data.transl)
+        pos[2] += 0.1
+        self.human.set_base_pos_orient(pos, smpl_data.global_orient)
+        print("self.human new pos: ", self.human.get_base_pos_orient()[0])
+        self.human.set_gravity(0, 0, -9.81)
+        # self.human.set_base_pos_orient(pos, )
+        # self.human.set_base_pos_orient([0.2, 0.2, bed_height+0.1], [np.pi, 0, 0])
         p.setTimeStep(1/240., physicsClientId=self.id)
 
         # Enable rendering
@@ -223,10 +262,11 @@ class SeatedPoseEnv(AssistiveEnv):
             if ord('q') in keys:
                 break
         img, depth = self.get_camera_image_depth()
+        print('depth: ', depth)
         print("image taken")
         fn = date.today().strftime("%b-%d-%Y") + "_" + datetime.now().strftime("%H%M")
-        rgb_fn = "images/" + fn + "_rgb.png"
-        depth_fn = "images/" + fn + "_depth.png"
+        rgb_fn = "images/sim_results/" + fn + "_rgb.png"
+        depth_fn = "images/sim_results/" + fn + "_depth.png"
         cv2.imwrite(rgb_fn, img)
         cv2.imwrite(depth_fn, depth)
         print("images_saved")
