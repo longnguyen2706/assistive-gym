@@ -11,7 +11,7 @@ from gym.utils import seeding
 from assistive_gym.envs.agents.stretch_dex import StretchDex
 from assistive_gym.envs.env import AssistiveEnv
 from assistive_gym.envs.utils.human_utils import set_self_collisions, disable_self_collisions
-from assistive_gym.envs.utils.urdf_utils import load_smpl
+from assistive_gym.envs.utils.urdf_utils import load_smpl , convert_aa_to_euler_quat, SMPLData
 from assistive_gym.envs.utils.human_urdf_dict import HumanUrdfDict
 from assistive_gym.envs.agents.human_mesh import HumanMesh
 from experimental.human_urdf import HumanUrdf
@@ -103,7 +103,15 @@ class SeatedPoseEnv(AssistiveEnv):
                   (h.j_right_elbow_x, ind["right_elbow_x"]), (h.j_right_elbow_y, ind["right_elbow_y"]), (h.j_right_elbow_z, ind["right_elbow_z"]), 
                   (h.j_left_wrist_x, ind["left_lowarm_x"]), (h.j_left_wrist_y, ind["left_lowarm_y"]), (h.j_left_wrist_z, ind["left_lowarm_z"]), 
                   (h.j_right_wrist_x, ind["right_lowarm_x"]), (h.j_right_wrist_y, ind["right_lowarm_y"]),(h.j_right_wrist_z, ind["right_lowarm_z"]),
-                  ]
+                  (h.j_upper_neck_x, ind["head_x"]), (h.j_upper_neck_y, ind["head_y"]), (h.j_upper_neck_z, ind["head_z"]),
+                  (h.j_lower_neck_x, ind["neck_x"]), (h.j_lower_neck_y, ind["neck_y"]), (h.j_lower_neck_z, ind["neck_z"]), 
+                  (h.j_left_pecs_x, ind["left_clavicle_x"]), (h.j_left_pecs_y, ind["left_clavicle_y"]), (h.j_left_pecs_z, ind["left_clavicle_z"]), 
+                  (h.j_right_pecs_x, ind["right_clavicle_x"]), (h.j_right_pecs_y, ind["right_clavicle_y"]), (h.j_right_pecs_z, ind["right_clavicle_z"]), 
+                  (h.j_left_toes_x, ind["left_foot_x"]), (h.j_left_toes_y, ind["left_foot_y"]), (h.j_left_toes_z, ind["left_foot_z"]),
+                  (h.j_right_toes_x, ind["right_foot_x"]), (h.j_right_toes_y, ind["right_foot_y"]),(h.j_right_toes_z, ind["right_foot_z"]), 
+                  (h.j_waist_x, ind["spine_2_x"]), (h.j_waist_y, ind["spine_2_y"]), (h.j_waist_z, ind["spine_2_z"]), 
+                  (h.j_chest_x, ind["spine_3_x"]), (h.j_chest_y, ind["spine_3_y"]), (h.j_chest_z, ind["spine_3_z"]), 
+                  (h.j_upper_chest_x, ind["spine_4_x"]), (h.j_upper_chest_y, ind["spine_4_y"]), (h.j_upper_chest_z, ind["spine_4_z"])]
         # NEED head, neck relationship and spine 
         '''
         My guess -> upper neck = head, lower neck = neck, clavicle = pec, upper_chest, chest (or Upper neck!) = spine (2, 3, 4) 
@@ -115,6 +123,18 @@ class SeatedPoseEnv(AssistiveEnv):
 
         return angles_matched
     
+    def get_mesh_angle(self, angles, jnts: list):
+        dic = HumanUrdfDict()
+        dict = dic.joint_xyz_dict
+        ind = {}
+        i = 0
+        for joint in dict: 
+            ind[joint] = angles[i]
+            i += 1
+        ref = []
+        for j in jnts: ref.append(ind[j])
+        return ref
+           
     def reset_human(self, is_collision):
         if not is_collision:
             self.human.set_joint_angles_with_smpl(load_smpl(self.smpl_file)) #TODO: fix
@@ -130,10 +150,19 @@ class SeatedPoseEnv(AssistiveEnv):
             for _ in range(100):
                 p.stepSimulation(physicsClientId=self.id)
 
-    def reset_human_mesh(self):
-        # place the human in the chair with predefined orientation
-        chair_seat_position = np.array([0, 0.05, 0.6]) # EDIT THIS
-        self.human.set_base_pos_orient(self.furniture.get_base_pos_orient()[0] + chair_seat_position - self.human.get_vertex_positions(self.human.bottom_index), self.human.get_base_pos_orient()[1])
+    def assign_smplx_features(self, smpl_data: SMPLData):
+        smpl_info = pk.load(open(smpl_data.smpl_file, 'rb'))
+    
+        r_hand = smpl_info['right_hand_pose'][0][0:6]
+        l_hand = smpl_info['left_hand_pose'][0][0:6]
+
+        smpl_data.r_hand_pose = torch.tensor(r_hand)[None, :]
+        smpl_data.l_hand_pose = torch.tensor(l_hand)[None, :]
+        smpl_data.r_eye_pose = torch.tensor(smpl_info['reye_pose'][0])
+        smpl_data.l_eye_pose = torch.tensor(smpl_info['leye_pose'][0])
+        smpl_data.jaw_pose = torch.tensor(smpl_info['jaw_pose'][0])
+        smpl_data.expression = torch.tensor(smpl_info['expression'][0])[None, :]
+        return smpl_data
     
     def write_human_pkl(self, smpl_data):
         # get template smpl pkl file
@@ -166,7 +195,43 @@ class SeatedPoseEnv(AssistiveEnv):
         new_fpath = dir + '/examples/data/saved_seated_poses/' + new_fn
         pk.dump(template, open(new_fpath, 'ab'))
         print("human saved")
+ 
+    def rotate_test(self, smpl_data):
+        # ROTATE TEST LOOP
+        pos = list(smpl_data.transl)
+        pos[2] += 0.1
 
+        p.addUserDebugText("rotate z", [0, 0, 1.5], [1, 0, 0]) # red text
+        rots = [np.pi/8, np.pi/6, np.pi/4, np.pi/2, np.pi]
+        for a in rots:
+            ori = self.axis_rotate(smpl_data.global_orient, -a, axis='z')
+            self.human.set_base_pos_orient(pos, ori)
+            time.sleep(2)
+        p.removeAllUserDebugItems()
+            # reset
+        self.human.set_base_pos_orient(pos, smpl_data.global_orient)
+            # y rot
+        p.addUserDebugText("rotate y", [0, 0, 1.5], [1, 0, 0]) # red text
+        rots = [np.pi/8, np.pi/6, np.pi/4, np.pi/2, np.pi]
+        for a in rots:
+            ori = self.axis_rotate(smpl_data.global_orient, -a, axis='y')
+            self.human.set_base_pos_orient(pos, ori)
+            time.sleep(2)
+        p.removeAllUserDebugItems()
+            # reset
+        self.human.set_base_pos_orient(pos, smpl_data.global_orient)
+            # x rot
+        p.addUserDebugText("rotate x", [0, 0, 1.5], [1, 0, 0]) # red text
+        rots = [np.pi/8, np.pi/6, np.pi/4, np.pi/2, np.pi]
+        for a in rots:
+            ori = self.axis_rotate(smpl_data.global_orient, -a, axis='x')
+            self.human.set_base_pos_orient(pos, ori)
+            time.sleep(2)
+        p.removeAllUserDebugItems()
+
+        self.human.set_base_pos_orient(pos, smpl_data.global_orient)
+        time.sleep(5)
+        # END LOOP
     
     def reset(self):
         super(SeatedPoseEnv, self).reset()
@@ -186,7 +251,6 @@ class SeatedPoseEnv(AssistiveEnv):
         smpl_data.global_orient[0][0] += new_x_or
         smpl_data.global_orient = smpl_data.global_orient[0]
 
-        init_pelvis = self.human.get_ee_pos_orient("pelvis")
         self.human.set_global_orientation(smpl_data, [0, -0.05,  bed_height+0.2])
 
         self.robot.set_gravity(0, 0, -9.81)
@@ -209,11 +273,6 @@ class SeatedPoseEnv(AssistiveEnv):
         p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1, physicsClientId=self.id)
         # drop human on bed
         for i in range(1000):
-            # if i in [100, 200, 300]:
-            #     new_x_or = self.human.align_chair()
-            #     print(i, ": sleeping")
-            #     print("new_x_or: ", new_x_or)
-            #     time.sleep(5)
             p.stepSimulation(physicsClientId=self.id)
 
         # # enable self collision and reset joint angle after dropping on bed
@@ -228,49 +287,56 @@ class SeatedPoseEnv(AssistiveEnv):
 
         self.init_env_variables()
         smpl_data.transl = self.human.get_ee_pos_orient("spine_4")[0]
-        # smpl_data.transl = self.human.get_base_pos_orient()[0]
         angles = self.get_all_human_angles()
-        p.addUserDebugText("final pose", [0, 0, 2], [1, 0, 0]) # red text
+        p.addUserDebugText("final pose", [0, 0, 1.5], [1, 0, 0]) # red text
         self.write_human_pkl(smpl_data)
-        time.sleep(10)
+        time.sleep(5)
         p.removeAllUserDebugItems()
+        smpl_data.smpl_file = self.smpl_file
+        smpl_data = self.assign_smplx_features(smpl_data)
         return smpl_data, angles
     
-    def reset_mesh(self, smpl_data, angles): 
-        self.setup_camera([0, -1, 1.25])
+    def reset_mesh(self, smpl_data: SMPLData, angles): 
+        self.setup_camera([0, -1.65, 1.25], [0, 0, 0.75])
         super(SeatedPoseEnv, self).reset()
-        angles = self.config_mesh_angles(angles)
+        angs = self.config_mesh_angles(angles)
+
         # magic happen here - now call agent.init()
-        self.build_assistive_env('diningchair', human_angles=angles, smpl_data=smpl_data)
-        bed_height, _ = self.furniture.get_heights(set_on_ground=True)
+        self.build_assistive_env('diningchair', human_angles=angs, smpl_data=smpl_data)
+
         # RESET: human
         pos = list(smpl_data.transl)
-        pos[2] += 0.1
-        self.human.set_base_pos_orient(pos, smpl_data.global_orient)
-        print("self.human new pos: ", self.human.get_base_pos_orient()[0])
-        self.human.set_gravity(0, 0, -9.81)
-        # self.human.set_base_pos_orient(pos, )
-        # self.human.set_base_pos_orient([0.2, 0.2, bed_height+0.1], [np.pi, 0, 0])
+        pos[1] += 0.1
+
+        orient = [0.0, 0.0, 0.0]
+        orient[0] -= np.pi/8
+        orient = convert_aa_to_euler_quat(orient)[0]
+        self.human.set_base_pos_orient(pos, orient)
+
+        # STEP: simulation
         p.setTimeStep(1/240., physicsClientId=self.id)
 
         # Enable rendering
         p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1, physicsClientId=self.id)
-        # drop human on bed
+        
+        # RUN: sim for viewing etc.
         while True:
             p.stepSimulation(physicsClientId=self.id)
             keys = p.getKeyboardEvents()
             if ord('q') in keys:
                 break
         img, depth = self.get_camera_image_depth()
-        print('depth: ', depth)
+        depth = np.array(depth)
+        d_shifted = depth - np.min(depth)
+        d_scaled = (d_shifted / np.max(d_shifted)) * 255
+
         print("image taken")
         fn = date.today().strftime("%b-%d-%Y") + "_" + datetime.now().strftime("%H%M")
         rgb_fn = "images/sim_results/" + fn + "_rgb.png"
         depth_fn = "images/sim_results/" + fn + "_depth.png"
         cv2.imwrite(rgb_fn, img)
-        cv2.imwrite(depth_fn, depth)
+        cv2.imwrite(depth_fn, d_scaled)
         print("images_saved")
         return
-        # self.set_all_human_angles(angles)
 
 

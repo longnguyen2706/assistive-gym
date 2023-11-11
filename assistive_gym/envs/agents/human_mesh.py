@@ -4,6 +4,9 @@ from scipy.spatial.transform import Rotation as R
 import pybullet as p
 from .agent import Agent
 
+from assistive_gym.envs.utils.human_utils import set_global_orientation
+from assistive_gym.envs.utils.urdf_utils import SMPLData
+
 right_arm_joints = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 left_arm_joints = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
 right_leg_joints = [28, 29, 30, 31, 32, 33, 34]
@@ -68,8 +71,8 @@ class HumanMesh(Agent):
         self.j_left_wrist_x, self.j_left_wrist_y, self.j_left_wrist_z = 57, 58, 59
         self.j_right_wrist_x, self.j_right_wrist_y, self.j_right_wrist_z = 60, 61, 62
         # SMPL only joints (not SMPL-X)
-        # self.j_left_fingers_x, self.j_left_fingers_y, self.j_left_fingers_z = 63, 64, 65
-        # self.j_right_fingers_x, self.j_right_fingers_y, self.j_right_fingers_z = 66, 67, 68
+        self.j_left_fingers_x, self.j_left_fingers_y, self.j_left_fingers_z = 63, 64, 65
+        self.j_right_fingers_x, self.j_right_fingers_y, self.j_right_fingers_z = 66, 67, 68
 
         self.num_body_shape = 10
         self.vertex_positions = None
@@ -78,7 +81,7 @@ class HumanMesh(Agent):
         self.right_arm_vertex_indices = None
         self.bottom_index = 5574
 
-    def create_smplx_body(self, directory, id, np_random, gender='male', height=None, body_shape=None, joint_angles=[], position=[0, 0, 0], orientation=[0, 0, 0], body_pose=None):
+    def create_smplx_body(self, directory, id, np_random, gender='male', height=None, body_shape=None, joint_angles=[], position=[0, 0, 0], orientation=[0, 0, 0], body_pose=None, smpl_data=None):
         # Choose gender
         self.gender = gender
         if self.gender not in ['male', 'female']:
@@ -88,7 +91,7 @@ class HumanMesh(Agent):
 
         # Create SMPL-X model
         model_folder = os.path.join(directory, 'smpl_models')
-        model = smplx.create(model_folder, model_type='smplx', gender=self.gender) # CHANGED to SMPL
+        model = smplx.create(model_folder, model_type='smplx', gender=self.gender)
         # Define body shape
         if type(body_shape) == str:
             params_filename = os.path.join(model_folder, 'human_params', body_shape)
@@ -104,10 +107,10 @@ class HumanMesh(Agent):
             body_pose = np.zeros((1, model.NUM_BODY_JOINTS*3))
             for joint_index, angle in joint_angles:
                 body_pose[0, joint_index] = angle
-
         # Generate standing human mesh and determine default height of the mesh
-        print("betas passed to model(): ", betas)
+
         output = model(betas=betas, body_pose=torch.Tensor(np.zeros((1, model.NUM_BODY_JOINTS*3))), return_verts=True)
+        
         vertices = output.vertices.detach().cpu().numpy().squeeze()
         out_mesh = trimesh.Trimesh(vertices, model.faces)
         rot = trimesh.transformations.rotation_matrix(np.deg2rad(90), [1, 0, 0])
@@ -119,9 +122,15 @@ class HumanMesh(Agent):
 
         # Generate human mesh with correct height scaling
         height_scale = height/out_mesh.extents[-1] if height is not None else 1.0
-        # print('Scale:', height_scale, '=', height, '/', out_mesh.extents[-1])
-        print("betas passed to model(): ", betas)
-        output = model(betas=betas, body_pose=torch.Tensor(body_pose), return_verts=True)
+        if smpl_data is not None:
+            print("adjusting eye and jaw")
+            output = model(betas=betas, body_pose=torch.Tensor(body_pose), return_verts=True,
+                           jaw_pose=smpl_data.jaw_pose, leye_pose = smpl_data.l_eye_pose, reye_pose=smpl_data.r_eye_pose,
+                           expression=smpl_data.expression, 
+                           left_hand_pose = smpl_data.l_hand_pose, right_hand_pose = smpl_data.r_hand_pose
+                        )
+        else: output = model(betas=betas, body_pose=torch.Tensor(body_pose), return_verts=True)
+
         vertices = output.vertices.detach().cpu().numpy().squeeze()
         joints = output.joints.detach().cpu().numpy().squeeze()
         # Scale vertices and rotate
@@ -140,10 +149,10 @@ class HumanMesh(Agent):
         
         return out_mesh, vertices, joints
 
-    def init(self, directory, id, np_random, gender='female', height=None, body_shape=None, joint_angles=[], position=[0, 0, 0], orientation=[0, 0, 0], skin_color='random', specular_color=[0.1, 0.1, 0.1], body_pose=None, out_mesh=None, vertices=None, joints=None):
+    def init(self, directory, id, np_random, gender='female', height=None, body_shape=None, joint_angles=[], position=[0, 0, 0], orientation=[0, 0, 0], skin_color='random', specular_color=[0.1, 0.1, 0.1], body_pose=None, out_mesh=None, vertices=None, joints=None, smpl_data=None):
         if out_mesh is None:
             # Create mesh
-            out_mesh, vertices, joints = self.create_smplx_body(directory, id, np_random, gender, height, body_shape, joint_angles, position, orientation, body_pose)
+            out_mesh, vertices, joints = self.create_smplx_body(directory, id, np_random, gender, height, body_shape, joint_angles, position, orientation, body_pose, smpl_data=smpl_data)
         model_folder = os.path.join(directory, 'smpl_models')
         self.skin_color = skin_color
         if self.skin_color == 'random':
@@ -183,4 +192,7 @@ class HumanMesh(Agent):
     def get_vertex_positions(self, vertices):
         pos, _ = self.get_base_pos_orient()
         return self.vertex_positions[vertices] + pos
+
+    def set_global_orientation(self, smpl_data: SMPLData, pos):
+        set_global_orientation(self.body, smpl_data.global_orient, pos)
 

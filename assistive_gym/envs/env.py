@@ -120,7 +120,6 @@ class AssistiveEnv(gym.Env):
     def build_assistive_env(self, furniture_type=None, fixed_human_base=True, human_impairment='random', gender='random', human_angles=None, smpl_data=None):
         # Build plane, furniture, robot, human, etc. (just like world creation)
         # Load the ground plane
-        print("self.human: ", self.human)
         plane = p.loadURDF(os.path.join(self.directory, 'plane', 'plane.urdf'), physicsClientId=self.id)
         self.plane.init(plane, self.id, self.np_random, indices=-1)
         # Randomly set friction of the ground
@@ -146,10 +145,11 @@ class AssistiveEnv(gym.Env):
                 height = ((np.random.rand(1)) / 2.5) + 1.5 # height ranges from 1.5 to 1.9
                 body_shape = smpl_data.betas
                 self.human.init(self.directory, self.id, self.np_random, gender='random', height=height, body_shape=body_shape,
-                                joint_angles=human_angles, position=smpl_data.transl, orientation=smpl_data.global_orient)
+                                joint_angles=human_angles, position=smpl_data.transl, orientation=[0, 0, 0], smpl_data=smpl_data)
                 print("human initialized")
                 self.agents.append(self.human)
             else: # human urdf
+                print("found HumanURDF, initializing")
                 self.human.init(self.id, self.np_random)
                 self.agents.append(self.human)
                 self.update_action_space()
@@ -371,7 +371,7 @@ class AssistiveEnv(gym.Env):
         self.camera_width = camera_width
         self.camera_height = camera_height
         self.view_matrix = p.computeViewMatrix(camera_eye, camera_target, [0, 0, 1], physicsClientId=self.id)
-        self.projection_matrix = p.computeProjectionMatrixFOV(fov, camera_width / camera_height, 0.01, 100, physicsClientId=self.id)
+        self.projection_matrix = p.computeProjectionMatrixFOV(fov, camera_width / camera_height, 0.01, 10, physicsClientId=self.id) # CHANED 100 to 10
 
     def setup_camera_rpy(self, camera_target=[-0.2, 0, 0.75], distance=1.5, rpy=[0, -35, 40], fov=60, camera_width=1920//4, camera_height=1080//4):
         self.camera_width = camera_width
