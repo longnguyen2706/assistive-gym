@@ -517,15 +517,12 @@ class HumanUrdf(Agent):
 
         head_dir = np.array(head_dir) / np.linalg.norm(head_dir)
         x_obj_dir = np.array(x_obj_dir) / np.linalg.norm(x_obj_dir)
-        print("\n############\nend effector: ", end_effector, "\nhead_dir: ", head_dir)
-        print("object dir: ", x_obj_dir)
 
         # not including orientation of object as of now
         vis = np.arccos(np.dot(head_dir, x_obj_dir))
 
         # attempting a different type of return
         diff = head_dir - x_obj_dir # both have already been normalized
-        print("mag of difference: ", np.linalg.norm(diff))
         # typically return abs(vis)
         return np.linalg.norm(diff)
 
