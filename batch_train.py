@@ -3,21 +3,21 @@ import pickle as pkl
 import numpy as np
 import pybullet as p
 import torch
+import time
 from assistive_gym.mprocess_train import mp_train, mp_load
 from assistive_gym.train import train
 
 #### Define dynamic configs ####
-### testing config ###
-PERSON_IDS = ['p002']
-SMPL_FILES = ['s41', 's08', 's03', 's27', 's35', 's16']
-# SMPL_FILES = ['s01', 's02', 's03', 's04', 's05', 's06', 's07', 's08', 's09', 's10', 's11', 's12',
-#               's16', 's17', 's18', 's19', 's20', 's21', 's22', 's23', 's24', 's25', 's26',
-#               's30', 's31', 's32', 's33', 's34', 's35', 's36', 's37', 's38', 's39', 's40',]
-# # PERSON_IDS = [ 'p002' ]
-OBJECTS = ['pill']
-
-
-
+PERSON_IDS = ['p026', 'p027', 'p028', 'p029', 'p030', 'p031', 'p032', 'p033', 'p034', 'p035', 'p036', 'p037', 'p038',
+              'p039', 'p040', 'p041', 'p042', 'p043', 'p044', 'p045', 'p047', 'p048', 'p049', 'p050', 'p051']
+# SMPL_FILES = ['s01' ]
+SMPL_FILES = ['s06', 's07', 's08', 's09', 's10', 's11', 's12',
+              's13', 's14', 's15', 's16', 's17', 's18', 's19', 's20']
+# SMPL_FILES = [ 's01', 's19', 's45']
+# SMPL_FILES = [ 's44']
+# PERSON_IDS = [ 'p001', 'p002']
+# SMPL_FILES = [ 's19', 's20', 's44', 's45']
+OBJECTS = ['cane', 'cup', 'pill']
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
 ENV = 'HumanComfort-v1-1107'
@@ -29,7 +29,7 @@ ROBOT_IK = True
 END_EFFECTOR = 'right_hand'
 
 ### DEFINE MULTIPROCESS SETTING ###
-NUM_WORKERS = 1
+NUM_WORKERS = 24
 
 def get_dynamic_configs():
     configs =[]
@@ -52,9 +52,10 @@ def do_train(config):
 
 if __name__ == '__main__':
     configs = get_dynamic_configs()
-    # ORIGINAL: leave unchanged
-    # if ENV == 'SeatedPose-v1':
+    start = time.time()
     with concurrent.futures.ProcessPoolExecutor(max_workers=NUM_WORKERS) as executor:
         results = executor.map(do_train, configs)
     for num, result in enumerate(results):
         print('Done training for {} {}'.format(num, result))
+    end = time.time()
+    print("Total time taken: {}".format(end - start))

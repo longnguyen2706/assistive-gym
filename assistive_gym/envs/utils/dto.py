@@ -110,7 +110,6 @@ class MainEnvInitResult:
         self.smpl_data = smpl_data
         self.angles = angles
 
-
 class MainEnvProcessTaskType(Enum):
     INIT = "init"
     RENDER_STEP = "render_step"
