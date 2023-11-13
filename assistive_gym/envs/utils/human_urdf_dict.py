@@ -62,6 +62,62 @@ class HumanUrdfDict:
             "right_hand": 89,
         }
 
+        self.joint_xyz_dict = {
+            "pelvis": 0,
+            "left_hip_x": 1, "left_hip_y": 2, "left_hip_z": 3,
+            "left_knee_x": 5, "left_knee_y": 6, "left_knee_z": 7,
+            "left_ankle_x": 9, "left_ankle_y": 10, "left_ankle_z": 11,
+            "left_foot_x": 13, "left_foot_y": 14, "left_foot_z": 15,
+            "right_hip_x": 17, "right_hip_y": 18, "right_hip_z": 19,
+            "right_knee_x": 21, "right_knee_y": 22, "right_knee_z": 23,
+            "right_ankle_x": 25, "right_ankle_y": 26, "right_ankle_z": 27,
+            "right_foot_x": 29, "right_foot_y": 30, "right_foot_z": 31,
+            "spine_2_x": 33, "spine_2_y": 34, "spine_2_z": 35,
+            "spine_3_x": 37, "spine_3_y": 38, "spine_3_z": 39,
+            "spine_4_x": 41, "spine_4_y": 42, "spine_4_z": 43,
+            "neck_x": 45, "neck_y": 46, "neck_z": 47,
+            "head_x": 49, "head_y": 50, "head_z": 51,
+            "left_clavicle_x": 53, "left_clavicle_y": 54, "left_clavicle_z": 55,
+            "left_shoulder_x": 57, "left_shoulder_y": 58, "left_shoulder_z": 59,
+            "left_elbow_x": 61, "left_elbow_y": 62, "left_elbow_z": 63,
+            "left_lowarm_x": 65, "left_lowarm_y": 66,"left_lowarm_z": 67,
+            "left_hand_x": 69, "left_hand_y": 70, "left_hand_z": 71,
+            "right_clavicle_x": 73, "right_clavicle_y": 74, "right_clavicle_z": 75,
+            "right_shoulder_x": 77, "right_shoulder_y": 78,"right_shoulder_z": 79,
+            "right_elbow_x": 81, "right_elbow_y": 82, "right_elbow_z": 83,
+            "right_lowarm_x": 85, "right_lowarm_y": 86, "right_lowarm_z": 87,
+            "right_hand_x": 89, "right_hand_y": 90, "right_hand_z": 91,
+        }
+
+        self.joint_xyz_lists = {
+            "pelvis": 0,
+            "left_hip": [1, 2, 3],
+            "left_knee": [5, 6, 7],
+            "left_ankle": [9, 10, 11],
+            "left_foot": [13, 14, 15],
+            "right_hip": [17, 18, 19],
+            "right_knee": [21, 22, 23],
+            "right_ankle": [25, 26, 27],
+            "right_foot": [29, 30, 31],
+            "spine_2": [33, 34, 35],
+            "spine_3": [37, 38, 39],
+            "spine_4": [41, 42, 43],
+            "neck": [45, 46, 47],
+            "head": [49, 50, 51],
+            "left_clavicle": [53, 54, 55],
+            "left_shoulder": [57, 58, 59],
+            "left_elbow": [61, 62, 63],
+            "left_lowarm": [65, 66, 67],
+            "left_hand": [69, 70, 71],
+            "right_clavicle": [73, 74, 75],
+            "right_shoulder": [77, 78, 79],
+            "right_elbow": [81, 82, 83],
+            "right_lowarm": [85, 86, 87],
+            "right_hand": [89, 90, 91]
+
+
+        }
+
         self.urdf_to_smpl_dict = {
             "pelvis": "Pelvis",
             "left_hip": "L_Hip",
