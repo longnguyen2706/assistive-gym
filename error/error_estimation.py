@@ -54,6 +54,8 @@ def mpjpe(smpl_body, ag_body):
         s += np.abs(np.linalg.norm(smpl - ag))
         i += 1
     return s/i
+    
+
 
 # function returns a dictionary with the specific joint and the squared error betweeen the two models
 # note: the SMPL model must be passed in first to obtain the correct estimation

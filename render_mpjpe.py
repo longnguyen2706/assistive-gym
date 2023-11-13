@@ -9,6 +9,7 @@ from error.error_estimation import mpjpe
 from error.heatmap_plot import build_map_pkl
 from assistive_gym.envs.utils.smpl_geom import generate_geom2
 from assistive_gym.envs.utils.urdf_utils import SMPLData, load_smpl
+from scripts.icp import icp 
 
     
 
@@ -44,12 +45,21 @@ def do_render(config):
     render(ENV, p, s, SAVE_DIR, o, ROBOT_IK)
 
 def render_result(env_name, person_id, smpl_file, pose_id='00'):
+    # DEBUGGING
+    # print("running ICP test")
+    # points_a = np.array([[0, 1, 4], [2, 3, 5], [1, 2, 2]])
+    # points_b = np.array([[3, 1, 2], [4, 6, 10], [4, 3, 2]])
+    # rotation = icp(points_a, points_b)
+    # b_trans = np.reshape(points_b)
+    # b_trans = np.matmil()
+    
+    # SETUP
     print("person_id: ", person_id, "smpl_file: ", smpl_file)
     env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=None, person_id=person_id)
     env.render()  # need to call reset after render
     env.reset()
 
-    # collect joint angles to write to pkl file
+    # BUILD: collect joint angles from sim to compare to reference file
     humanURDF = HumanUrdfDict()
     joints = ["left_hip", "pelvis", "right_hip", "left_shoulder", # 0 - 3
         "neck", "right_shoulder", "left_elbow", "right_elbow", # 4 - 7
@@ -57,7 +67,7 @@ def render_result(env_name, person_id, smpl_file, pose_id='00'):
         "left_ankle", "right_ankle", "spine_2", "spine_3", "spine_4", # 12 - 16
         "left_foot", "right_foot", "head", "left_clavicle", "right_clavicle",  # 17 - 21
         "left_lowarm", "right_lowarm" # 22 - 23
-    ]
+        ]
     data = []
     for joint in joints:
         if joint == "pelvis": data.append(np.array(env.human.get_link_positions_id(0, center_of_mass=False)))
@@ -66,14 +76,14 @@ def render_result(env_name, person_id, smpl_file, pose_id='00'):
             data.append(np.array(env.human.get_link_positions_id(humanURDF.get_dammy_joint_id(joint), center_of_mass=False)))
             print(joint, ": ", env.human.get_link_positions_id(humanURDF.get_dammy_joint_id(joint)))
 
-
     env.disconnect()
     
-    # env.disconnect()
+    # OPEN: SMPL body
     slp_body = pkl.load(open("error/" + person_id + "/" + pose_id + ".pkl", "rb"))
     smpl_path = "examples/data/SMPL_FEMALE.pkl"
     smpl_data = SMPLData(slp_body['body_pose'], slp_body['betas'], slp_body['global_orient'])
     
+    # BUILD: joint locations from SMPL body
     _, joint_pos, _ = generate_geom2(smpl_path, smpl_data, "assistive_gym/error/error_geom")
     s_body = []
     joints = ["L_Hip", "Pelvis", "R_Hip", "L_Shoulder", # 0 - 3
@@ -85,12 +95,37 @@ def render_result(env_name, person_id, smpl_file, pose_id='00'):
     ]
     for joint in joints:
         s_body.append(joint_pos[joint])
-    build_map_pkl([], 0, 0, 0, smpl_ag_body_pts=s_body, ag_body_pts=data, go=False)
+    
+    # ICP: to align AG body with SMPL
+    smpl = np.array(s_body)
+    ag = np.reshape(np.array(data), (24,3))
+    rot, dists, _ = icp(ag, smpl, max_iterations=45)
+    
+    # ROTATE: assitive gym body to match smpl
+    ag_trans = np.ones((24, 4))
+    ag_trans[:,  0:3] = np.copy(ag)
 
+    ag_trans = np.dot(rot, ag_trans.T).T
+    ag_trans = ag_trans[:, :-1]
+
+    # for i,row in enumerate(ag):
+    #     # print("pre transform: ", row)
+    #     ag_trans[i] = row[0:-1] / row[-1]
+    #     print("ag: ", ag_trans[i], "-> smpl: ", smpl[i])
+    
+
+    # SHOW
+    print()
+    build_map_pkl([], 0, 0, 0, smpl_ag_body_pts=smpl, ag_body_pts=ag_trans, go=False) # not building a heatmap, just body plotting
+
+    # WRITE
     file_w = open("error/mpjpe_values.txt", "a")
-    file_w.write(person_id + "/" + pose_id + ".pkl: " + str(mpjpe(s_body, data)))
+    file_w.write(person_id + "/" + pose_id + ".pkl: " + str(mpjpe(smpl, ag_trans)))
     file_w.close()
+    
+    # PRINT
     print("\n\nmpjpe: ", mpjpe(s_body, data))
+    print("final distances: ", dists)
 
 
 

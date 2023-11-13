@@ -233,13 +233,14 @@ def build_map_pkl(func_data, points, func_max, func_min, body_pts=None, bp_body_
             i = i + 1
     # plot the body points then draw them (from Louis ag model)
     if ag_body_pts is not None:
+        if len(ag_body_pts.shape) > 2: raise Exception("Please pass a numpy array with shape (24, 3)")
         i = 0
         hip = ag_body_pts[1] # using pelvis instead // not renaming for time
         for body_point in ag_body_pts:
-            body_point = np.array(body_point) - np.array(hip)
-            body_point = body_point[0]
+            # body_point = np.array(body_point) - np.array(hip) # NOT NECCESSARY following ICP
+            # body_point = body_point[0] # NOT NECCESSARY if you reshape ag to (24, 3)
             # print("body_point: ", body_point)
-            if i == 4:  # do nothing
+            if i == 0:  # do nothing
                 ax.scatter(body_point[0], body_point[1], body_point[2], color='green', s=10)
             else:
                 ax.scatter(body_point[0], body_point[1], body_point[2], color='blue', s=10)
@@ -256,6 +257,7 @@ def build_map_pkl(func_data, points, func_max, func_min, body_pts=None, bp_body_
             hips = [0, 1, 2]
             left_leg = [0, 10, 12]
             right_leg = [2, 11, 13]
+            hip = None # ADDED to remove shifting
             # draw the main body
             x = build_body_line(ag_body_pts, main_body, 0, sub=hip)[0]
             y = build_body_line(ag_body_pts, main_body, 1, sub=hip)[0]
@@ -296,10 +298,10 @@ def build_map_pkl(func_data, points, func_max, func_min, body_pts=None, bp_body_
         i = 0
         hip = smpl_ag_body_pts[1] # using pelvis instead, not renaming for time
         for body_point in smpl_ag_body_pts:
-            body_point = np.array(body_point) - np.array(hip)
-            # body_point = body_point[0]
+            # body_point = np.array(body_point) - np.array(hip) # NOT NECESSARY, with ICP
+            # body_point = body_point[0] # NOT NECESSARY, with shape (24, 3)
             # print("body_point: ", body_point)
-            if i == 4:  # do nothing
+            if i == 0:  # do nothing
                 ax.scatter(body_point[0], body_point[1], body_point[2], color='green', s=10)
             else:
                 ax.scatter(body_point[0], body_point[1], body_point[2], color='black', s=10)
@@ -309,6 +311,7 @@ def build_map_pkl(func_data, points, func_max, func_min, body_pts=None, bp_body_
             # define the body line indexes
             # print("hip: ", hip)
             # hip = hip[0]
+            hip = None
             main_body = [4, 1]
             shoulders = [3, 4, 5]
             left_arm = [3, 6, 8] # this works for SMPL body, commented out for testing Henry's model
@@ -529,10 +532,10 @@ def build_map_pkl(func_data, points, func_max, func_min, body_pts=None, bp_body_
     plt.legend(loc="upper left")
     plt.show()
 
-def build_body_line(body_pts, arrs, ind, sub=[]):
+def build_body_line(body_pts, arrs, ind, sub=None):
     arr = np.zeros(shape = (1, len(arrs)))
     x = 0
-    if len(sub) == 0:
+    if sub is None:
         # print("no subtraction factor")
         for i in arrs:
             arr[0][x] = (body_pts[i][ind])
