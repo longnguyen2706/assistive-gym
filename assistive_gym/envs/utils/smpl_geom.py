@@ -48,13 +48,75 @@ def generate_body_hull(jname, vert, outdir, joint_pos=(0, 0, 0)):
         "hull": p_hull,
     }
 
-
 def generate_geom(default_model_path, smpl_data= None, outdir=None):
     smpl_parser = SMPL_Parser(default_model_path)
     pose = torch.zeros((1, 72)) # reset the model to default pose
 
-    # pose = torch.Tensor(smpl_data.body_pose).unsqueeze(0)
-    # print ("pose shape: ", pose.shape)
+    transl = None
+    if smpl_data is not None:
+        print ("betas before: ", smpl_data.betas)
+        betas = torch.Tensor(np.array(smpl_data.betas).reshape(1, 10))
+        if smpl_data.transl is not None:
+            transl = torch.Tensor(smpl_data.transl).unsqueeze(0)
+    else:
+        betas = BETAS
+
+    (
+        smpl_verts,
+        smpl_jts,
+        skin_weights,
+        joint_names,
+        joint_offsets,
+        joint_parents,
+        joint_axes,
+        joint_dofs,
+        joint_range,
+        contype,
+        conaffinity,
+    ) = smpl_parser.get_mesh_offsets(pose, betas=betas, transl=transl)
+
+    vert_to_joint = skin_weights.argmax(axis=1)
+    hull_dict = {}
+    scale_dict = {
+        # "Spine3": 0.9,
+    }
+    # create joint geometries
+    # print("need to change geom_dir in smpl_geom.py line 79")
+    # geom_dir = "/home/hrl5/assistive-gym/assistive_gym/envs/assets/human/meshes/"
+    # geom_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../assets/human/meshes/")
+    os.makedirs(outdir, exist_ok=True)
+    joint_pos_dict = {}
+    total_mass = 0
+    for jind, jname in enumerate(joint_names):
+        vind = np.where(vert_to_joint == jind)[0]
+        if len(vind) == 0:
+            print(f"{jname} has no vertices!")
+            continue
+        vert = (smpl_verts[vind] - smpl_jts[jind]) * scale_dict.get(jname, 1) + smpl_jts[jind]
+        # vert = (smpl_verts[vind] - smpl_jts[jind]) + smpl_jts[jind]
+        r = generate_body_hull(jname, vert, outdir, joint_pos=smpl_jts[jind])
+        joint_pos_dict[jname] = smpl_jts[jind]
+
+        hull_dict[jname] = HullWrapper(r["hull"], r["filename"])
+        total_mass += r["hull"].mass
+    print("total mass: ", total_mass)
+    return hull_dict, joint_pos_dict, joint_offsets
+
+def generate_geom2(default_model_path, smpl_data= None, outdir=None):
+    smpl_parser = SMPL_Parser(default_model_path)
+    pose = torch.zeros((1, 72)) # reset the model to default pose
+
+    # print("smpl data body pose: ", smpl_data.body_pose)
+    if len(smpl_data.body_pose) == 69:
+        body_pose = np.array([0, 0, 0])
+        body_pose = np.append(body_pose, smpl_data.body_pose)
+        pose = torch.Tensor(body_pose).unsqueeze(0)
+        print("unsqeezed!")
+    else:
+        body_pose = np.append(body_pose, smpl_data.body_pose)
+        pose = torch.Tensor(body_pose).unsqueeze(0)
+        print("unsqeezed!")
+
     transl = None
     if smpl_data is not None:
         print ("betas before: ", smpl_data.betas)

@@ -25,6 +25,13 @@ class SMPLData:
         self.betas = betas
         self.global_orient = global_orient
         self.transl = transl
+        self.smpl_file = None
+        self.r_hand_pose = None
+        self.l_hand_pose = None
+        self.r_eye_pose = None
+        self.l_eye_pose = None
+        self.jaw_pose = None
+        self.expression = None
 
 def get_template_smpl_path(gender):
     if not gender:

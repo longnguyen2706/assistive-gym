@@ -60,6 +60,8 @@ def train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', 
 
     smpl_name = os.path.basename(smpl_file)
     p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_name), [0, 0, 1], textColorRGB=[1, 0, 0])
+    # human.set_head_angle() # getting the head's left and right limits
+    # print("head limits defined")
 
     while timestep < MAX_ITERATIONS and not optimizer.stop():
         timestep += 1

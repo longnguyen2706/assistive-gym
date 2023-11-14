@@ -7,11 +7,12 @@ from assistive_gym.envs.utils.dto import RobotSetting, InitRobotSetting, EnvConf
     SearchResult, MainEnvProcessInitTask, MainEnvProcessTask, MainEnvProcessTaskType, MainEnvProcessRenderTask, \
     MainEnvProcessGetHumanRobotInfoTask
 from assistive_gym.envs.utils.train_utils import *
+from assistive_gym.envs.seated_pose_env import SeatedPoseEnv
 
 LOG = get_logger()
 NUM_WORKERS = 1
 MAX_ITERATION = 500
-RENDER_UI = False
+RENDER_UI = True
 
 
 # env that run in parallel, in background
@@ -149,7 +150,7 @@ def init_main_env(env, handover_obj):
 
     if RENDER_UI:
         env.render()
-    env.reset()
+    smpl_data, angles = env.reset()
     # draw original ee pos
     original_ee_pos = human.get_pos_orient(human.human_dict.get_dammy_joint_id(end_effector), center_of_mass=True)[0]
     draw_point(original_ee_pos, size=0.01, color=[0, 1, 0, 1])
@@ -158,8 +159,16 @@ def init_main_env(env, handover_obj):
     return MainEnvInitResult(original_info, max_dynamics, env_object_ids, human_link_robot_collision, end_effector,
                              handover_obj_config,
                              human.controllable_joint_lower_limits, human.controllable_joint_upper_limits,
-                             robot_setting)
+                             robot_setting, smpl_data=smpl_data, angles=angles)
 
+
+def init_mesh_env(env, smpl_data, angles):
+    try:
+        env.render()
+        env.reset_mesh(smpl_data, angles) 
+    except: 
+        raise Exception("environment has no mesh configuration, please use a different environment")
+    return -1
 
 def do_search(env, joint_angles, search_config):
     human, end_effector, handover_obj = env.human, search_config.handover_obj_config.end_effector, search_config.handover_obj
@@ -362,6 +371,26 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
 
     print("training time (s): ", time.time() - start_time)
     return action
+
+
+def mp_load(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', person_id='p001',
+             end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_physics=False,
+             robot_ik=False, handover_obj=None):
+    env_config = EnvConfig(env_name, person_id, smpl_file, handover_obj, end_effector, True)
+
+    # init main env process
+    main_env_process, main_env_task_queue, main_env_result_queue = init_main_env_process(env_config)
+    main_env_task_queue.put(MainEnvProcessInitTask())
+    init_result: MainEnvInitResult = main_env_result_queue.get()
+    destroy_main_env_process(main_env_process, main_env_task_queue)
+    print("new env make")
+    mesh_env = SeatedPoseEnv(mesh=True, robot=False)
+    mesh_env.render()
+    mesh_env.reset_mesh(smpl_data=init_result.smpl_data, angles=init_result.angles)
+    
+    mesh_env.disconnect()
+
+    return 0
 
 
 def save_train_result(save_dir, env_name, person_id, smpl_file, actions, key):

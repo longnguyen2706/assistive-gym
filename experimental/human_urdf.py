@@ -10,7 +10,6 @@ from cma import CMAEvolutionStrategy
 from gym.utils import seeding
 from kinpy import Transform
 from ergonomics.reba import RebaScore
-# from panda3d.bullet import BulletAllHitsRayResult
 
 from assistive_gym.envs.agents.agent import Agent
 from assistive_gym.envs.utils.human_urdf_dict import HumanUrdfDict
@@ -120,7 +119,7 @@ class HumanUrdf(Agent):
         robot_joints = self.human_dict.get_joint_ids(robot_joint_name)
         # print ("joint name: ", smpl_joint_name, " angles: ", smpl_angles*180/np.pi)
         self.set_joint_angles(robot_joints, smpl_angles, use_limits=use_limits)
-
+    
     def set_global_orientation(self, smpl_data: SMPLData, pos):
         set_global_orientation(self.body, smpl_data.global_orient, pos)
 
@@ -312,7 +311,36 @@ class HumanUrdf(Agent):
         for _ in range(5):  # 5 is the number of skip steps
             p.stepSimulation(physicsClientId=self.id)
 
+    def align_chair(self):
+        p.removeAllUserDebugItems()
+        norm = [0, 0, 1] # want no z variation
+        lh_pos, lh_orient = self.get_ee_pos_orient("left_hip")
+        rh_pos, rh_orient = self.get_ee_pos_orient("right_hip")
 
+        lh_rot = np.array(p.getMatrixFromQuaternion(lh_orient))
+        lh_dir = lh_rot.reshape(3, 3)[:, 1]
+
+        rh_rot = np.array(p.getMatrixFromQuaternion(rh_orient))
+        rh_dir = rh_rot.reshape(3, 3)[:, 1]
+
+        # lines for debugging
+        p.addUserDebugLine(lh_pos, lh_dir, [0, 1, 0]) # green
+        p.addUserDebugLine(rh_pos, rh_dir, [1, 0, 0]) # red
+
+        # remove x component
+        lh_dir[0] = 0
+        rh_dir[0] = 0
+
+        # normalize
+        lh_dir = lh_dir / np.linalg.norm(lh_dir)
+        rh_dir = rh_dir / np.linalg.norm(rh_dir)
+        
+        # find and return the smaller of the two angles (this will be the x-rotation to align with the chair seat)
+        l_ang = np.arccos(np.dot(norm, lh_dir))
+        r_ang = np.arccos(np.dot(norm, rh_dir))
+        return min((l_ang, r_ang)) - np.pi/2 # hips should be 90 deg off from the chair base
+    
+    
     def get_reba_score(self, end_effector="right_hand"):
         human_dict = HumanUrdfDict()
         rebaScore = RebaScore()
@@ -330,7 +358,7 @@ class HumanUrdf(Agent):
 
         for i in dammy_ids:
             # get the location of each dammy joint and append to the pose list
-            loc = p.getLinkState(self.body, i)[4]
+            loc = p.getLinkState(self.body, i)[4]            
             pose.append(loc)
     
         pose = np.array(pose)
@@ -348,27 +376,24 @@ class HumanUrdf(Agent):
         # return all info
         return arm_score
 
-    def get_roll_wrist_orientation(self, end_effector="right_hand"):
+
+    def get_vertical_offset(self, end_effector="right_hand"):
         human_dict = HumanUrdfDict()
         # determine wrist index for the correct hand
         _, ee_orient = self.get_ee_pos_orient(end_effector)
         rotation = np.array(p.getMatrixFromQuaternion(ee_orient))
         ray_dir = rotation.reshape(3, 3)[:, 1]
-        # print("ray_dir: ", ray_dir)
-
         goal = [0, 0, 1]
         cosine = np.dot(ray_dir, goal)/(norm(ray_dir)*norm(goal))
         # print("Cosine Similarity:", cosine)
 
         return cosine
 
-    def get_pitch_wrist_orientation(self, end_effector="right_hand"):
+    def get_parallel_offset(self, end_effector="right_hand"):
         # determine wrist index for the correct hand
         _, ee_orient = self.get_ee_pos_orient(end_effector)
         rotation = np.array(p.getMatrixFromQuaternion(ee_orient))
         ray_dir = rotation.reshape(3, 3)[:, 2]
-        # print("ray_dir: ", ray_dir)
-
         goal = [0, 0, 1]
         cosine = np.dot(ray_dir, goal)/(norm(ray_dir)*norm(goal))
         # print("Cosine Similarity:", cosine)
@@ -382,6 +407,148 @@ class HumanUrdf(Agent):
         wrist_orientation = p.getLinkState(self.body, wrist_ind)[1]
         array = p.getEulerFromQuaternion(wrist_orientation)
         return array[2]
+    
+    def get_eyeline_offset(self, end_effector):
+        fov = self.get_fov()
+        right = fov[0]
+        left = fov[1]
+        hand_pos, _ = self.get_ee_pos_orient(end_effector)
+        hand_x = hand_pos[0]
+
+        # testing
+        ee_pos, _ = self.get_ee_pos_orient("head")
+        p.addUserDebugLine(ee_pos, left, [0, 1, 0])
+        p.addUserDebugLine(ee_pos, right, [1, 0, 0])
+        p.createVisualShape(p.GEOM_SPHERE, radius=0.1)
+        print("left: ", left, "\nright: ", right)
+        l = left[0]
+        r = right[0]
+        if hand_x >= l and hand_x <= r:
+            return 0
+        return min(abs(hand_x - l), abs(hand_x - r))
+
+    def get_eyeline_cone(self, end_effector, l=0.5):
+        ee_pos, ee_orient = self.get_ee_pos_orient("head")
+        rotation = np.array(p.getMatrixFromQuaternion(ee_orient))
+        ray_dir = rotation.reshape(3, 3)[:, 2]
+        end_cone = [ee_pos[0] + (ray_dir[0]*l), ee_pos[1] + (ray_dir[1]*l), ee_pos[2] + (ray_dir[2]*l)]
+        radius = 5
+        perp = self.get_orthoganol(ee_orient)
+        end_rad = [end_cone[0] + (perp[0]*radius), end_cone[1] + (perp[1]*radius), end_cone[2] + (perp[2]*radius)]
+        end_rad0 = [end_cone[0] + (perp[0]*-radius), end_cone[1] + (perp[1]*-radius), end_cone[2] + (perp[2]*-radius)]
+        perp = self.get_orthoganol(perp)
+        end_rad2 = [end_cone[0] + (perp[0]*radius), end_cone[1] + (perp[1]*radius), end_cone[2] + (perp[2]*radius)]
+        end_rad20 = [end_cone[0] + (perp[0]*-radius), end_cone[1] + (perp[1]*-radius), end_cone[2] + (perp[2]*-radius)]
+        
+        # ensure calculations were done correctly
+        p.addUserDebugLine(ee_pos, end_cone, [1, 0, 0]) 
+        p.addUserDebugLine(end_cone, end_rad, [0, 1, 0])
+        p.addUserDebugLine(end_cone, end_rad0, [0, 0, 1])
+        p.addUserDebugLine(end_cone, end_rad2, [0, 1, 0])
+        p.addUserDebugLine(end_cone, end_rad20, [0, 0, 1])
+        p.removeAllUserDebugItems()
+        # idea, using the angle made between the head normal and [1, 0, 0] --> if greater or less than a certain threshold we can force
+        # the hand in a certain direction or change how we model the cone of vision
+
+        return False
+
+    def get_fov(self, l=0.25):
+        # casts field of view from head 0.5m outward to define a line of sight -- will check that 0.5m is reasonable
+        ee_pos, ee_orient = self.get_ee_pos_orient("head")
+        rotation = np.array(p.getMatrixFromQuaternion(ee_orient))
+        ray_dir = rotation.reshape(3, 3)[:, 2]
+        axis = np.cross(ray_dir, [1, 0, 0])
+        left = self.rotate_3d(ray_dir, axis, 70)
+        right = self.rotate_3d(ray_dir, axis, -70)
+        ray_dir = left
+        end_left = [ee_pos[0] + (ray_dir[0]*l), ee_pos[1] + (ray_dir[1]*l), ee_pos[2] + (ray_dir[2]*l)]
+        ray_dir = right
+        end_right = [ee_pos[0] + (ray_dir[0]*l), ee_pos[1] + (ray_dir[1]*l), ee_pos[2] + (ray_dir[2]*l)]
+        return [end_left, end_right]
+
+    def set_head_angle(self, l=0.375):
+        ee_pos, ee_orient = self.get_ee_pos_orient("head")
+        rotation = np.array(p.getMatrixFromQuaternion(ee_orient))
+        ray_dir = rotation.reshape(3, 3)[:, 2]
+        # head = np.array([ee_pos[0] + (ray_dir[0]*l), ee_pos[1] + (ray_dir[1]*l), ee_pos[2] + (ray_dir[2]*l)])
+        head_u = ray_dir / np.linalg.norm(ray_dir)
+        x = np.array([1, 0, 0])
+        x_u = x / np.linalg.norm(x)
+        angle = np.arccos(np.dot(head_u, x_u))
+        # based on this angle, we can force the hand in the desired direction
+        print("head anlge: ", angle)
+
+        #idea 1
+        end_norm = np.array([ee_pos[0] + (ray_dir[0]*l), ee_pos[1] + (ray_dir[1]*l), ee_pos[2] + (ray_dir[2]*l)])
+        ray_dir = [1, 0, 0]
+        end_l = np.array([end_norm[0] + (ray_dir[0]*l), end_norm[1] + (ray_dir[1]*l), end_norm[2] + (ray_dir[2]*l)])
+        end_r = np.array([end_norm[0] + (ray_dir[0]*-l), end_norm[1] + (ray_dir[1]*-l), end_norm[2] + (ray_dir[2]*-l)])
+        p.addUserDebugLine(ee_pos, end_norm, [1, 0 ,0])
+        p.addUserDebugLine(end_norm, end_l, [0, 1, 0]) # left is green
+        p.addUserDebugLine(end_norm, end_r, [0, 0, 1]) # right is blue
+        self.head_coords = [end_l, end_norm, end_r] 
+        self.head_angle = angle
+
+    def get_head_angle_range(self, end_effector): # currently using
+        end_l, end_norm, end_r = self.head_coords
+
+        hand_pos, _ = self.get_ee_pos_orient(end_effector)
+        hand = hand_pos[0]
+        # center = end_norm[0]
+        # print("right limit (lower): ", end_r[0], "\nleft limit (upper): ", end_l[0])
+
+        if hand >= end_r[0] and hand <= end_l[0]:
+            return 0
+            # return abs(0.5 * (hand - center)) # TRY LATER: add a slight bias toward the center
+        return min(hand - end_r[0], hand - end_l[0])
+
+    def visibility(self, end_effector):
+        # inspired by [] - may have to offset 90deg due to straight = perp to the ground
+        head_pos, head_or = self.get_ee_pos_orient("head")
+        rotation = np.array(p.getMatrixFromQuaternion(head_or))
+        head_dir = rotation.reshape(3, 3)[:, 2]
+        hand_pos, _ = self.get_ee_pos_orient(end_effector)
+        x_obj_dir = np.array([- head_pos[0] + hand_pos[0], - head_pos[1] + hand_pos[1], - head_pos[2] + hand_pos[2]])
+        # for debugging
+        end_head_pos = np.array(head_pos) + (np.array(head_dir) * 0.25)
+        # print("head pos: ", head_pos, "   head end pos: ", end_head_pos, " head_dir: ", head_dir, "\nend effector: ", end_effector, "   hand_pos: ", hand_pos, "   hand_dir: ", x_obj_dir)
+        p.addUserDebugLine(head_pos, end_head_pos, [1, 0, 0], lineWidth=2.0) # red head orientation vector
+        p.addUserDebugLine(head_pos, hand_pos, [0, 1, 0], lineWidth=2.0) # green head to hand vec
+
+        head_dir = np.array(head_dir) / np.linalg.norm(head_dir)
+        x_obj_dir = np.array(x_obj_dir) / np.linalg.norm(x_obj_dir)
+
+        # not including orientation of object as of now
+        vis = np.arccos(np.dot(head_dir, x_obj_dir))
+
+        # attempting a different type of return
+        diff = head_dir - x_obj_dir # both have already been normalized
+        # typically return abs(vis)
+        return np.linalg.norm(diff)
+
+    
+    def rotate_3d(self, point, axis, angle_degrees):
+        # Convert the angle to radians
+        angle_rad = np.radians(angle_degrees)
+        
+        # Normalize the rotation axis
+        axis = axis / np.linalg.norm(axis)
+        
+        # Create the rotation matrix
+        cos_theta = np.cos(angle_rad)
+        sin_theta = np.sin(angle_rad)
+        ux, uy, uz = axis
+        rotation_matrix = np.array([
+            [cos_theta + ux**2 * (1 - cos_theta), ux * uy * (1 - cos_theta) - uz * sin_theta, ux * uz * (1 - cos_theta) + uy * sin_theta],
+            [uy * ux * (1 - cos_theta) + uz * sin_theta, cos_theta + uy**2 * (1 - cos_theta), uy * uz * (1 - cos_theta) - ux * sin_theta],
+            [uz * ux * (1 - cos_theta) - uy * sin_theta, uz * uy * (1 - cos_theta) + ux * sin_theta, cos_theta + uz**2 * (1 - cos_theta)]
+        ])
+        
+        return np.dot(rotation_matrix, point)
+
+    def get_orthoganol(self, vec):
+
+        return [-vec[1], vec[0], 0]
 
     def cal_chain_manipulibility(self, joint_angles, ee: str):
         chain = self.chain[ee]
@@ -448,6 +615,15 @@ class HumanUrdf(Agent):
                 link_positions.append(pos)
 
         return link_positions
+
+    def get_link_positions_id(self, link_id, center_of_mass=True):
+        link_positions = []
+        for i in [link_id]:
+                pos, orient = self.get_pos_orient(i, center_of_mass=center_of_mass)
+                link_positions.append(pos)
+        return link_positions
+
+
 
     def inverse_dynamic(self, end_effector_name=None):
         # inverse dynamics will return the torque for base 7 DOF + all joints DOF (in our case of floating base + 23 joints, it will be 76)

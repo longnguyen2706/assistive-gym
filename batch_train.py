@@ -1,6 +1,10 @@
+import os
+import pickle as pkl
+import numpy as np
+import pybullet as p
+import torch
 import time
-
-from assistive_gym.mprocess_train import mp_train
+from assistive_gym.mprocess_train import mp_train, mp_load
 from assistive_gym.train import train
 
 #### Define dynamic configs ####
@@ -16,7 +20,7 @@ SMPL_FILES = ['s06', 's07', 's08', 's09', 's10', 's11', 's12',
 OBJECTS = ['cane', 'cup', 'pill']
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
-ENV = 'HumanComfort-v1'
+ENV = 'HumanComfort-v1-1107'
 SEED = 1001
 SAVE_DIR = 'trained_models'
 RENDER_GUI = False

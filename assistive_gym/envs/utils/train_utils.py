@@ -2,6 +2,7 @@ import importlib
 import json
 import os
 import pickle
+import time
 from datetime import datetime
 from typing import Set, Optional
 
@@ -410,14 +411,20 @@ def cost_func(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.n
     mid_angle_displacement = cal_angle_diff(angle_config, mid_angle)
     # print("mid_angle_displacement: ", mid_angle_displacement)
 
+
+    visibility = human.visibility(ee_name)
+    max_visibility = np.pi
+
+
     object = 'default' if not object_config else  object_type_to_name(object_config.object_type)
     w= PARAMS[object]['weights']
     cost = 0
     o_specific_cost , self_penetration_cost, env_penetration_cost, ik_cost, robot_penetration_cost = 0, 0, 0, 0, 0
+    w['visibility'] = 10
 
     cost += (w['dist'] * dist + w['manipulibility'] * 1 / (manipulibility / max_dynamics.manipulibility) + w[
         'energy'] * energy_final / max_dynamics.energy \
-            + w['torque'] * torque / max_dynamics.torque + w['mid_angle'] * mid_angle_displacement)
+            + w['torque'] * torque / max_dynamics.torque + w['mid_angle'] * mid_angle_displacement + w['visibility'] * visibility / max_visibility)
     if object != 'default':
         o_specific_cost = w['special_cost'] * object_specific_cost
         cost+= o_specific_cost
@@ -816,12 +823,15 @@ def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik
     env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=handover_obj, person_id=person_id)
     # env.render()  # need to call reset after render
     env.reset()
+    # print("action[end_effector]", action["end_effector"])
+    action["end_effector"] = "left_hand"
 
     smpl_name = os.path.basename(smpl_file).split(".")[0]
     p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_name), [0, 0, 1], textColorRGB=[1, 0, 0])
 
     env.human.reset_controllable_joints(action["end_effector"])
     env.human.set_joint_angles(env.human.controllable_joint_indices, action["solution"])
+
     if robot_ik:
         # print("robot pose: ", robot_pose, "robot_joint_angles: ", robot_joint_angles)
         if robot_pose is None or robot_joint_angles is None:
@@ -885,6 +895,7 @@ def render_nn_result(env_name, data, person_id, smpl_file, handover_obj):
         keys = p.getKeyboardEvents()
         if ord('q') in keys:
             break
+
     env.disconnect()
 
 def render_nn_result2(env_name, data, person_id, smpl_file, handover_obj):
