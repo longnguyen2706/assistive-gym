@@ -240,7 +240,7 @@ def build_map_pkl(func_data, points, func_max, func_min, body_pts=None, bp_body_
             # body_point = np.array(body_point) - np.array(hip) # NOT NECCESSARY following ICP
             # body_point = body_point[0] # NOT NECCESSARY if you reshape ag to (24, 3)
             # print("body_point: ", body_point)
-            if i == 0:  # do nothing
+            if i == 1:  # do nothing
                 ax.scatter(body_point[0], body_point[1], body_point[2], color='green', s=10)
             else:
                 ax.scatter(body_point[0], body_point[1], body_point[2], color='blue', s=10)
@@ -301,7 +301,7 @@ def build_map_pkl(func_data, points, func_max, func_min, body_pts=None, bp_body_
             # body_point = np.array(body_point) - np.array(hip) # NOT NECESSARY, with ICP
             # body_point = body_point[0] # NOT NECESSARY, with shape (24, 3)
             # print("body_point: ", body_point)
-            if i == 0:  # do nothing
+            if i == 1:  # do nothing
                 ax.scatter(body_point[0], body_point[1], body_point[2], color='green', s=10)
             else:
                 ax.scatter(body_point[0], body_point[1], body_point[2], color='black', s=10)

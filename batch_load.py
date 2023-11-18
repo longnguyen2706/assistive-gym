@@ -8,7 +8,7 @@ from assistive_gym.train import train
 
 #### Define dynamic configs ####
 ### testing config ###
-PERSON_IDS = ['p000']
+PERSON_IDS = ['p101', 'p102']
 SMPL_FILES = ['s01']
 # SMPL_FILES = ['s01', 's02', 's03', 's04', 's05', 's06', 's07', 's08', 's09', 's10', 's11', 's12',
 #               's16', 's17', 's18', 's19', 's20', 's21', 's22', 's23', 's24', 's25', 's26',
@@ -54,7 +54,8 @@ if __name__ == '__main__':
     configs = get_dynamic_configs()
     # ORIGINAL: leave unchanged
     # if ENV == 'SeatedPose-v1':
-    do_train(configs[0])
+    for c in configs:
+        do_train(c)
     
 
     # with concurrent.futures.ProcessPoolExecutor(max_workers=NUM_WORKERS) as executor:

@@ -144,6 +144,10 @@ class AssistiveEnv(gym.Env):
                                                         (self.human.j_left_elbow_y, -90), (self.human.j_right_elbow_y, 90)]
                 height = ((np.random.rand(1)) / 2.5) + 1.5 # height ranges from 1.5 to 1.9
                 body_shape = smpl_data.betas
+                if len(body_shape) > 1:
+                    body_shape = [body_shape]
+                    smpl_data.transl = [smpl_data.transl]
+                    
                 self.human.init(self.directory, self.id, self.np_random, gender='random', height=height, body_shape=body_shape,
                                 joint_angles=human_angles, position=smpl_data.transl, orientation=[0, 0, 0], smpl_data=smpl_data)
                 print("human initialized")

@@ -90,7 +90,7 @@ class HumanUrdfDict:
         }
 
         self.joint_xyz_lists = {
-            "pelvis": 0,
+            "pelvis": [0],
             "left_hip": [1, 2, 3],
             "left_knee": [5, 6, 7],
             "left_ankle": [9, 10, 11],

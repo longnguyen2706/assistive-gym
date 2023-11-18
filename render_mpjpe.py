@@ -45,13 +45,6 @@ def do_render(config):
     render(ENV, p, s, SAVE_DIR, o, ROBOT_IK)
 
 def render_result(env_name, person_id, smpl_file, pose_id='00'):
-    # DEBUGGING
-    # print("running ICP test")
-    # points_a = np.array([[0, 1, 4], [2, 3, 5], [1, 2, 2]])
-    # points_b = np.array([[3, 1, 2], [4, 6, 10], [4, 3, 2]])
-    # rotation = icp(points_a, points_b)
-    # b_trans = np.reshape(points_b)
-    # b_trans = np.matmil()
     
     # SETUP
     print("person_id: ", person_id, "smpl_file: ", smpl_file)
@@ -72,14 +65,15 @@ def render_result(env_name, person_id, smpl_file, pose_id='00'):
     for joint in joints:
         if joint == "pelvis": data.append(np.array(env.human.get_link_positions_id(0, center_of_mass=False)))
         else:
-            print("joint: ", joint, " -> dammy joint id: ", humanURDF.get_dammy_joint_id(joint))
+            # print("joint: ", joint, " -> dammy joint id: ", humanURDF.get_dammy_joint_id(joint))
             data.append(np.array(env.human.get_link_positions_id(humanURDF.get_dammy_joint_id(joint), center_of_mass=False)))
-            print(joint, ": ", env.human.get_link_positions_id(humanURDF.get_dammy_joint_id(joint)))
+            # print(joint, ": ", env.human.get_link_positions_id(humanURDF.get_dammy_joint_id(joint)))
 
     env.disconnect()
     
     # OPEN: SMPL body
     slp_body = pkl.load(open("error/" + person_id + "/" + pose_id + ".pkl", "rb"))
+    print("slp body: ", slp_body)
     smpl_path = "examples/data/SMPL_FEMALE.pkl"
     smpl_data = SMPLData(slp_body['body_pose'], slp_body['betas'], slp_body['global_orient'])
     
@@ -97,8 +91,9 @@ def render_result(env_name, person_id, smpl_file, pose_id='00'):
         s_body.append(joint_pos[joint])
     
     # ICP: to align AG body with SMPL
-    smpl = np.array(s_body)
+    smpl = np.array(s_body) - s_body[1] # put pelvis at the origin
     ag = np.reshape(np.array(data), (24,3))
+    ag = ag - ag[1]
     rot, dists, _ = icp(ag, smpl, max_iterations=45)
     
     # ROTATE: assitive gym body to match smpl
@@ -124,7 +119,7 @@ def render_result(env_name, person_id, smpl_file, pose_id='00'):
     file_w.close()
     
     # PRINT
-    print("\n\nmpjpe: ", mpjpe(s_body, data))
+    print("\n\nmpjpe: ", mpjpe(smpl, ag_trans))
     print("final distances: ", dists)
 
 

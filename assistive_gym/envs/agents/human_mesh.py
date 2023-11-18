@@ -71,8 +71,8 @@ class HumanMesh(Agent):
         self.j_left_wrist_x, self.j_left_wrist_y, self.j_left_wrist_z = 57, 58, 59
         self.j_right_wrist_x, self.j_right_wrist_y, self.j_right_wrist_z = 60, 61, 62
         # SMPL only joints (not SMPL-X)
-        self.j_left_fingers_x, self.j_left_fingers_y, self.j_left_fingers_z = 63, 64, 65
-        self.j_right_fingers_x, self.j_right_fingers_y, self.j_right_fingers_z = 66, 67, 68
+        # self.j_left_fingers_x, self.j_left_fingers_y, self.j_left_fingers_z = 63, 64, 65
+        # self.j_right_fingers_x, self.j_right_fingers_y, self.j_right_fingers_z = 66, 67, 68
 
         self.num_body_shape = 10
         self.vertex_positions = None

@@ -7,11 +7,14 @@ import cv2
 import os
 import torch
 
+# Angle Conversion
+from scipy.spatial.transform import Rotation as R
+
 from gym.utils import seeding
 from assistive_gym.envs.agents.stretch_dex import StretchDex
 from assistive_gym.envs.env import AssistiveEnv
 from assistive_gym.envs.utils.human_utils import set_self_collisions, disable_self_collisions
-from assistive_gym.envs.utils.urdf_utils import load_smpl , convert_aa_to_euler_quat, SMPLData
+from assistive_gym.envs.utils.urdf_utils import load_smpl , convert_aa_to_euler_quat, get_aa_from_euler, euler_convert_np, batch_rot2aa, SMPLData
 from assistive_gym.envs.utils.human_urdf_dict import HumanUrdfDict
 from assistive_gym.envs.agents.human_mesh import HumanMesh
 from experimental.human_urdf import HumanUrdf
@@ -81,45 +84,75 @@ class SeatedPoseEnv(AssistiveEnv):
         angles = self.human.get_joint_angles(inds)
         return angles
 
-    def config_mesh_angles(self, angles):
+    def config_mesh_angles(self, angles, transform=True):
         dic = HumanUrdfDict()
-        dict = dic.joint_xyz_dict
+        dict = dic.joint_xyz_lists
         ind = {}
         i = 0
-        for joint in dict: 
-            ind[joint] = angles[i]
-            i += 1
-
+        for joint in dict:
+            j = dict[joint] # the x, y, z coords for the joint angles
+            if joint in ["left_elbow", "right_elbow"]: 
+                euler = angles[i:i+3]
+                r = R.from_euler("XYZ", euler, degrees=False)
+                r = torch.tensor(r.as_matrix())[None, :]
+                ind[joint] = batch_rot2aa(r)[0]
+                print("ind[", joint, "]: ", ind[joint])
+                i += 3
+            elif joint == "pelvis": 
+                ind[joint] = angles[i] 
+                i += 1
+            else:
+                ind[joint] = angles[i:i+3]
+                i += 3
         h = self.human
-        angles_matched = [(h.j_left_hip_x, ind["left_hip_x"]), (h.j_left_hip_y, ind["left_hip_y"]), (h.j_left_hip_z, ind["left_hip_z"]), 
-                  (h.j_right_hip_x, ind["right_hip_x"]), (h.j_right_hip_y, ind["right_hip_y"]), (h.j_right_hip_z, ind["right_hip_z"]), 
-                  (h.j_left_knee_x, ind["left_knee_x"]), (h.j_left_knee_y, ind["left_knee_y"]), (h.j_left_knee_z, ind["left_knee_z"]),
-                  (h.j_right_knee_x, ind["right_knee_x"]), (h.j_right_knee_y, ind["right_knee_y"]), (h.j_right_knee_z, ind["right_knee_z"]), 
-                  (h.j_left_ankle_x, ind["left_ankle_x"]), (h.j_left_ankle_y, ind["left_ankle_y"]), (h.j_left_ankle_z, ind["left_ankle_z"]),
-                  (h.j_right_ankle_x, ind["right_ankle_x"]), (h.j_right_ankle_z, ind["right_ankle_z"]), (h.j_right_ankle_z, ind["right_ankle_z"]), 
-                  (h.j_left_shoulder_x, ind["left_shoulder_x"]), (h.j_left_shoulder_y, ind["left_shoulder_y"]), (h.j_left_shoulder_z, ind["left_shoulder_z"]), 
-                  (h.j_right_shoulder_x, ind["right_shoulder_x"]), (h.j_right_shoulder_y, ind["right_shoulder_y"]), (h.j_right_shoulder_z, ind["right_shoulder_z"]), 
-                  (h.j_left_elbow_x, ind["left_elbow_x"]), (h.j_left_elbow_y, ind["left_elbow_y"]), (h.j_left_elbow_z, ind["left_elbow_z"]), 
-                  (h.j_right_elbow_x, ind["right_elbow_x"]), (h.j_right_elbow_y, ind["right_elbow_y"]), (h.j_right_elbow_z, ind["right_elbow_z"]), 
-                  (h.j_left_wrist_x, ind["left_lowarm_x"]), (h.j_left_wrist_y, ind["left_lowarm_y"]), (h.j_left_wrist_z, ind["left_lowarm_z"]), 
-                  (h.j_right_wrist_x, ind["right_lowarm_x"]), (h.j_right_wrist_y, ind["right_lowarm_y"]),(h.j_right_wrist_z, ind["right_lowarm_z"]),
-                  (h.j_upper_neck_x, ind["head_x"]), (h.j_upper_neck_y, ind["head_y"]), (h.j_upper_neck_z, ind["head_z"]),
-                  (h.j_lower_neck_x, ind["neck_x"]), (h.j_lower_neck_y, ind["neck_y"]), (h.j_lower_neck_z, ind["neck_z"]), 
-                  (h.j_left_pecs_x, ind["left_clavicle_x"]), (h.j_left_pecs_y, ind["left_clavicle_y"]), (h.j_left_pecs_z, ind["left_clavicle_z"]), 
-                  (h.j_right_pecs_x, ind["right_clavicle_x"]), (h.j_right_pecs_y, ind["right_clavicle_y"]), (h.j_right_pecs_z, ind["right_clavicle_z"]), 
-                  (h.j_left_toes_x, ind["left_foot_x"]), (h.j_left_toes_y, ind["left_foot_y"]), (h.j_left_toes_z, ind["left_foot_z"]),
-                  (h.j_right_toes_x, ind["right_foot_x"]), (h.j_right_toes_y, ind["right_foot_y"]),(h.j_right_toes_z, ind["right_foot_z"]), 
-                  (h.j_waist_x, ind["spine_2_x"]), (h.j_waist_y, ind["spine_2_y"]), (h.j_waist_z, ind["spine_2_z"]), 
-                  (h.j_chest_x, ind["spine_3_x"]), (h.j_chest_y, ind["spine_3_y"]), (h.j_chest_z, ind["spine_3_z"]), 
-                  (h.j_upper_chest_x, ind["spine_4_x"]), (h.j_upper_chest_y, ind["spine_4_y"]), (h.j_upper_chest_z, ind["spine_4_z"])]
-        # NEED head, neck relationship and spine 
-        '''
-        My guess -> upper neck = head, lower neck = neck, clavicle = pec, upper_chest, chest (or Upper neck!) = spine (2, 3, 4) 
-        '''
-        # [h.j_left_hip_x, h.j_left_hip_y, h.j_left_hip_z, h.j_left_knee_x, h.j_left_knee_y, h.j_left_knee_z,
-        #  h.j_left_ankle_x, h.j_left_ankle_y, h.j_left_ankle_z, h.j_right_hip_x, h.j_right_hip_y, h.j_right_hip_z, 
-        #  h.j_right_knee_x, h.j_right_knee_y, h.j_right_knee_z, h.j_right_ankle_x, h.j_right_ankle_y, h.j_right_ankle_z, 
-        #  ]
+        angles_matched = [(h.j_left_hip_x, ind["left_hip"][0]), (h.j_left_hip_y, ind["left_hip"][1]), (h.j_left_hip_z, ind["left_hip"][2]), 
+                  (h.j_right_hip_x, ind["right_hip"][0]), (h.j_right_hip_y, ind["right_hip"][1]), (h.j_right_hip_z, ind["right_hip"][2]), 
+                  (h.j_left_knee_x, ind["left_knee"][0]), (h.j_left_knee_y, ind["left_knee"][1]), (h.j_left_knee_z, ind["left_knee"][2]),
+                  (h.j_right_knee_x, ind["right_knee"][0]), (h.j_right_knee_y, ind["right_knee"][1]), (h.j_right_knee_z, ind["right_knee"][2]), 
+                  (h.j_left_ankle_x, ind["left_ankle"][0]), (h.j_left_ankle_y, ind["left_ankle"][1]), (h.j_left_ankle_z, ind["left_ankle"][2]),
+                  (h.j_right_ankle_x, ind["right_ankle"][0]), (h.j_right_ankle_z, ind["right_ankle"][1]), (h.j_right_ankle_z, ind["right_ankle"][2]), 
+                  (h.j_left_shoulder_x, ind["left_shoulder"][0]), (h.j_left_shoulder_y, ind["left_shoulder"][1]), (h.j_left_shoulder_z, ind["left_shoulder"][2]), 
+                  (h.j_right_shoulder_x, ind["right_shoulder"][0]), (h.j_right_shoulder_y, ind["right_shoulder"][1]), (h.j_right_shoulder_z, ind["right_shoulder"][2]), 
+                  (h.j_left_elbow_x, ind["left_elbow"][0]), (h.j_left_elbow_y, ind["left_elbow"][1]), (h.j_left_elbow_z, ind["left_elbow"][2]), 
+                  (h.j_right_elbow_x, ind["right_elbow"][0]), (h.j_right_elbow_y, ind["right_elbow"][1]), (h.j_right_elbow_z, ind["right_elbow"][2]),                 
+                  (h.j_left_wrist_x, ind["left_lowarm"][0]), (h.j_left_wrist_y, ind["left_lowarm"][1]), (h.j_left_wrist_z, ind["left_lowarm"][2]), 
+                  (h.j_right_wrist_x, ind["right_lowarm"][0]), (h.j_right_wrist_y, ind["right_lowarm"][1]),(h.j_right_wrist_z, ind["right_lowarm"][2]),
+                  (h.j_upper_neck_x, ind["head"][0]), (h.j_upper_neck_y, ind["head"][1]), (h.j_upper_neck_z, ind["head"][2]),
+                  (h.j_lower_neck_x, ind["neck"][0]), (h.j_lower_neck_y, ind["neck"][1]), (h.j_lower_neck_z, ind["neck"][2]), 
+                  (h.j_left_pecs_x, ind["left_clavicle"][0]), (h.j_left_pecs_y, ind["left_clavicle"][1]), (h.j_left_pecs_z, ind["left_clavicle"][2]), 
+                  (h.j_right_pecs_x, ind["right_clavicle"][0]), (h.j_right_pecs_y, ind["right_clavicle"][1]), (h.j_right_pecs_z, ind["right_clavicle"][2]), 
+                  (h.j_left_toes_x, ind["left_foot"][0]), (h.j_left_toes_y, ind["left_foot"][1]), (h.j_left_toes_z, ind["left_foot"][2]),
+                  (h.j_right_toes_x, ind["right_foot"][0]), (h.j_right_toes_y, ind["right_foot"][1]),(h.j_right_toes_z, ind["right_foot"][2]), 
+                  (h.j_waist_x, ind["spine_2"][0]), (h.j_waist_y, ind["spine_2"][1]), (h.j_waist_z, ind["spine_2"][2]), 
+                  (h.j_chest_x, ind["spine_3"][0]), (h.j_chest_y, ind["spine_3"][1]), (h.j_chest_z, ind["spine_3"][2]), 
+                  (h.j_upper_chest_x, ind["spine_4"][0]), (h.j_upper_chest_y, ind["spine_4"][1]), (h.j_upper_chest_z, ind["spine_4"][2])]
+        
+
+        # ind["left_elbow_x"], ind['left_elbow_y'], ind['left_elbow_z'] = (0.11429025, -1.8572933, 0.34492198)
+        # ind["right_elbow_x"], ind['right_elbow_y'], ind['right_elbow_z'] = (0.55436826, 1.83781826, -0.62086833)
+        # angles_matched = [(h.j_left_hip_x, ind["left_hip_x"]), (h.j_left_hip_y, ind["left_hip_y"]), (h.j_left_hip_z, ind["left_hip_z"]), 
+        #           (h.j_right_hip_x, ind["right_hip_x"]), (h.j_right_hip_y, ind["right_hip_y"]), (h.j_right_hip_z, ind["right_hip_z"]), 
+        #           (h.j_left_knee_x, ind["left_knee_x"]), (h.j_left_knee_y, ind["left_knee_y"]), (h.j_left_knee_z, ind["left_knee_z"]),
+        #           (h.j_right_knee_x, ind["right_knee_x"]), (h.j_right_knee_y, ind["right_knee_y"]), (h.j_right_knee_z, ind["right_knee_z"]), 
+        #           (h.j_left_ankle_x, ind["left_ankle_x"]), (h.j_left_ankle_y, ind["left_ankle_y"]), (h.j_left_ankle_z, ind["left_ankle_z"]),
+        #           (h.j_right_ankle_x, ind["right_ankle_x"]), (h.j_right_ankle_z, ind["right_ankle_z"]), (h.j_right_ankle_z, ind["right_ankle_z"]), 
+        #           (h.j_left_shoulder_x, ind["left_shoulder_x"]), (h.j_left_shoulder_y, ind["left_shoulder_y"]), (h.j_left_shoulder_z, ind["left_shoulder_z"]), 
+        #           (h.j_right_shoulder_x, ind["right_shoulder_x"]), (h.j_right_shoulder_y, ind["right_shoulder_y"]), (h.j_right_shoulder_z, ind["right_shoulder_z"]), 
+        #           (h.j_left_elbow_x, ind["left_elbow_x"]), (h.j_left_elbow_y, ind["left_elbow_y"]), (h.j_left_elbow_z, ind["left_elbow_z"]), 
+        #           (h.j_right_elbow_x, ind["right_elbow_x"]), (h.j_right_elbow_y, ind["right_elbow_y"]), (h.j_right_elbow_z, ind["right_elbow_z"]),                 
+        #           (h.j_left_wrist_x, ind["left_lowarm_x"]), (h.j_left_wrist_y, ind["left_lowarm_y"]), (h.j_left_wrist_z, ind["left_lowarm_z"]), 
+        #           (h.j_right_wrist_x, ind["right_lowarm_x"]), (h.j_right_wrist_y, ind["right_lowarm_y"]),(h.j_right_wrist_z, ind["right_lowarm_z"]),
+        #           (h.j_upper_neck_x, ind["head_x"]), (h.j_upper_neck_y, ind["head_y"]), (h.j_upper_neck_z, ind["head_z"]),
+        #           (h.j_lower_neck_x, ind["neck_x"]), (h.j_lower_neck_y, ind["neck_y"]), (h.j_lower_neck_z, ind["neck_z"]), 
+        #           (h.j_left_pecs_x, ind["left_clavicle_x"]), (h.j_left_pecs_y, ind["left_clavicle_y"]), (h.j_left_pecs_z, ind["left_clavicle_z"]), 
+        #           (h.j_right_pecs_x, ind["right_clavicle_x"]), (h.j_right_pecs_y, ind["right_clavicle_y"]), (h.j_right_pecs_z, ind["right_clavicle_z"]), 
+        #           (h.j_left_toes_x, ind["left_foot_x"]), (h.j_left_toes_y, ind["left_foot_y"]), (h.j_left_toes_z, ind["left_foot_z"]),
+        #           (h.j_right_toes_x, ind["right_foot_x"]), (h.j_right_toes_y, ind["right_foot_y"]),(h.j_right_toes_z, ind["right_foot_z"]), 
+        #           (h.j_waist_x, ind["spine_2_x"]), (h.j_waist_y, ind["spine_2_y"]), (h.j_waist_z, ind["spine_2_z"]), 
+        #           (h.j_chest_x, ind["spine_3_x"]), (h.j_chest_y, ind["spine_3_y"]), (h.j_chest_z, ind["spine_3_z"]), 
+        #           (h.j_upper_chest_x, ind["spine_4_x"]), (h.j_upper_chest_y, ind["spine_4_y"]), (h.j_upper_chest_z, ind["spine_4_z"])]
+        
+        # print("left_elbow in matched: ", ind["left_elbow_x"], " ", ind["left_elbow_y"], " ", ind["left_elbow_z"])        
 
         return angles_matched
     
@@ -233,25 +266,38 @@ class SeatedPoseEnv(AssistiveEnv):
         time.sleep(5)
         # END LOOP
     
+    def align_human(self, smpl_data):
+        bed_height, _ = self.furniture.get_heights(set_on_ground=True)
+        new_x_or = self.human.align_chair()
+        print("rotating: ", new_x_or)
+        
+        if len(smpl_data.global_orient) == 1:
+            smpl_data.global_orient[0][0] += new_x_or
+            smpl_data.global_orient = smpl_data.global_orient[0]
+        else: smpl_data.global_orient[0] += new_x_or
+        
+        smpl_data.global_orient = [smpl_data.global_orient[0], 0.0, 0.0] # SET URDF orientation to 0 in yaw and roll
+        self.human.set_global_orientation(smpl_data, [0, 0,  bed_height+0.2]) # SET the oritentation and base pos to 0 out y
+        r_foot, l_foot = self.human.get_ee_pos_orient("right_foot")[0], self.human.get_ee_pos_orient("left_foot")[0]
+        loc_y = min(r_foot[1], l_foot[1])
+        if loc_y > -0.5: shift_y = -(loc_y + 0.5) 
+        else: shift_y = 0.0
+        self.human.set_global_orientation(smpl_data, [0, shift_y,  bed_height+0.2])
+        return smpl_data
+    
     def reset(self):
         super(SeatedPoseEnv, self).reset()
 
         # magic happen here - now call agent.init()
         self.build_assistive_env('diningchair')
 
-        bed_height, _ = self.furniture.get_heights(set_on_ground=True)
-
         # disable self collision before dropping on bed
         num_joints = p.getNumJoints(self.human.body, physicsClientId=self.id)
         disable_self_collisions(self.human.body, num_joints, self.id)
         smpl_data = load_smpl(self.smpl_file)
         self.human.set_joint_angles_with_smpl(smpl_data, False)
-        new_x_or = self.human.align_chair()
-        print("rotating: ", new_x_or)
-        smpl_data.global_orient[0][0] += new_x_or
-        smpl_data.global_orient = smpl_data.global_orient[0]
 
-        self.human.set_global_orientation(smpl_data, [0, -0.05,  bed_height+0.2])
+        smpl_data = self.align_human(smpl_data)
 
         self.robot.set_gravity(0, 0, -9.81)
         self.human.set_gravity(0, 0, -9.81)
@@ -280,7 +326,7 @@ class SeatedPoseEnv(AssistiveEnv):
 
         # # REMOVED: the resetting of global orientation - it may be messing a bit with the chair interaction
         # self.human.set_global_orientation(smpl_data, human_pos)
-        self.human.set_joint_angles_with_smpl(smpl_data, False)
+        self.human.set_joint_angles_with_smpl(smpl_data, False) # DECIDE ABOUT THIS
 
         set_self_collisions(self.human.body, self.id)
         self.human.initial_self_collisions= self.human.check_self_collision()
@@ -288,10 +334,15 @@ class SeatedPoseEnv(AssistiveEnv):
         self.init_env_variables()
         smpl_data.transl = self.human.get_ee_pos_orient("spine_4")[0]
         angles = self.get_all_human_angles()
-        p.addUserDebugText("final pose", [0, 0, 1.5], [1, 0, 0]) # red text
+        
+        print("left_knee angle: ", self.human.get_joint_angles([5, 6, 7]))
+        print("left_elbow angle: ", self.human.get_joint_angles([61, 62, 63]))
+        for i in range(5): 
+            p.addUserDebugText("final pose: " + str(5- i), [0, 0, 1.5], [1, 0, 0]) # red text
+            time.sleep(1)
+            p.removeAllUserDebugItems()
+
         self.write_human_pkl(smpl_data)
-        time.sleep(5)
-        p.removeAllUserDebugItems()
         smpl_data.smpl_file = self.smpl_file
         smpl_data = self.assign_smplx_features(smpl_data)
         return smpl_data, angles
@@ -305,11 +356,13 @@ class SeatedPoseEnv(AssistiveEnv):
         self.build_assistive_env('diningchair', human_angles=angs, smpl_data=smpl_data)
 
         # RESET: human
-        pos = list(smpl_data.transl)
+        if len(list(smpl_data.transl)) == 1: pos = list(smpl_data.transl[0])
+        else: pos = list(smpl_data.transl)
         pos[1] += 0.1
 
+        # orient = [smpl_data.global_orient[0], 0.0, 0.0]
         orient = [0.0, 0.0, 0.0]
-        orient[0] -= np.pi/8
+        orient[0] -= np.pi/7
         orient = convert_aa_to_euler_quat(orient)[0]
         self.human.set_base_pos_orient(pos, orient)
 
