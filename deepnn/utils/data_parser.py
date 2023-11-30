@@ -58,3 +58,32 @@ class ModelOutput:
                 'joint_angles': self.robot_joint_angles
             }
         }
+
+
+class ModelOutputHumanOnly:
+    def __init__(self, human_joint_angles):
+        self.human_joint_angles = human_joint_angles  # len 15
+        assert len(human_joint_angles) == 15, "human_joint_angles should be len 15"
+
+    def to_tensor(self):
+        data = self.human_joint_angles
+        # data = self.human_joint_angles
+        return torch.tensor(data, dtype=torch.float)
+
+    @classmethod
+    def from_tensor(cls, tensor: torch.Tensor):
+        # expect len tensor = 15 + 3 + 4 + 10
+        # convert tensor to list
+        tensor = tensor.tolist()
+        human_joint_angles = tensor[:15]
+        # robot_base_pos = tensor[15:18]
+        # robot_base_orient = tensor[18:22]
+        # robot_joint_angles = tensor[22:]
+        return cls(human_joint_angles)
+
+    def convert_to_dict(self):
+        return {
+            'human': {
+                'joint_angles': self.human_joint_angles,
+            },
+        }

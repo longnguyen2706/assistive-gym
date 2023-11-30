@@ -3,14 +3,14 @@ import torch
 import os
 from torch.utils.data import Dataset, DataLoader
 
-from deepnn.utils.data_parser import ModelInput, ModelOutput
+from deepnn.utils.data_parser import ModelInput, ModelOutput, ModelOutputHumanOnly
 
 SEARCH_INPUT_DIR = 'searchinput'
 SEARCH_OUTPUT_DIR = 'searchoutput'
 
 # TODO: split such that you have unseen person for testing
 class CustomDataset(Dataset):
-    def __init__(self, directory, object=None, transform=None):
+    def __init__(self, directory, object=None, transform=None, human_only=False):
         """
         Initialize the object with the directory where the JSON files are located.
         Each JSON file contains a single data sample.
@@ -23,6 +23,8 @@ class CustomDataset(Dataset):
         self.transform = transform
         self.inputfile_list =[]
         self.outputfile_list = []
+        self.human_only = human_only
+
         # Expect the directory to contain two subdirectories: 'input' and 'output'
         input_dir, output_dir = os.path.join(directory, SEARCH_INPUT_DIR), os.path.join(directory, SEARCH_OUTPUT_DIR)
         # print (input_dir, output_dir)
@@ -32,16 +34,22 @@ class CustomDataset(Dataset):
         for p in person_ids:
             subinput_dir, sub_output_dir = os.path.join(input_dir, p), os.path.join(output_dir, p)
             pose_ids = [f for f in os.listdir(sub_output_dir) if os.path.isdir(os.path.join(sub_output_dir, f))]
-            inputfile_list = []
-            outputfile_list = []
+            sub_inputfile_list = []
+            sub_outputfile_list = []
             for pose_id in pose_ids:
                 subsub_output_dir = os.path.join(sub_output_dir, pose_id)
 
-                outputfile_list.extend([os.path.join(subsub_output_dir, f) for f in os.listdir(subsub_output_dir) if f.endswith(object + '.json')])
-                inputfile_list.append(os.path.join(subinput_dir, pose_id+'.json'))
+                sub_outputfile_list.extend([os.path.join(subsub_output_dir, f) for f in os.listdir(subsub_output_dir) if f.endswith(object + '.json')])
+                sub_inputfile_list.append(os.path.join(subinput_dir, pose_id+'.json'))
 
-            self.inputfile_list.extend(inputfile_list)
-            self.outputfile_list.extend(outputfile_list)
+            self.inputfile_list.extend(sub_inputfile_list)
+            self.outputfile_list.extend(sub_outputfile_list)
+
+            if len(sub_inputfile_list) != len(sub_outputfile_list):
+                print (subinput_dir, sub_output_dir, len(sub_inputfile_list), len(sub_outputfile_list))
+                raise AssertionError
+
+        print ("Total number of samples:", len(self.inputfile_list), "for person_ids: ", person_ids)
         assert len(self.inputfile_list) == len(self.outputfile_list)
 
 
@@ -63,9 +71,11 @@ class CustomDataset(Dataset):
         with open(outputfile_path, 'r') as outfile:
             output = json.load(outfile)
 
-        # TODO: cut this parsing to a class
         model_input = ModelInput(input['pose'], input['betas'])
-        model_output = ModelOutput(output['joint_angles'], output['robot']['original'][0], output['robot']['original'][1], output['robot_joint_angles'])
+        if self.human_only:
+            model_output = ModelOutputHumanOnly(output['joint_angles'])
+        else:
+            model_output = ModelOutput(output['joint_angles'], output['robot']['original'][0], output['robot']['original'][1], output['robot_joint_angles'])
 
         feature = model_input.to_tensor()
         label = model_output.to_tensor()

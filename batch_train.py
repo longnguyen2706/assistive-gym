@@ -1,4 +1,3 @@
-import time
 
 from assistive_gym.mprocess_train import mp_train
 from assistive_gym.train import train

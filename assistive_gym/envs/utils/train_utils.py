@@ -782,11 +782,11 @@ def init_optimizer2(x0, sigma, lower_bounds, upper_bounds):  # for cma library
     return es
 
 
-def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik: bool):
+def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik: bool, save_to_file=False):
     print("rendering person {} and smpl file {}".format(person_id, smpl_file))
-
     save_dir = get_save_dir(save_dir, env_name, person_id, smpl_file)
     actions = pickle.load(open(os.path.join(save_dir, "actions.pkl"), "rb"))
+
     if not actions:
         raise Exception("no actions found for person {} and smpl file {}".format(person_id, smpl_file))
     if handover_obj == "all":
@@ -801,7 +801,6 @@ def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik: boo
                 robot_pose = action["wrt_pelvis"]["robot"]['original']
                 robot_joint_angles = action["wrt_pelvis"]["robot_joint_angles"]
 
-
             except Exception as e:
                 print("no robot pose found")
 
@@ -813,19 +812,21 @@ def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik: boo
             raise Exception("no action found for ", key)
         action = actions[key]
         robot_pose, robot_joint_angles = None, None
-
+        # print ("action: ", action['wrt_pelvis'], 'handover_obj: ', handover_obj)
         try:
+
             robot_pose = action["wrt_pelvis"]["robot"]['original']
             robot_joint_angles = action["wrt_pelvis"]["robot_joint_angles"]
         except Exception as e:
             print("no robot pose found")
-        render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik, robot_pose, robot_joint_angles)
+        render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik, robot_pose, robot_joint_angles, save_to_file=save_to_file)
 
 
 def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik: bool, robot_pose=None,
                   robot_joint_angles=None, save_to_file=False):
     env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=handover_obj, person_id=person_id)
-    env.render()  # need to call reset after render
+    if not save_to_file:
+        env.render()  # need to call reset after render
     env.reset()
 
     smpl_name = os.path.basename(smpl_file).split(".")[0]
