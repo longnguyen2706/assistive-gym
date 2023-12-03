@@ -21,7 +21,7 @@ class HandoverObject(Enum):
             raise ValueError(f"Invalid handover object label: {label}")
 
 
-class OriginalHumanInfo:
+class HumanInfo:
     def __init__(self, original_angles: np.ndarray, original_link_positions: np.ndarray, original_self_collisions,
                  original_env_collisions):
         self.link_positions = original_link_positions  # should be array of tuples that are the link positions
@@ -95,7 +95,7 @@ class SearchResult:
 
 
 class MainEnvInitResult:
-    def __init__(self, original_info: OriginalHumanInfo, max_dynamics: MaximumHumanDynamics, env_object_ids,
+    def __init__(self, original_info: HumanInfo, max_dynamics: MaximumHumanDynamics, env_object_ids,
                  human_link_robot_collision, end_effector, handover_obj_config,
                  joint_lower_limits, joint_upper_limits, robot_setting: InitRobotSetting):
         self.original_info = original_info

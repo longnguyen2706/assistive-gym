@@ -143,7 +143,7 @@ def init_main_env(env, handover_obj):
     human_link_robot_collision = get_human_link_robot_collision(human, end_effector)
 
     # init original info and max dynamics
-    original_info = build_original_human_info(human, env_object_ids, end_effector)
+    original_info = build_human_info(human, env_object_ids, end_effector)
     max_dynamics = build_max_human_dynamics(env, end_effector, original_info)
 
     if RENDER_UI:

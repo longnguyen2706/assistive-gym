@@ -14,7 +14,7 @@ from cmaes import CMA
 from deprecation import deprecated
 from torch.utils.hipify.hipify_python import bcolors
 
-from assistive_gym.envs.utils.dto import HandoverObject, HandoverObjectConfig, MaximumHumanDynamics, OriginalHumanInfo
+from assistive_gym.envs.utils.dto import HandoverObject, HandoverObjectConfig, MaximumHumanDynamics, HumanInfo
 from assistive_gym.envs.utils.log_utils import get_logger
 from assistive_gym.envs.utils.plot_utils import plot_cmaes_metrics, plot_mean_evolution
 from assistive_gym.envs.utils.point_utils import fibonacci_evenly_sampling_range_sphere, eulidean_distance
@@ -287,7 +287,7 @@ def solve_ik(env, target_pos, end_effector="right_hand"):
     return solution
 
 
-def build_max_human_dynamics(env, end_effector, original_info: OriginalHumanInfo) -> MaximumHumanDynamics:
+def build_max_human_dynamics(env, end_effector, original_info: HumanInfo) -> MaximumHumanDynamics:
     """
     build maximum human dynamics by doing CMAES search
     will reset the env after all searches are done
@@ -312,7 +312,7 @@ def build_max_human_dynamics(env, end_effector, original_info: OriginalHumanInfo
     return max_dynamics
 
 
-def detect_collisions(original_info: OriginalHumanInfo, self_collisions, env_collisions, human, end_effector):
+def detect_collisions(original_info: HumanInfo, self_collisions, env_collisions, human, end_effector):
     # check collision
     new_self_penetrations = find_new_penetrations(original_info.self_collisions, self_collisions, human, end_effector,
                                                   COLLISION_PENETRATION_THRESHOLD["self_collision"])
@@ -397,7 +397,7 @@ def object_type_to_name(object_type: HandoverObject):
 
 # TODO: better refactoring for seperating robot-ik/ non robot ik mode
 def cost_func(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.ndarray,
-              original_info: OriginalHumanInfo,
+              original_info: HumanInfo,
               max_dynamics: MaximumHumanDynamics, new_self_penetrations, new_env_penetrations, has_valid_robot_ik,
               robot_penetrations, robot_dist_to_target, angle_dist,
               object_config: Optional[HandoverObjectConfig], robot_ik_mode: bool, object_specific_cost: float):
@@ -718,14 +718,14 @@ def choose_closer_bedside_hand(env):
     return "right_hand" if right_dist < left_dist else "left_hand"
 
 
-def build_original_human_info(human, env_object_ids, end_effector) -> OriginalHumanInfo:
+def build_human_info(human, env_object_ids, end_effector) -> HumanInfo:
     # original value
     original_joint_angles = human.get_joint_angles(human.controllable_joint_indices)
     original_link_positions = human.get_link_positions(center_of_mass=True, end_effector_name=end_effector)
     original_self_collisions = human.check_self_collision()
     original_env_collisions = human.check_env_collision(env_object_ids)
-    original_info = OriginalHumanInfo(original_joint_angles, original_link_positions, original_self_collisions,
-                                      original_env_collisions)
+    original_info = HumanInfo(original_joint_angles, original_link_positions, original_self_collisions,
+                              original_env_collisions)
     return original_info
 
 
@@ -782,7 +782,7 @@ def init_optimizer2(x0, sigma, lower_bounds, upper_bounds):  # for cma library
     return es
 
 
-def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik: bool, save_to_file=False):
+def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik: bool, save_to_file=False, save_metrics=False):
     print("rendering person {} and smpl file {}".format(person_id, smpl_file))
     save_dir = get_save_dir(save_dir, env_name, person_id, smpl_file)
     actions = pickle.load(open(os.path.join(save_dir, "actions.pkl"), "rb"))
@@ -819,60 +819,93 @@ def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik: boo
             robot_joint_angles = action["wrt_pelvis"]["robot_joint_angles"]
         except Exception as e:
             print("no robot pose found")
-        render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik, robot_pose, robot_joint_angles, save_to_file=save_to_file)
+        render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik, robot_pose, robot_joint_angles, save_to_file=save_to_file, save_metrics=save_metrics)
 
 
 def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik: bool, robot_pose=None,
-                  robot_joint_angles=None, save_to_file=False):
+                  robot_joint_angles=None, save_to_file=False, save_metrics = False):
     env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=handover_obj, person_id=person_id)
-    if not save_to_file:
+    if not save_to_file and not save_metrics:
         env.render()  # need to call reset after render
     env.reset()
+    try:
+        smpl_name = os.path.basename(smpl_file).split(".")[0]
+        p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_name), [0, 0, 1], textColorRGB=[1, 0, 0])
 
-    smpl_name = os.path.basename(smpl_file).split(".")[0]
-    p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_name), [0, 0, 1], textColorRGB=[1, 0, 0])
+        human, robot, furniture, plane, tool = env.human, env.robot, env.furniture, env.plane, env.tool
 
-    env.human.reset_controllable_joints(action["end_effector"])
-    env.human.set_joint_angles(env.human.controllable_joint_indices, action["solution"])
-    if robot_ik:
-        # print("robot pose: ", robot_pose, "robot_joint_angles: ", robot_joint_angles)
-        if robot_pose is None or robot_joint_angles is None:
-            find_robot_ik_solution(env, action["end_effector"], handover_obj)
-        else:
-            # TODO: refactor - render_robot in mprocess_train
-            # find_robot_ik_solution(env, action["end_effector"], handover_obj)
-            # TODO: remove after proper fix. currently action["end_effector"] is default righthand, we will recalulate
-            hand_config = get_handover_object_config(handover_obj, env)
-            end_effector = hand_config.end_effector
+        human.reset_controllable_joints(action["end_effector"])
 
-            _, _, side = find_robot_start_pos_orient(env, end_effector)
-            env.robot.set_base_pos_orient(robot_pose[0], robot_pose[1])
-            env.robot.set_joint_angles(
-                env.robot.right_arm_joint_indices if side == 'right' else env.robot.left_arm_joint_indices,
-                robot_joint_angles)
-            env.tool.reset_pos_orient()
-            # get_eyeline_side(env.human)
+        env_ids = [furniture.body, plane.body]
+        original_human_info = build_human_info(human, env_ids, action["end_effector"])
 
-    # plot_cmaes_metrics(action['mean_cost'], action['mean_dist'], action['mean_m'], action['mean_energy'],
-    #                    action['mean_torque'])
-    # plot_mean_evolution(action['mean_evolution'])
+        human.set_joint_angles(human.controllable_joint_indices, action["solution"])
+        new_human_info = build_human_info(human, env_ids, action["end_effector"])
 
-    # TODO: remove this - temporary fix
-    if save_to_file:
-        data = action["wrt_pelvis"]
-        data["end_effector"] = end_effector
-        # save
-        save_dir = get_save_dir('trained_models', env_name, person_id, smpl_file)
-        filename = os.path.join(save_dir, handover_obj + ".json")
-        dumped = json.dumps(data, cls=NumpyEncoder)
-        with open(filename, "w") as f:
-            f.write(dumped)
+        if robot_ik:
+            # print("robot pose: ", robot_pose, "robot_joint_angles: ", robot_joint_angles)
+            if robot_pose is None or robot_joint_angles is None:
+                find_robot_ik_solution(env, action["end_effector"], handover_obj)
+            else:
+                # TODO: refactor - render_robot in mprocess_train
+                # find_robot_ik_solution(env, action["end_effector"], handover_obj)
+                # TODO: remove after proper fix. currently action["end_effector"] is default righthand, we will recalulate
+                hand_config = get_handover_object_config(handover_obj, env)
+                end_effector = hand_config.end_effector
 
-    while True and not save_to_file:
-        keys = p.getKeyboardEvents()
-        if ord('q') in keys:
-            break
-    env.disconnect()
+                _, _, side = find_robot_start_pos_orient(env, end_effector)
+                robot.set_base_pos_orient(robot_pose[0], robot_pose[1])
+                robot.set_joint_angles(
+                    robot.right_arm_joint_indices if side == 'right' else env.robot.left_arm_joint_indices,
+                    robot_joint_angles)
+                tool.reset_pos_orient()
+                # get_eyeline_side(env.human)
+
+        # plot_cmaes_metrics(action['mean_cost'], action['mean_dist'], action['mean_m'], action['mean_energy'],
+        #                    action['mean_torque'])
+        # plot_mean_evolution(action['mean_evolution'])
+
+        if save_metrics:
+            pose_err = check_pose_validity(original_human_info, new_human_info, human, action["end_effector"])
+            print("pose err: ", pose_err)
+            save_dir = get_save_dir('trained_models/metrics', env_name, person_id, smpl_file)
+            os.makedirs(save_dir, exist_ok=True)
+            filename = os.path.join(save_dir, handover_obj + ".json")
+            dumped = json.dumps(pose_err)
+            with open(filename, "w") as f:
+                f.write(dumped)
+
+        # TODO: remove this - temporary fix
+        if save_to_file:
+            data = action["wrt_pelvis"]
+            data["end_effector"] = end_effector
+            # save
+            save_dir = get_save_dir('trained_models', env_name, person_id, smpl_file)
+            os.makedirs(save_dir, exist_ok=True)
+            filename = os.path.join(save_dir, handover_obj + ".json")
+            dumped = json.dumps(data, cls=NumpyEncoder)
+            with open(filename, "w") as f:
+                f.write(dumped)
+
+        while True and not save_to_file and not save_metrics:
+            keys = p.getKeyboardEvents()
+            if ord('q') in keys:
+                break
+    except Exception as e:
+        print("exception: ", e)
+    finally:
+        env.disconnect()
+
+
+# TODO: add check distance from hand to object & robot collision
+def check_pose_validity(original_human_info: HumanInfo, new_human_info: HumanInfo, human, end_effector):
+    err = {}
+    env_penetrations, self_penetrations = detect_collisions(original_human_info, new_human_info.self_collisions, new_human_info.env_collisions, human, end_effector)
+    if len(env_penetrations) > 0:
+        err["env_penetrations"] = env_penetrations
+    if len(self_penetrations) > 0:
+        err["self_penetrations"] = self_penetrations
+    return err
 
 
 def render_nn_result(env_name, data, person_id, smpl_file, handover_obj):

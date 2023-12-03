@@ -1,3 +1,4 @@
+import time
 
 from assistive_gym.mprocess_train import mp_train
 from assistive_gym.train import train
@@ -11,8 +12,7 @@ from assistive_gym.train import train
 #               'p074', 'p075', 'p076', 'p077', 'p078', 'p079', 'p080',
 #               ]
 
-PERSON_IDS = ['p081', 'p082', 'p083', 'p084', 'p085', 'p086', 'p087', 'p088', 'p089', 'p090', 'p091'
-              ]
+PERSON_IDS = [ 'p093', 'p094', 'p095', 'p096', 'p097', 'p098', 'p099', 'p100', 'p101', 'p102']
 # SMPL_FILES = ['s01' ]
 SMPL_FILES = ['s01', 's02', 's03', 's04', 's05', 's06', 's07', 's08', 's09', 's10', 's11', 's12',
               's13', 's14', 's15', 's16', 's17', 's18', 's19', 's20', 's21', 's22', 's23', 's24', 's25', 's26',
@@ -59,8 +59,16 @@ if __name__ == '__main__':
     configs = get_dynamic_configs()
     start = time.time()
     with concurrent.futures.ProcessPoolExecutor(max_workers=NUM_WORKERS) as executor:
-        results = executor.map(do_train, configs)
-    for num, result in enumerate(results):
-        print('Done training for {} {}'.format(num, result))
+        futures = {
+            executor.submit(do_train, config): (i, config) for i, config in enumerate(configs)
+        }
+        for future in concurrent.futures.as_completed(futures):
+            res = futures[future]
+            try:
+                print('Done rendering for {}'.format(res))
+                del futures[future]
+            except Exception as exc:
+                print('%r generated an exception: %s' % (res, exc))
+    executor.shutdown()
     end = time.time()
     print("Total time taken: {}".format(end - start))

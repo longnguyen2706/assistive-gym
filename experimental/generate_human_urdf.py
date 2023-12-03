@@ -51,7 +51,7 @@ def generate_urdf(args):
 # generate urdfs for all the people in the slp3d dataset
 # TODO: refactor or remove
 def generate_urdfs():
-    for i in range(1, 103):  # TODO: fix why p046 has no gender
+    for i in range(93, 103):  # TODO: fix why p046 has no gender
         args.person_id = f'p{i:03d}'
         args.smpl_file = f'examples/data/slp3d/{args.person_id}/s01.pkl'
         try:
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     parser.add_argument('--mode', default='generate', help='Mode: generate or test')
     args = parser.parse_args()
     if args.mode == 'generate':
-        generate_urdf(args)
-        # generate_urdfs()
+        # generate_urdf(args)
+        generate_urdfs()
     else:
         raise NotImplementedError()

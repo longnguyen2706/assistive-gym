@@ -38,7 +38,7 @@ def train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', 
     human_link_robot_collision = get_human_link_robot_collision(human, end_effector)
 
     # init original info and max dynamics
-    original_info = build_original_human_info(human, env_object_ids, end_effector)
+    original_info = build_human_info(human, env_object_ids, end_effector)
     max_dynamics = build_max_human_dynamics(env, end_effector, original_info)
 
     # draw original ee pos
