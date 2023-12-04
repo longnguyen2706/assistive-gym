@@ -11,20 +11,20 @@ from assistive_gym.train import render, render_pose
               'p038','p039', 'p040', 'p041', 'p042', 'p043', 'p044', 'p045', 'p046', 'p047', 'p048', 'p049', 'p050',
               'p051','p052', 'p053', 'p054', 'p055', 'p056', 'p057', 'p058', 'p059', 'p060', 'p061', 'p062',
 """
-PERSON_IDS = [  'p070', 'p071', 'p072', 'p073', 'p074', 'p075', 'p076',
-              'p077','p078', 'p079', 'p080', 'p081', 'p082', 'p083', 'p084', 'p085', 'p086', 'p087', 'p088', 'p089',
-              'p090','p091', 'p092', 'p093', 'p094', 'p095', 'p096', 'p097', 'p098', 'p099', 'p100', 'p101', 'p102']
-
-SMPL_FILES = ['s01', 's02', 's03', 's04', 's05', 's06', 's07', 's08', 's09', 's10', 's11', 's12',
-              's13', 's14', 's15', 's16', 's17', 's18', 's19', 's20', 's21', 's22', 's23', 's24', 's25',
-              's26', 's27', 's28', 's29', 's30', 's31', 's32', 's33', 's34', 's35', 's36', 's37', 's38',
-              's39', 's40', 's41', 's42', 's43', 's44', 's45']
-
+# PERSON_IDS = [  'p070', 'p071', 'p072', 'p073', 'p074', 'p075', 'p076',
+#               'p077','p078', 'p079', 'p080', 'p081', 'p082', 'p083', 'p084', 'p085', 'p086', 'p087', 'p088', 'p089',
+#               'p090','p091', 'p092', 'p093', 'p094', 'p095', 'p096', 'p097', 'p098', 'p099', 'p100', 'p101', 'p102']
+PERSON_IDS = [ 'p045'] #'p070',
+# SMPL_FILES = ['s01', 's02', 's03', 's04', 's05', 's06', 's07', 's08', 's09', 's10', 's11', 's12',
+#               's13', 's14', 's15', 's16', 's17', 's18', 's19', 's20', 's21', 's22', 's23', 's24', 's25',
+#               's26', 's27', 's28', 's29', 's30', 's31', 's32', 's33', 's34', 's35', 's36', 's37', 's38',
+#               's39', 's40', 's41', 's42', 's43', 's44', 's45']
+SMPL_FILES = ['s15'] #'s28',
 # good: p074, s22, pill
 # penetration: # p080, s38, pill; p036, s42, pill
 # PERSON_IDS = ['p080', 'p036']
 # SMPL_FILES = ['s38', 's42']
-OBJECTS = ['pill', 'cane', 'cup']
+OBJECTS = ['pill']
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
 ENV = "HumanComfort-v1"
@@ -35,7 +35,7 @@ ROBOT_IK = True
 END_EFFECTOR = 'right_hand'
 
 ### DEFINE MULTIPROCESS SETTING ###
-NUM_WORKERS = 18
+NUM_WORKERS = 1
 
 def get_dynamic_configs():
     configs =[]
@@ -50,7 +50,7 @@ def get_dynamic_configs():
 def do_render(config):
     p, s, o = config
     print (p, s, o)
-    render(ENV, p, s, SAVE_DIR,o, ROBOT_IK, save_to_file=False, save_metrics = True)
+    render(ENV, p, s, SAVE_DIR,o, ROBOT_IK, save_to_file=False, save_metrics = False)
 
 if __name__ == '__main__':
     configs = get_dynamic_configs()
