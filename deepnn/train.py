@@ -10,7 +10,7 @@ from torch.utils.data import random_split, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 from ray.tune.schedulers import ASHAScheduler
-from deepnn.model.net import MyNet
+from deepnn.model.variable_depth_net import VariableDepthNet
 from deepnn.preprocess.custom_dataset import CustomDataset
 from deepnn.utils.data_parser import ModelOutput, ModelOutputHumanOnly
 from deepnn.utils.loss_utils import cal_loss, cal_joint_angle_loss
@@ -22,12 +22,9 @@ CHECKPOINT_PATH = os.path.join(os.getcwd(), os.path.join('checkpoints'))
 # TODO: move this one to yaml
 # Hyperparameters
 input_size = 82  # 72 + 10
-hidden_size1 = 128
-hidden_size2 = 64
-hidden_size3 = 32
 output_size = 32  # 32
 output_size_human_only = 15
-num_epochs = 100
+num_epochs = 200
 OUTPUT_HUMAN_ONLY = True
 
 def get_output_size():
@@ -35,6 +32,10 @@ def get_output_size():
 
 def get_output_class():
     return ModelOutputHumanOnly if OUTPUT_HUMAN_ONLY else ModelOutput
+
+def get_model(config):
+    # return MyNet(input_size, config['h1_size'], config['h2_size'], config['h3_size'], get_output_size())
+    return VariableDepthNet(input_size, config['layer_sizes'], get_output_size())
 
 def get_data_split(batch_size, object):  # 60% train, 20% val, 20% test
     datasets = CustomDataset(INPUT_PATH, object, transform=None, human_only = OUTPUT_HUMAN_ONLY)
@@ -57,7 +58,8 @@ def train(config):
     train_loader, val_loader, test_loader = get_data_split(config['batch_size'], config['object'])
 
     # init model
-    model = MyNet(input_size, config['h1_size'], config['h2_size'], config['h3_size'], get_output_size()).to(device)
+    model = get_model(config).to(device)
+    print (model)
 
     criterion = nn.MSELoss()  # For regression, we use Mean Squared Error loss
     optimizer = optim.Adam(model.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
@@ -213,7 +215,7 @@ def eval_model(model_checkpoint):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     saved_data = torch.load(os.path.join(CHECKPOINT_PATH, model_checkpoint))
     config = saved_data['config']
-    model = MyNet(input_size, config['h1_size'], config['h2_size'], config['h3_size'], get_output_size()).to(device)
+    model = get_model(config).to(device)
 
     model.load_state_dict(saved_data['model'])
     model.eval()
@@ -249,9 +251,8 @@ if __name__ == '__main__':
     config = {
         "lr": tune.loguniform(1e-5, 1e-1),
         "weight_decay": tune.loguniform(1e-5, 1e-1),
-        "h1_size": tune.grid_search(list(range(256, 1024, 128))),
-        "h2_size": tune.grid_search(list(range(128, 256, 32))),
-        "h3_size": tune.grid_search(list(range(32, 128, 16))),
+        "layer_sizes": [tune.grid_search(list(range(256, 1024, 128))), tune.grid_search(list(range(128, 256, 32))),
+                        tune.grid_search(list(range(64, 128, 32))), tune.grid_search(list(range(32, 128, 16)))],
         "batch_size": tune.choice([16, 32, 64]),
         "object": "pill"
     }
