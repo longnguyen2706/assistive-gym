@@ -12,7 +12,7 @@ LOG = get_logger()
 NUM_WORKERS = 1
 MAX_ITERATION = 500
 RENDER_UI = False
-MAX_TRIAL = 5
+MAX_TRIAL = 3
 
 
 # env that run in parallel, in background
@@ -25,7 +25,7 @@ class SubEnvProcess(multiprocessing.Process):
         self.env = None  # will be created
 
         self.env_config = env_config
-        self.search_config = search_config
+        self.search_config =                                                                                    search_config
         self.debug_id = id
 
     def run(self):
@@ -317,7 +317,8 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
         "mean_evolution": best_trial_result.mean_kinematic_result.mean_evolution,
         "mean_torque": best_trial_result.mean_kinematic_result.mean_torque,
         "initial_robot_settings": init_result.robot_setting,
-        "wrt_pelvis": human_robot_info
+        "wrt_pelvis": human_robot_info,
+        "validity": best_trial_result.handover_validity
     }
 
     print('human_robot_info:', human_robot_info)
@@ -370,8 +371,9 @@ def run_trial(init_result, main_env_task_queue, main_env_result_queue, sub_env_t
                 best_angle = sr.joint_angles
                 best_robot_setting = sr.robot_setting
             # print('best_cost: ', best_cost)
-            main_env_task_queue.put(MainEnvProcessRenderTask(sr.joint_angles, sr.robot_setting))
-            main_env_result_queue.get()
+            if RENDER_UI:
+                main_env_task_queue.put(MainEnvProcessRenderTask(sr.joint_angles, sr.robot_setting))
+                main_env_result_queue.get()
 
         optimizer.tell(solutions, fitness_values)
 
@@ -382,7 +384,7 @@ def run_trial(init_result, main_env_task_queue, main_env_result_queue, sub_env_t
         mean_energy.append(np.mean(energy_changes, axis=0))
         mean_torque.append(np.mean(torques, axis=0))
 
-        if validity_count / len(solutions) / timestep < 0.25:  # stuck
+        if timestep >50 and validity_count / len(solutions) / timestep < 0.25:  # stuck
             LOG.info(
                 f"{bcolors.OKBLUE} Stuck at step: {timestep}, validity count: {validity_count}, validity ratio: {validity_count / len(solutions) / timestep}, {bcolors.ENDC}")
             break
