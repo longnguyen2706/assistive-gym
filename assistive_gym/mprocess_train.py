@@ -5,13 +5,14 @@ import os
 import time
 from assistive_gym.envs.utils.dto import RobotSetting, InitRobotSetting, EnvConfig, SearchConfig, MainEnvInitResult, \
     SearchResult, MainEnvProcessInitTask, MainEnvProcessTask, MainEnvProcessTaskType, MainEnvProcessRenderTask, \
-    MainEnvProcessGetHumanRobotInfoTask
+    MainEnvProcessGetHumanRobotInfoTask, TrialResult, HandoverValidity, BestKinematicResult, MeanKinematicResult
 from assistive_gym.envs.utils.train_utils import *
 
 LOG = get_logger()
 NUM_WORKERS = 1
 MAX_ITERATION = 500
 RENDER_UI = False
+MAX_TRIAL = 5
 
 
 # env that run in parallel, in background
@@ -67,6 +68,7 @@ class MainEnvProcess(multiprocessing.Process):
             self.env = make_env(self.env_config.env_name, self.env_config.person_id,
                                 self.env_config.smpl_file, self.env_config.handover_obj, self.env_config.coop)
 
+        # print ('main env task: ', task)
         if task.task_type == MainEnvProcessTaskType.INIT:
             print('init main env')
             return init_main_env(self.env, self.env_config.handover_obj)
@@ -97,7 +99,8 @@ class MainEnvProcess(multiprocessing.Process):
                     'transform': translate_wrt_human_pelvis(human, np.array(
                         human.get_ee_pos_orient(self.env_config.end_effector)[0]),
                                                             np.array(
-                                                                human.get_ee_pos_orient(self.env_config.end_effector)[1])),
+                                                                human.get_ee_pos_orient(self.env_config.end_effector)[
+                                                                    1])),
                 },
                 "ik_target": {
                     'original': [np.array(ik_target_pos), np.array(robot_setting.gripper_orient)],  # [pos, orient
@@ -161,6 +164,7 @@ def init_main_env(env, handover_obj):
 
 
 def do_search(env, joint_angles, search_config):
+    # TODO: remove reset_controllable_joints
     human, end_effector, handover_obj = env.human, search_config.handover_obj_config.end_effector, search_config.handover_obj
     # print("s: ", s, 'human', human.controllable_joint_indices, 'end_effector', end_effector, 'handover_obj', handover_obj)
     # set angle directly
@@ -204,10 +208,12 @@ def do_search(env, joint_angles, search_config):
 
     robot_setting = RobotSetting(robot_base_pos, robot_base_orient, robot_joint_angles, robot_side,
                                  gripper_orient)
+    handover_validity = HandoverValidity(new_self_penetrations, new_env_penetrations, robot_penetrations,
+                                         robot_dist_to_target)
     # print ("sub process ", robot_setting.robot_joint_angles)
     # restore joint angle
     # human.set_joint_angles(human.controllable_joint_indices, original_info.angles)
-    return SearchResult(joint_angles, cost, m, dist, energy, torque, robot_setting)
+    return SearchResult(joint_angles, cost, m, dist, energy, torque, robot_setting, handover_validity)
 
 
 def cal_object_specific_cost(env, handover_object, bedside, end_effector):
@@ -255,6 +261,13 @@ def destroy_main_env_process(main_env_process, main_env_task_queue):
     main_env_process.join()
 
 
+def check_validity(handover_validity: HandoverValidity):
+    if len(handover_validity.new_env_penetrations) or len(handover_validity.new_self_penetrations):
+        return False
+    return True
+
+
+# TODO: retry till success
 def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', person_id='p001',
              end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_physics=False,
              robot_ik=False, handover_obj=None):
@@ -272,77 +285,37 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
                                  init_result.handover_obj_config, init_result.robot_setting)
     sub_env_workers, sub_env_task_queue, sub_env_result_queue = init_sub_env_process(env_config, search_config)
 
-    timestep = 0
-    mean_cost, mean_dist, mean_m, mean_energy, mean_torque, mean_evolution, mean_reba = [], [], [], [], [], [], []
+    # best_mean_cost,  best_mean_dist, best_mean_m, best_mean_energy, best_mean_torque, best_mean_evolution, best_mean_reba = [], [], [], [], [], [], []
+    best_trial_cost, best_trial_result = float('inf'), None
+    for i in range(MAX_TRIAL):
+        result = run_trial(init_result, main_env_task_queue, main_env_result_queue, sub_env_task_queue,
+                           sub_env_result_queue)
+        if result.best_kinematic_result.cost < best_trial_cost:
+            best_trial_cost = result.best_kinematic_result.cost
+            best_trial_result = result
 
-    # init optimizer
-    x0 = np.array(init_result.original_info.angles)
-    optimizer = init_optimizer(x0, 0.05, init_result.joint_lower_limits, init_result.joint_upper_limits)
-
-    best_cost, best_angle, best_robot_setting = float('inf'), None, None
-    while timestep < MAX_ITERATION and not optimizer.stop():
-        timestep += 1
-        solutions = optimizer.ask()
-        fitness_values, dists, manipus, energy_changes, torques = [], [], [], [], []
-
-        for s in solutions:
-            sub_env_task_queue.put(s)
-
-        for _ in solutions:
-            sr: SearchResult = sub_env_result_queue.get()
-            # print (result)
-            fitness_values.append(sr.cost)
-            dists.append(sr.dist)
-            manipus.append(sr.manipulability)
-            energy_changes.append(sr.energy)
-            torques.append(sr.torque)
-            if sr.cost < best_cost:
-                best_cost = sr.cost
-                best_angle = sr.joint_angles
-                best_robot_setting = sr.robot_setting
-            # print('best_cost: ', best_cost)
-            main_env_task_queue.put(MainEnvProcessRenderTask(sr.joint_angles, sr.robot_setting))
-            main_env_result_queue.get()
-        optimizer.tell(solutions, fitness_values)
-
-        mean_evolution.append(np.mean(solutions, axis=0))
-        mean_cost.append(np.mean(fitness_values, axis=0))
-        mean_dist.append(np.mean(dists, axis=0))
-        mean_m.append(np.mean(manipus, axis=0))
-        mean_energy.append(np.mean(energy_changes, axis=0))
-        mean_torque.append(np.mean(torques, axis=0))
-
-    # # get the kinematic result for best solution
-    sub_env_task_queue.put(best_angle)
-    sr: SearchResult = sub_env_result_queue.get()
-    best_dist, best_m, best_energy, best_torque = sr.dist, sr.manipulability, sr.energy, sr.torque
-    destroy_sub_env_process(sub_env_workers, sub_env_task_queue)
-
-
-    LOG.info(
-        f"{bcolors.OKBLUE} Best cost: {optimizer.best.f} {best_cost} {bcolors.ENDC}")
-
-    main_env_task_queue.put(MainEnvProcessGetHumanRobotInfoTask(best_angle, best_robot_setting, end_effector))
+    main_env_task_queue.put(
+        MainEnvProcessGetHumanRobotInfoTask(best_trial_result.joint_angles, best_trial_result.robot_setting,
+                                            end_effector))
     human_robot_info = main_env_result_queue.get()
-
+    destroy_sub_env_process(sub_env_workers, sub_env_task_queue)
     destroy_main_env_process(main_env_process, main_env_task_queue)
 
     action = {
-        "solution": best_angle,
-        "cost": best_cost,
+        "solution": best_trial_result.joint_angles,
+        "cost": best_trial_result.best_kinematic_result.cost,
         "end_effector": end_effector,
-        "m": best_m,
-        "dist": best_dist,
-        "energy": best_energy,
-        "torque": best_torque,
-        "mean_energy": mean_energy,
+        "m": best_trial_result.best_kinematic_result.m,
+        "dist": best_trial_result.best_kinematic_result.dist,
+        "energy": best_trial_result.best_kinematic_result.energy,
+        "torque": best_trial_result.best_kinematic_result.torque,
+        "mean_energy": best_trial_result.mean_kinematic_result.mean_energy,
         # "target": init_result.original_info.original_ee_pos,
-        "mean_cost": mean_cost,
-        "mean_dist": mean_dist,
-        "mean_m": mean_m,
-        "mean_evolution": mean_evolution,
-        "mean_torque": mean_torque,
-        "mean_reba": mean_reba,
+        "mean_cost": best_trial_result.mean_kinematic_result.mean_cost,
+        "mean_dist": best_trial_result.mean_kinematic_result.mean_dist,
+        "mean_m": best_trial_result.mean_kinematic_result.mean_m,
+        "mean_evolution": best_trial_result.mean_kinematic_result.mean_evolution,
+        "mean_torque": best_trial_result.mean_kinematic_result.mean_torque,
         "initial_robot_settings": init_result.robot_setting,
         "wrt_pelvis": human_robot_info
     }
@@ -363,6 +336,91 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
     return action
 
 
+def run_trial(init_result, main_env_task_queue, main_env_result_queue, sub_env_task_queue, sub_env_result_queue):
+    timestep = 0
+    mean_cost, mean_dist, mean_m, mean_energy, mean_torque, mean_evolution, mean_reba = [], [], [], [], [], [], []
+    # init optimizer
+    x0 = np.array(init_result.original_info.angles)
+
+    optimizer = init_optimizer(x0, 0.05, init_result.joint_lower_limits, init_result.joint_upper_limits)
+
+    best_cost, best_angle, best_robot_setting = float('inf'), None, None
+    validity_count = 0
+    while timestep < MAX_ITERATION and not optimizer.stop():
+        timestep += 1
+        solutions = optimizer.ask()
+        fitness_values, dists, manipus, energy_changes, torques = [], [], [], [], []
+
+        for s in solutions:
+            sub_env_task_queue.put(s)
+
+        for _ in solutions:
+            sr: SearchResult = sub_env_result_queue.get()
+            # print (result)
+            fitness_values.append(sr.cost)
+            dists.append(sr.dist)
+            manipus.append(sr.manipulability)
+            energy_changes.append(sr.energy)
+            torques.append(sr.torque)
+
+            if check_validity(sr.handover_validity):
+                validity_count += 1
+            if sr.cost < best_cost and check_validity(sr.handover_validity):
+                best_cost = sr.cost
+                best_angle = sr.joint_angles
+                best_robot_setting = sr.robot_setting
+            # print('best_cost: ', best_cost)
+            main_env_task_queue.put(MainEnvProcessRenderTask(sr.joint_angles, sr.robot_setting))
+            main_env_result_queue.get()
+
+        optimizer.tell(solutions, fitness_values)
+
+        mean_evolution.append(np.mean(solutions, axis=0))
+        mean_cost.append(np.mean(fitness_values, axis=0))
+        mean_dist.append(np.mean(dists, axis=0))
+        mean_m.append(np.mean(manipus, axis=0))
+        mean_energy.append(np.mean(energy_changes, axis=0))
+        mean_torque.append(np.mean(torques, axis=0))
+
+        if validity_count / len(solutions) / timestep < 0.25:  # stuck
+            LOG.info(
+                f"{bcolors.OKBLUE} Stuck at step: {timestep}, validity count: {validity_count}, validity ratio: {validity_count / len(solutions) / timestep}, {bcolors.ENDC}")
+            break
+
+    # # get the kinematic result for best solution
+    sub_env_task_queue.put(best_angle)
+    sr: SearchResult = sub_env_result_queue.get()
+    best_dist, best_m, best_energy, best_torque = sr.dist, sr.manipulability, sr.energy, sr.torque
+
+    best_kinematic_result = BestKinematicResult(best_energy, best_cost, best_dist, best_m, best_torque)
+    mean_kinematic_result = MeanKinematicResult(mean_energy, mean_cost, mean_dist, mean_m, mean_torque, mean_evolution)
+    result = TrialResult(best_angle, best_kinematic_result, mean_kinematic_result, sr.robot_setting,
+                         sr.handover_validity)
+    # result = {
+    #     "solution": best_angle,
+    #     "cost": best_cost,
+    #     "dist": best_dist,
+    #     "m": best_m,
+    #     "energy": best_energy,
+    #     "torque": best_torque,
+    #     "mean_energy": mean_energy,
+    #     "mean_cost": mean_cost,
+    #     "mean_dist": mean_dist,
+    #     "mean_m": mean_m,
+    #     "mean_evolution": mean_evolution,
+    #     "mean_torque": mean_torque,
+    #     "mean_reba": mean_reba,
+    #     "initial_robot_settings": init_result.robot_setting,
+    #     "new_self_penetration": sr.new_self_penetrations,
+    #     "new_env_penetrations": sr.new_env_penetrations,
+    #     "robot_penetrations": sr.robot_penetrations,
+    #     "robot_dist_to_target": sr.robot_dist_to_target,
+    # }
+    LOG.info(
+        f"{bcolors.OKBLUE} Best cost: {optimizer.best.f} {best_cost} {bcolors.ENDC}")
+    return result
+
+
 def save_train_result(save_dir, env_name, person_id, smpl_file, actions, key, handover_obj):
     save_dir = get_save_dir(save_dir, env_name, person_id, smpl_file)
     os.makedirs(save_dir, exist_ok=True)
@@ -378,7 +436,7 @@ def save_train_result(save_dir, env_name, person_id, smpl_file, actions, key, ha
     pickle.dump(actions, open(os.path.join(save_dir, "actions.pkl"), "wb"))
 
     dumped = json.dumps(actions[key]['wrt_pelvis'], cls=NumpyEncoder)
-    with open(os.path.join(save_dir, handover_obj+".json"), "w") as f:
+    with open(os.path.join(save_dir, handover_obj + ".json"), "w") as f:
         f.write(dumped)
 
 

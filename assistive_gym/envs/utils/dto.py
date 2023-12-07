@@ -83,8 +83,17 @@ class SearchConfig:
         self.initial_robot_setting = initial_robot_setting
 
 
+class HandoverValidity:
+    def __init__(self, new_self_penetrations, new_env_penetrations, robot_penetrations, robot_dist_to_target):
+        self.new_self_penetrations = new_self_penetrations
+        self.new_env_penetrations = new_env_penetrations
+        self.robot_penetrations = robot_penetrations
+        self.robot_dist_to_target = robot_dist_to_target
+
+
 class SearchResult:
-    def __init__(self, joint_angles, cost, manipulability, dist, energy, torque, robot_setting):
+    def __init__(self, joint_angles, cost, manipulability, dist, energy, torque, robot_setting,
+                 handover_validity: HandoverValidity):
         self.joint_angles = joint_angles  # just for reference, in case multithread messed up the order
         self.cost = cost
         self.dist = dist
@@ -92,6 +101,7 @@ class SearchResult:
         self.energy = energy
         self.torque = torque
         self.robot_setting = robot_setting
+        self.handover_validity = handover_validity
 
 
 class MainEnvInitResult:
@@ -107,6 +117,7 @@ class MainEnvInitResult:
         self.joint_lower_limits = joint_lower_limits
         self.joint_upper_limits = joint_upper_limits
         self.robot_setting = robot_setting
+
 
 class MainEnvProcessTaskType(Enum):
     INIT = "init"
@@ -137,3 +148,33 @@ class MainEnvProcessGetHumanRobotInfoTask(MainEnvProcessTask):
         self.joint_angle = joint_angle
         self.robot_setting = robot_setting
         self.end_effector = end_effector
+
+
+class MeanKinematicResult:
+    def __init__(self, mean_energy, mean_cost, mean_dist, mean_m, mean_torque, mean_evolution):
+        self.mean_energy = mean_energy
+        self.mean_cost = mean_cost
+        self.mean_dist = mean_dist
+        self.mean_m = mean_m
+        self.mean_torque = mean_torque
+        self.mean_evolution = mean_evolution
+
+
+class BestKinematicResult:
+    def __init__(self, best_energy, best_cost, best_dist, best_m, best_torque):
+        self.energy = best_energy
+        self.cost = best_cost
+        self.dist = best_dist
+        self.m = best_m
+        self.torque = best_torque
+
+
+class TrialResult:
+    def __init__(self, joint_angles, best_kinematic_result: BestKinematicResult,
+                 mean_kinematic_result: MeanKinematicResult, robot_setting,
+                 handover_validity: HandoverValidity):
+        self.joint_angles = joint_angles
+        self.best_kinematic_result = best_kinematic_result
+        self.mean_kinematic_result = mean_kinematic_result
+        self.robot_setting = robot_setting
+        self.handover_validity = handover_validity
