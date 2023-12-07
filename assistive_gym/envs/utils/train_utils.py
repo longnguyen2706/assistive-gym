@@ -908,23 +908,24 @@ def check_pose_validity(original_human_info: HumanInfo, new_human_info: HumanInf
     return err
 
 
-def render_nn_result(env_name, data, person_id, smpl_file, handover_obj):
+def render_nn_result(env_name, data, person_id, smpl_file, handover_obj, real=False):
     env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=handover_obj, person_id=person_id)
     env.render()  # need to call reset after render
     env.reset()
 
     smpl_name = os.path.basename(smpl_file).split(".")[0]
-    p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_name), [0, 0, 1], textColorRGB=[1, 0, 0])
+    p.addUserDebugText("person: {}, smpl: {}, real: {}".format(person_id, smpl_name, real), [0, 0, 1], textColorRGB=[1, 0, 0])
 
     env.human.reset_controllable_joints(data["end_effector"])
-    env.human.set_joint_angles(env.human.controllable_joint_indices, data['human']["joint_angles"])
+    joint_angles = data["human"]["joint_angles"] if not real else data["joint_angles"]
+    env.human.set_joint_angles(env.human.controllable_joint_indices, joint_angles)
 
-    _, _, side = find_robot_start_pos_orient(env, data["end_effector"])
-    env.robot.set_base_pos_orient(data['robot']['base'][0], data['robot']['base'][1])
-    env.robot.set_joint_angles(
-        env.robot.right_arm_joint_indices if side == 'right' else env.robot.left_arm_joint_indices,
-        data['robot']['joint_angles'])
-    env.tool.reset_pos_orient()
+    # _, _, side = find_robot_start_pos_orient(env, data["end_effector"])
+    # env.robot.set_base_pos_orient(data['robot']['base'][0], data['robot']['base'][1])
+    # env.robot.set_joint_angles(
+    #     env.robot.right_arm_joint_indices if side == 'right' else env.robot.left_arm_joint_indices,
+    #     data['robot']['joint_angles'])
+    # env.tool.reset_pos_orient()
     while True:
         keys = p.getKeyboardEvents()
         if ord('q') in keys:

@@ -2,10 +2,11 @@ import json
 import os
 from datetime import datetime
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from ray import tune
+from ray import tune, train as ray_train
 from torch.utils.data import random_split, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
@@ -24,7 +25,7 @@ CHECKPOINT_PATH = os.path.join(os.getcwd(), os.path.join('checkpoints'))
 input_size = 82  # 72 + 10
 output_size = 32  # 32
 output_size_human_only = 15
-num_epochs = 200
+num_epochs = 500
 OUTPUT_HUMAN_ONLY = True
 
 def get_output_size():
@@ -35,7 +36,7 @@ def get_output_class():
 
 def get_model(config):
     # return MyNet(input_size, config['h1_size'], config['h2_size'], config['h3_size'], get_output_size())
-    return VariableDepthNet(input_size, config['layer_sizes'], get_output_size())
+    return VariableDepthNet(input_size, config['layer_sizes'], get_output_size(), config['dropout'])
 
 def get_data_split(batch_size, object):  # 60% train, 20% val, 20% test
     datasets = CustomDataset(INPUT_PATH, object, transform=None, human_only = OUTPUT_HUMAN_ONLY)
@@ -52,7 +53,7 @@ def get_data_split(batch_size, object):  # 60% train, 20% val, 20% test
     return train_loader, val_loader, test_loader
 
 
-def train(config):
+def train(config, exp_name="ray", is_tune=True):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     train_loader, val_loader, test_loader = get_data_split(config['batch_size'], config['object'])
@@ -65,7 +66,7 @@ def train(config):
     optimizer = optim.Adam(model.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
 
     # Initialize the SummaryWriter
-    writer = SummaryWriter('runs/experiment_1')  # Specify the directory for logging
+    writer = SummaryWriter('runs/' + exp_name)  # Specify the directory for logging
 
     # Train the model
     for epoch in range(num_epochs):
@@ -78,41 +79,31 @@ def train(config):
 
             # Forward pass
             outputs = model(features)
-            loss = criterion(outputs, labels)
+            loss = criterion(outputs, labels) *100
 
             # Backward pass and optimization
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            # Report the metric to optimize
-            tune.report(loss=loss.item())
-
-            if (i + 1) % 10 == 0:
-                print(f'Epoch [{epoch + 1}/{num_epochs}], Step [{i + 1}/{len(train_loader)}], Loss: {loss.item():.4f}')
-                # Log the loss value to TensorBoard
-                writer.add_scalar('training loss', loss, epoch * len(train_loader) + i)
-            if (i + 1) % 20 == 0:
-                with torch.no_grad():
+            if is_tune:
+                # Report the metric to optimize
+                tune.report(loss=loss.item())
+            else:
+                if (i + 1) % 40 == 0:
+                    # Log the loss value to TensorBoard
+                    train_loss, train_err, = get_dataset_loss(model, criterion, train_loader, device)
+                    print(f'Epoch [{epoch + 1}/{num_epochs}], Step [{i + 1}/{len(train_loader)}], Loss: {loss.item():.4f}, Train Loss: {train_loss:.4f}', f'Train Error: {train_err:.4f}')
+                    writer.add_scalar('loss', loss, epoch * len(train_loader) + i)
+                    writer.add_scalar('training loss', train_loss, epoch * len(train_loader) + i)
+                    writer.add_scalar('training err', train_err, epoch * len(train_loader) + i)
+                if (i + 1) % 40 == 0:
                     # Calculate the validation loss
-                    val_loss = 0.0
-                    for val_data in val_loader:
-                        features, labels = val_data['feature'], val_data['label']
-                        # Move data to the correct device
-                        features = features.to(device)
-                        labels = labels.to(device)
-                        # Forward pass
-                        outputs = model(features)
-                        loss = criterion(outputs, labels)
-                        # Update running loss value
-                        val_loss += loss.item() * features.size(0)
-                    # Calculate the average loss over the entire validation dataset
-                    average_val_loss = val_loss / len(val_loader.dataset)
-
-                print(
-                    f'Epoch [{epoch + 1}/{num_epochs}], Step [{i + 1}/{len(train_loader)}], Validation Loss: {average_val_loss:.4f}')
-                # Log the validation loss to TensorBoard
-                writer.add_scalar('validation loss', average_val_loss, epoch * len(train_loader) + i)
-                model.train()
+                    val_loss, val_err = get_dataset_loss(model, criterion, val_loader, device)
+                    print(
+                        f'Epoch [{epoch + 1}/{num_epochs}], Step [{i + 1}/{len(train_loader)}], Validation Loss: {val_loss:.4f}', f'Validation Error: {val_err:.4f}')
+                    # Log the validation loss to TensorBoard
+                    writer.add_scalar('validation loss', val_loss, epoch * len(train_loader) + i)
+                    writer.add_scalar('validation err', val_err, epoch * len(train_loader) + i)
     writer.close()
     test_model(model, test_loader, criterion)
     # Save the model checkpoint with time stamp
@@ -121,7 +112,61 @@ def train(config):
              'model': model.state_dict()
             }, os.path.join(CHECKPOINT_PATH, f'model_{config["object"]}_epoch_{num_epochs}_{datetime.now()}.ckpt'))
 
+def get_dataset_loss(model, criterion, loader, device):
+    with torch.no_grad():
+        # Calculate the loss
+        loss = 0.0
+        err = 0.0
+        for data in loader:
+            features, labels = data['feature'], data['label']
+            # Move data to the correct device
+            features = features.to(device)
+            labels = labels.to(device)
+            # Forward pass
+            outputs = model(features)
+            loss = criterion(outputs, labels)
+            # Update running loss value
+            loss += loss.item() * features.size(0)
+            # for i in range(len(outputs)):
+            #     angle_err = cal_per_joint_err(labels[i], outputs[i])['human_joint_angle_loss']
+            #     err += angle_err
+            # print (labels.shape, outputs.shape, features.shape)
+            err += cal_per_joint_err(labels, outputs) * features.size(0)
+        # Calculate the average loss over the entire validation dataset
+        # print ("loss: ", loss, "len: ", len(loader.dataset))
+        average_val_loss = loss / len(loader.dataset)
+        average_err = err / len(loader.dataset)
+        print (len(loader.dataset))
+    model.train()
+    return average_val_loss, average_err
 
+def cal_per_joint_err(labels, outputs):
+    # label = label.cpu().numpy()
+    # output = output.cpu().numpy()
+    # label_obj = get_output_class().from_tensor(label)
+    # output_obj = get_output_class().from_tensor(output)
+    err = torch.norm ((labels - outputs),p=1, dim=1)/ labels.shape[1] * 180 / np.pi
+    err = torch.mean(err)
+
+    # err = {}
+    # if OUTPUT_HUMAN_ONLY:  # only calculate human joint angle loss
+    #     # human_joint_angle_loss = cal_joint_angle_loss(label_obj.human_joint_angles, output_obj.human_joint_angles)
+    #     # print(f'Human joint angle err (deg): {human_joint_angle_loss}', ' file: ', test_data['feature_path'][i])
+    #     err['human_joint_angle_loss'] = human_joint_angle_loss
+    # else:
+    #     human_joint_angle_loss, robot_joint_angle_loss, robot_base_loss, robot_base_rot_loss = cal_loss(
+    #         label_obj, output_obj)
+    #     # print(
+    #     #     f'Human joint angle err (deg): {human_joint_angle_loss}, Robot joint angle err (deg): {robot_joint_angle_loss}, '
+    #     #     f'robot base pos err (m): {robot_base_loss}, robot base orient err: {robot_base_rot_loss}')
+    #     err = {
+    #         'human_joint_angle_loss': human_joint_angle_loss,
+    #         'robot_joint_angle_loss': robot_joint_angle_loss,
+    #         'robot_base_loss': robot_base_loss,
+    #         'robot_base_rot_loss': robot_base_rot_loss
+    #     }
+    # return err
+    return err
 def test_model(model, test_loader, criterion):
     """
     Evaluate the performance of a neural network model on a test dataset.
@@ -209,12 +254,13 @@ def train_with_ray(config):
     print("Best trial config: {}".format(best_trial.config))
     print("Best trial final validation loss: {}".format(best_trial.last_result["loss"]))
 
-    train(best_trial.config)
+    train(best_trial.config, is_tune=False)
 
 def eval_model(model_checkpoint):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     saved_data = torch.load(os.path.join(CHECKPOINT_PATH, model_checkpoint))
     config = saved_data['config']
+    print ("config:", config)
     model = get_model(config).to(device)
 
     model.load_state_dict(saved_data['model'])
@@ -248,16 +294,37 @@ def eval_model(model_checkpoint):
 
 if __name__ == '__main__':
     # Define the hyperparameter search space
-    config = {
-        "lr": tune.loguniform(1e-5, 1e-1),
-        "weight_decay": tune.loguniform(1e-5, 1e-1),
-        "layer_sizes": [tune.grid_search(list(range(256, 1024, 128))), tune.grid_search(list(range(128, 256, 32))),
-                        tune.grid_search(list(range(64, 128, 32))), tune.grid_search(list(range(32, 128, 16)))],
-        "batch_size": tune.choice([16, 32, 64]),
-        "object": "pill"
-    }
+    # config = {
+    #     "lr": tune.loguniform(1e-5, 0.25*1e-1),
+    #     "weight_decay": tune.loguniform(1e-5, 1e-1),
+    #     # "layer_sizes": [tune.grid_search(list(range(256, 1024, 128))), tune.grid_search(list(range(128, 256, 32))),
+    #     #                 tune.grid_search(list(range(64, 128, 32))), tune.grid_search(list(range(64, 128, 32))), tune.grid_search(list(range(32, 128, 16)))],
+    #     "layer_sizes": [tune.grid_search(list(range(512, 4096, 128))), tune.grid_search(list(range(256, 1024, 64))),
+    #                     tune.grid_search(list(range(64, 128, 32))), tune.grid_search(list(range(32, 128, 16)))],
+    #     "batch_size": tune.choice([16, 32, 64]),
+    #     "object": "pill"
+    # }
 
-    train_with_ray(config)
+    # config = {
+    #     "lr": tune.loguniform(1e-5, 0.25 * 1e-1),
+    #     "weight_decay": tune.loguniform(1e-5, 1e-1),
+    #     # "dropout": tune.loguniform(0.5*1e-2, 0.5*1e-1),
+    #     "dropout": 0,
+    #     "layer_sizes": [
+    #         tune.grid_search(list(range(1024, 8192, 512))),
+    #         tune.grid_search(list(range(512, 4096, 256))), tune.grid_search(list(range(256, 1024, 128))),
+    #                     tune.grid_search(list(range(64, 128, 32))), tune.grid_search(list(range(32, 64, 16)))],
+    #     "batch_size": tune.choice([16]),
+    #     "object": "pill"
+    # }
+    # # hyper param tuning and train with best config
+    # train_with_ray(config)
 
-    # model_checkpoint= 'model_cane_epoch_200_2023-11-05 23:04:22.032313.ckpt'
+    #train with best config
+    best_config = {'lr': 0.0011160391792473308, 'weight_decay': 4.984018369225781e-05, 'dropout': 0.009958794050846667,
+                   'layer_sizes': [6656, 768, 384, 96, 32], 'batch_size': 16, 'object': 'pill'}
+    train(best_config,exp_name='t4', is_tune=False)
+
+    # load model and output angle to file
+    # model_checkpoint= 'model_pill_epoch_200_2023-12-06 22:56:17.022110.ckpt'
     # eval_model(model_checkpoint)
