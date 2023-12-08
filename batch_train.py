@@ -21,7 +21,7 @@ SMPL_FILES = ['s01', 's02', 's03', 's04', 's05', 's06', 's07', 's08', 's09', 's1
                 's27', 's28', 's29', 's30', 's31', 's32', 's33', 's34', 's35', 's36', 's37', 's38', 's39', 's40', 's41',
                 's42', 's43', 's44', 's45']
 
-OBJECTS = ['pill']
+OBJECTS = ['cane']
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
 ENV = 'HumanComfort-v1_rerun'
@@ -33,7 +33,7 @@ ROBOT_IK = True
 END_EFFECTOR = 'right_hand'
 
 ### DEFINE MULTIPROCESS SETTING ###
-NUM_WORKERS = 64
+NUM_WORKERS = 32
 
 def get_dynamic_configs(re_run_failed_cases=False):
     invalid_cases = get_invalid_cases()

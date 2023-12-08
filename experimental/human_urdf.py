@@ -173,6 +173,7 @@ class HumanUrdf(Agent):
         plot(mean_evolution, "Mean Evolution", "Iteration", "Mean Evolution")
 
     def init(self, physics_id, np_random):
+        print("urdf path: ", self.urdf_path)
         self.body = p.loadURDF(self.urdf_path, [0, 0, 0],
                                flags=p.URDF_USE_SELF_COLLISION,
                                useFixedBase=False)
