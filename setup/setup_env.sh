@@ -1,13 +1,21 @@
-# # install pyenv
-# curl https://pyenv.run | bash
-# # install and activate python in pyenv
-# pyenv install 3.7.10
-# eval "$(pyenv virtualenv-init -)"
+#  install pyenv
+curl https://pyenv.run | bash
 
-# # clone assisi-gym and install
-# git clone https://github.com/longnguyen2706/assistive-gym.git
-# pip3 install --upgrade pip
-# pip3 install git+https://github.com/Healthcare-Robotics/assistive-gym.git
+echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+echo 'eval "$(pyenv init -)"' >> ~/.bashrc
+exec "$SHELL"
+# install and activate python in pyenv
+pyenv install 3.7.10
+eval "$(pyenv init -)"
+pyenv global 3.7.10
+
+
+
+# clone assisi-gym and install
+git clone https://github.com/longnguyen2706/assistive-gym.git
+pip3 install --upgrade pip
+pip3 install git+https://github.com/Healthcare-Robotics/assistive-gym.git
 
 # install additional dependencies
 sudo apt-get install python-tk python3-tk tk-dev
@@ -31,5 +39,6 @@ pip3 install cmaes
 pip3 install kinpy
 pip3 install ergonomics-metrics # can remove if we dont need reba score
 pip3 install keyboard
+pip3 install deprecation 
 
 pip3 install pybullet==3.2.5
