@@ -36,8 +36,9 @@ SIMULATE_COLLISION = False
 ROBOT_IK = True
 END_EFFECTOR = 'right_hand'
 
+exception_file = 'trained_models/HumanComfort-v1_dec10_2/exception.txt'
 ### DEFINE MULTIPROCESS SETTING ###
-NUM_WORKERS = 64
+NUM_WORKERS =32
 
 def get_dynamic_configs(re_run_failed_cases=False):
     invalid_cases = get_invalid_cases()
@@ -50,7 +51,7 @@ def get_dynamic_configs(re_run_failed_cases=False):
                 smpl_file = SMPL_DIR + p + '/' + s + '.pkl'
                 # print(p, s, o)
                 configs.append((p, smpl_file, o))
-    print(len(configs), configs)
+    # print(len(configs), configs)
     return configs
 
 
@@ -63,13 +64,19 @@ def get_invalid_cases():
 
     return invalid_cases
 
+
 def do_train(config):
     p, s, o = config
     print (p, s, o)
-    mp_train(ENV, SEED, s, p, END_EFFECTOR,  SAVE_DIR, RENDER_GUI, SIMULATE_COLLISION, ROBOT_IK, o)
-    # mp_read(ENV, SEED, s, p, END_EFFECTOR,  SAVE_DIR, RENDER_GUI, SIMULATE_COLLISION, ROBOT_IK, o)
-    return "Done training for {} {} {}".format(p, s, o)
-
+    try:
+        train(ENV, SEED, s, p, END_EFFECTOR,  SAVE_DIR, RENDER_GUI, SIMULATE_COLLISION, ROBOT_IK, o)
+        # mp_read(ENV, SEED, s, p, END_EFFECTOR,  SAVE_DIR, RENDER_GUI, SIMULATE_COLLISION, ROBOT_IK, o)
+        return "Done training for {} {} {}".format(p, s, o)
+    except Exception as e: 
+        message= "Exception for {} {} {}, cause {} \n".format(p, s, o, e)
+        with open(exception_file, 'a') as f: 
+            f.write(message)
+        f.close()
 
 if __name__ == '__main__':
     counter = 0
@@ -82,7 +89,7 @@ if __name__ == '__main__':
         }
         for future in concurrent.futures.as_completed(futures):
             res = futures[future]
-            counter +=1
+            counter +=1 
             try:
                 print('Done training for {}'.format(res), 'progress: {} / {}'.format(counter, len(configs)) )
                 del futures[future]

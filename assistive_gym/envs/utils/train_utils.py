@@ -4,6 +4,8 @@ import os
 import pickle
 from datetime import datetime
 from typing import Set, Optional
+from assistive_gym.envs.utils.debug_utils import timing
+import gc
 
 import gym
 import numpy as np
@@ -107,7 +109,7 @@ def find_ee_ik_goal(human, end_effector, handover_obj):
         handover_obj]  # need to depends on the size of the object as well
     return ee_pos, target_pos
 
-
+#@timing
 def find_robot_ik_solution(env, end_effector: str, handover_obj: str, init_robot_setting=None):
     """
     Find robot ik solution with TOC. Place the robot in best base position and orientation.
@@ -186,7 +188,7 @@ def find_max_val(human, cost_fn, original_joint_angles, original_link_positions,
     human.set_joint_angles(human.controllable_joint_indices, optimizer.best.x)
     return optimizer.best.x, 1.0 / optimizer.best.f
 
-
+#@timing
 def find_robot_start_pos_orient(env, end_effector="right_hand", initial_side=None):
     # find bed bb
     bed = env.furniture
@@ -199,12 +201,15 @@ def find_robot_start_pos_orient(env, end_effector="right_hand", initial_side=Non
     if initial_side is not None:
         side = initial_side
     else:
-        eyeline_side = get_eyeline_side(env.human)
-        if eyeline_side is None:
-            # find the side of the bed
-            side = "right" if ee_pos[0] > bed_pos[0] else "left"
-        else:
-            side = eyeline_side
+        # eyeline_side = get_eyeline_side(env.human)
+        # if eyeline_side is None:
+        #     # find the side of the bed
+        #     side = "right" if ee_pos[0] > bed_pos[0] else "left"
+        # else:
+        #     side = eyeline_side
+        # print ("robot side: ", side, eyeline_side)
+        side = "right" if ee_pos[0] > bed_pos[0] else "left"
+        print ("robot side: ", side, " end effector: ", end_effector)
         bed_xx, bed_yy, bed_zz = bed_bb[1] if side == "right" else bed_bb[0]
 
         # find robot base and bb
@@ -319,7 +324,7 @@ def detect_collisions(original_info: HumanInfo, self_collisions, env_collisions,
                                                   COLLISION_PENETRATION_THRESHOLD["self_collision"])
     new_env_penetrations = find_new_penetrations(original_info.env_collisions, env_collisions, human, end_effector,
                                                  COLLISION_PENETRATION_THRESHOLD["env_collision"])
-    LOG.info(f"self penetration: {new_self_penetrations}, env penetration: {new_env_penetrations}")
+    # LOG.info(f"self penetration: {new_self_penetrations}, env penetration: {new_env_penetrations}")
     # print(f"self penetration: {new_self_penetrations}, env penetration: {new_env_penetrations}")
     return new_self_penetrations, new_env_penetrations
 
@@ -895,7 +900,7 @@ def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik
     except Exception as e:
         print("exception: ", e)
     finally:
-        env.disconnect()
+        destroy_env(env)
 
 
 # TODO: add check distance from hand to object & robot collision
@@ -931,7 +936,7 @@ def render_nn_result(env_name, data, person_id, smpl_file, handover_obj, real=Fa
         keys = p.getKeyboardEvents()
         if ord('q') in keys:
             break
-    env.disconnect()
+    destroy_env(env)
 
 
 def render_pose(env_name, person_id, smpl_file):
@@ -943,8 +948,7 @@ def render_pose(env_name, person_id, smpl_file):
         keys = p.getKeyboardEvents()
         if ord('q') in keys:
             break
-    env.disconnect()
-
+    destroy_env(env)
 
 def save_train_result(save_dir, env_name, person_id, smpl_file, actions):
     save_dir = get_save_dir(save_dir, env_name, person_id, smpl_file)
@@ -959,6 +963,11 @@ def save_train_result(save_dir, env_name, person_id, smpl_file, actions):
                     actions[key] = old_actions[key]
     pickle.dump(actions, open(os.path.join(save_dir, "actions.pkl"), "wb"))
 
+
+def destroy_env(env):
+    env.disconnect()
+    env.close()
+    gc.collect()
 
 def find_new_penetrations(old_collisions: Set, new_collisions: Set, human, end_effector, penetration_threshold) -> int:
     # TODO: remove magic number (might need to check why self colllision happen in such case)

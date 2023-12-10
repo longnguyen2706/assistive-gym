@@ -2,6 +2,8 @@ import time
 
 import numpy as np
 import pybullet as p
+
+from assistive_gym.envs.utils.debug_utils import timing
 from .agent import Agent
 from ..utils.human_utils import check_collision
 from scipy.spatial.transform import Rotation as R
@@ -123,6 +125,7 @@ class Robot(Agent):
         self.set_joint_angles(self.right_arm_joint_indices if right else self.left_arm_joint_indices, np.array(best_ik_angles))
         return False, np.array(best_ik_angles)
 
+    #@timing
     def ik_random_restarts2(self, right, target_pos, target_orient, max_iterations=1000, max_ik_random_restarts=40, success_threshold=0.03, randomize_limits=False, collision_objects=None, tool = None):
         '''
 
@@ -331,6 +334,7 @@ class Robot(Agent):
         return best_position, best_orientation, best_start_joint_poses
 
     #TODO: for the bed, robot seems to run under, so need to find a better way to model. Might be a different bed/ using AABB
+    #@timing
     def position_robot_toc2(self, base_pos, arms, start_pos_orient, target_pos_orients, human, base_euler_orient=np.zeros(3),
                            max_ik_iterations=200, max_ik_random_restarts=1, randomize_limits=False, attempts=100,
                            jlwki_restarts=1, check_env_collisions=False, right_side=True,
