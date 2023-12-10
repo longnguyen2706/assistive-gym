@@ -1,18 +1,22 @@
 import json
 import time
 
-from assistive_gym.mprocess_train import mp_train
+from assistive_gym.mprocess_train import mp_train, mp_read
 from assistive_gym.train import train
 import concurrent.futures
 
 #### Define dynamic configs ####
-PERSON_IDS = ['p001', 'p002', 'p003', 'p004', 'p005', 'p006', 'p007', 'p008', 'p009', 'p010', 'p011', 'p012',
-              'p013', 'p014', 'p015', 'p016', 'p017', 'p018', 'p019', 'p020', 'p021', 'p022', 'p023', 'p024', 'p025',
-              'p026', 'p027', 'p028', 'p029', 'p030', 'p031', 'p032', 'p033', 'p034', 'p035', 'p036', 'p037', 'p038',
-              'p039', 'p040', 'p041', 'p042', 'p043', 'p044', 'p045',
-              'p046', 'p047', 'p048', 'p049', 'p050', 'p051', 'p052', 'p053', 'p054', 'p055', 'p056', 'p057', 'p058',
-              'p059', 'p060', 'p061', 'p062', 'p063', 'p064', 'p065', 'p066', 'p067', 'p068', 'p069', 'p070', 'p071',
-              'p072', 'p073', 'p074', 'p075', 'p076', 'p077', 'p078', 'p079', 'p080', 'p081', 'p082', 'p083', 'p084',
+# PERSON_IDS = ['p001', 'p002', 'p003', 'p004', 'p005', 'p006', 'p007', 'p008', 'p009', 'p010', 'p011', 'p012',
+#               'p013', 'p014', 'p015', 'p016', 'p017', 'p018', 'p019', 'p020', 'p021', 'p022', 'p023', 'p024', 'p025',
+#               'p026', 'p027', 'p028', 'p029', 'p030', 'p031', 'p032', 'p033', 'p034', 'p035', 'p036', 'p037', 'p038',
+#               'p039', 'p040', 'p041', 'p042', 'p043', 'p044', 'p045',
+#               'p046', 'p047', 'p048', 'p049', 'p050', 'p051', 'p052', 'p053', 'p054', 'p055', 'p056', 'p057', 'p058',
+#               'p059', 'p060', 'p061', 'p062', 'p063', 'p064', 'p065', 'p066', 'p067', 'p068', 'p069', 'p070', 'p071',
+#               'p072', 'p073', 'p074', 'p075', 'p076', 'p077', 'p078', 'p079', 'p080', 'p081', 'p082', 'p083', 'p084',
+#               'p085', 'p086', 'p087', 'p088', 'p089', 'p090', 'p091', 'p092', 'p093', 'p094', 'p095', 'p096', 'p097',
+#               'p098', 'p099', 'p100', 'p101', 'p102']
+
+PERSON_IDS = ['p072', 'p073', 'p074', 'p075', 'p076', 'p077', 'p078', 'p079', 'p080', 'p081', 'p082', 'p083', 'p084',
               'p085', 'p086', 'p087', 'p088', 'p089', 'p090', 'p091', 'p092', 'p093', 'p094', 'p095', 'p096', 'p097',
               'p098', 'p099', 'p100', 'p101', 'p102']
 
@@ -21,10 +25,10 @@ SMPL_FILES = ['s01', 's02', 's03', 's04', 's05', 's06', 's07', 's08', 's09', 's1
                 's27', 's28', 's29', 's30', 's31', 's32', 's33', 's34', 's35', 's36', 's37', 's38', 's39', 's40', 's41',
                 's42', 's43', 's44', 's45']
 
-OBJECTS = ['pill']
+OBJECTS = ['cane']
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
-ENV = 'HumanComfort-v1_rerun'
+ENV = 'HumanComfort-v1_rerun_dec10'
 SEED = 1001
 SAVE_DIR = 'trained_models'
 RENDER_GUI = False
@@ -41,8 +45,8 @@ def get_dynamic_configs(re_run_failed_cases=False):
     for p in PERSON_IDS:
         for s in SMPL_FILES:
             for o in OBJECTS:
-                if re_run_failed_cases and (p, s, o) not in invalid_cases:
-                    continue
+                # if re_run_failed_cases and (p, s, o) not in invalid_cases:
+                #     continue
                 smpl_file = SMPL_DIR + p + '/' + s + '.pkl'
                 # print(p, s, o)
                 configs.append((p, smpl_file, o))
@@ -59,18 +63,16 @@ def get_invalid_cases():
 
     return invalid_cases
 
-
-
-
-
 def do_train(config):
     p, s, o = config
     print (p, s, o)
     mp_train(ENV, SEED, s, p, END_EFFECTOR,  SAVE_DIR, RENDER_GUI, SIMULATE_COLLISION, ROBOT_IK, o)
+    # mp_read(ENV, SEED, s, p, END_EFFECTOR,  SAVE_DIR, RENDER_GUI, SIMULATE_COLLISION, ROBOT_IK, o)
     return "Done training for {} {} {}".format(p, s, o)
 
 
 if __name__ == '__main__':
+    counter = 0
 
     configs = get_dynamic_configs(re_run_failed_cases=True)
     start = time.time()
@@ -80,11 +82,13 @@ if __name__ == '__main__':
         }
         for future in concurrent.futures.as_completed(futures):
             res = futures[future]
+            counter +=1
             try:
-                print('Done rendering for {}'.format(res))
+                print('Done training for {}'.format(res), 'progress: {} / {}'.format(counter, len(configs)) )
                 del futures[future]
             except Exception as exc:
                 print('%r generated an exception: %s' % (res, exc))
     executor.shutdown()
     end = time.time()
     print("Total time taken: {}".format(end - start))
+

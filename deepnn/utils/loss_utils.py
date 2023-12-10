@@ -1,6 +1,6 @@
 import numpy as np
 
-from deepnn.utils.data_parser import ModelOutput
+from utils.data_parser import ModelOutput
 
 
 def cal_joint_angle_loss(joints_gt, joints_pred):

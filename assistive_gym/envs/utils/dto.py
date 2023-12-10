@@ -91,6 +91,7 @@ class HandoverValidity:
         self.robot_dist_to_target = robot_dist_to_target
 
 
+
 class SearchResult:
     def __init__(self, joint_angles, cost, manipulability, dist, energy, torque, robot_setting,
                  handover_validity: HandoverValidity):

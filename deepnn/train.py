@@ -11,10 +11,10 @@ from torch.utils.data import random_split, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 from ray.tune.schedulers import ASHAScheduler
-from deepnn.model.variable_depth_net import VariableDepthNet
-from deepnn.preprocess.custom_dataset import CustomDataset
-from deepnn.utils.data_parser import ModelOutput, ModelOutputHumanOnly
-from deepnn.utils.loss_utils import cal_loss, cal_joint_angle_loss
+from model.variable_depth_net import VariableDepthNet
+from preprocess.custom_dataset import CustomDataset
+from utils.data_parser import ModelOutput, ModelOutputHumanOnly
+from utils.loss_utils import cal_loss, cal_joint_angle_loss
 
 INPUT_PATH = os.path.join(os.getcwd(), os.path.join('data', 'input'))
 OUTPUT_PATH = os.path.join(os.getcwd(), os.path.join('data', 'output'))
@@ -25,7 +25,7 @@ CHECKPOINT_PATH = os.path.join(os.getcwd(), os.path.join('checkpoints'))
 input_size = 82  # 72 + 10
 output_size = 32  # 32
 output_size_human_only = 15
-num_epochs = 500
+num_epochs = 100
 OUTPUT_HUMAN_ONLY = True
 
 def get_output_size():
@@ -41,10 +41,11 @@ def get_model(config):
 def get_data_split(batch_size, object):  # 60% train, 20% val, 20% test
     datasets = CustomDataset(INPUT_PATH, object, transform=None, human_only = OUTPUT_HUMAN_ONLY)
 
-    train_size, val_size = int(len(datasets) * 0.7), int(len(datasets) * 0.1)
+    train_size, val_size = int(len(datasets) * 0.8), int(len(datasets) * 0.0)
     test_size = len(datasets) - train_size - val_size
 
-    train_dataset, val_dataset, test_dataset = random_split(datasets, [train_size, val_size, test_size])
+    train_dataset, val_dataset, test_dataset = random_split(datasets, [train_size, val_size, test_size], generator=torch.Generator().manual_seed(42))
+    print ("train size: ", len(train_dataset), "val size: ", len(val_dataset), "test size: ", len(test_dataset))
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
@@ -98,12 +99,12 @@ def train(config, exp_name="ray", is_tune=True):
                     writer.add_scalar('training err', train_err, epoch * len(train_loader) + i)
                 if (i + 1) % 40 == 0:
                     # Calculate the validation loss
-                    val_loss, val_err = get_dataset_loss(model, criterion, val_loader, device)
+                    val_loss, val_err = get_dataset_loss(model, criterion, test_loader, device)
                     print(
                         f'Epoch [{epoch + 1}/{num_epochs}], Step [{i + 1}/{len(train_loader)}], Validation Loss: {val_loss:.4f}', f'Validation Error: {val_err:.4f}')
                     # Log the validation loss to TensorBoard
-                    writer.add_scalar('validation loss', val_loss, epoch * len(train_loader) + i)
-                    writer.add_scalar('validation err', val_err, epoch * len(train_loader) + i)
+                    writer.add_scalar('test loss', val_loss, epoch * len(train_loader) + i)
+                    writer.add_scalar('test err', val_err, epoch * len(train_loader) + i)
     writer.close()
     test_model(model, test_loader, criterion)
     # Save the model checkpoint with time stamp
@@ -321,9 +322,10 @@ if __name__ == '__main__':
     # train_with_ray(config)
 
     #train with best config
-    best_config = {'lr': 0.0011160391792473308, 'weight_decay': 4.984018369225781e-05, 'dropout': 0.009958794050846667,
-                   'layer_sizes': [6656, 768, 384, 96, 32], 'batch_size': 16, 'object': 'pill'}
-    train(best_config,exp_name='t4', is_tune=False)
+    # best_config = {'lr': 0.0011160391792473308, 'weight_decay': 4.984018369225781e-05, 'dropout': 0.009958794050846667,
+    #                'layer_sizes': [6656, 768, 384, 96, 32], 'batch_size': 16, 'object': 'pill'}
+    best_config = {'lr': 0.0012743689880716444, 'weight_decay': 1.8385226343464778e-05, 'layer_sizes': [384, 96, 64], 'batch_size': 16, 'dropout': 0.1,  'object': 'pill'}
+    train(best_config,exp_name='t7', is_tune=False)
 
     # load model and output angle to file
     # model_checkpoint= 'model_pill_epoch_200_2023-12-06 22:56:17.022110.ckpt'

@@ -143,6 +143,7 @@ def find_robot_ik_solution(env, end_effector: str, handover_obj: str, init_robot
                                                                                                              target_pos=target_pos,
                                                                                                              target_orient=None,
                                                                                                              max_iterations=100,
+                                                                                                             max_ik_random_restarts=1,
                                                                                                              randomize_limits=False,
                                                                                                              collision_objects={
                                                                                                                  furniture: None,
@@ -450,10 +451,10 @@ def cost_func(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.n
             # print(robot_penetrations)]
             robot_penetration_cost = w['robot_penetration'] * sum(robot_penetrations)
             cost += robot_penetration_cost
-    print('cost: ', cost / 100, 'object specific cost: ', o_specific_cost / 100, 'self_penetration_cost: ',
-          self_penetration_cost / 100, 'env_penetration_cost: ',
-          env_penetration_cost / 100, 'ik_cost: ', ik_cost / 100, 'robot_penetration_cost: ',
-          robot_penetration_cost / 100)
+    # print('cost: ', cost / 100, 'object specific cost: ', o_specific_cost / 100, 'self_penetration_cost: ',
+    #       self_penetration_cost / 100, 'env_penetration_cost: ',
+    #       env_penetration_cost / 100, 'ik_cost: ', ik_cost / 100, 'robot_penetration_cost: ',
+    #       robot_penetration_cost / 100)
 
     return cost / 100, manipulibility, dist, energy_final, torque
 
