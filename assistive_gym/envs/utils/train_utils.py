@@ -5,6 +5,7 @@ import pickle
 from datetime import datetime
 from typing import Set, Optional
 from assistive_gym.envs.utils.debug_utils import timing
+import gc
 
 import gym
 import numpy as np
@@ -899,7 +900,7 @@ def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik
     except Exception as e:
         print("exception: ", e)
     finally:
-        env.disconnect()
+        destroy_env(env)
 
 
 # TODO: add check distance from hand to object & robot collision
@@ -935,7 +936,7 @@ def render_nn_result(env_name, data, person_id, smpl_file, handover_obj, real=Fa
         keys = p.getKeyboardEvents()
         if ord('q') in keys:
             break
-    env.disconnect()
+    destroy_env(env)
 
 
 def render_pose(env_name, person_id, smpl_file):
@@ -947,8 +948,7 @@ def render_pose(env_name, person_id, smpl_file):
         keys = p.getKeyboardEvents()
         if ord('q') in keys:
             break
-    env.disconnect()
-
+    destroy_env(env)
 
 def save_train_result(save_dir, env_name, person_id, smpl_file, actions):
     save_dir = get_save_dir(save_dir, env_name, person_id, smpl_file)
@@ -963,6 +963,11 @@ def save_train_result(save_dir, env_name, person_id, smpl_file, actions):
                     actions[key] = old_actions[key]
     pickle.dump(actions, open(os.path.join(save_dir, "actions.pkl"), "wb"))
 
+
+def destroy_env(env):
+    env.disconnect()
+    env.close()
+    gc.collect()
 
 def find_new_penetrations(old_collisions: Set, new_collisions: Set, human, end_effector, penetration_threshold) -> int:
     # TODO: remove magic number (might need to check why self colllision happen in such case)

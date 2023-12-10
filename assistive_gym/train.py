@@ -1,10 +1,7 @@
-import gc
 import pickle
 import time
 
 import argparse
-import gym
-import importlib
 
 from assistive_gym.envs.utils.dto import RobotSetting
 from assistive_gym.envs.utils.log_utils import get_logger
@@ -298,9 +295,7 @@ def train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', 
     except Exception as e:
         return e 
     finally: 
-        env.disconnect()
-        env.close()
-        gc.collect()
+        destroy_env(env)
     
 
 
