@@ -15,9 +15,11 @@ for dir in $(ls $URDF_DIR); do
         # echo "$URDF_DIR/$dir/human.urdf"
         # echo "$URDF_OLDPATH"
        sed -i "s|$URDF_OLDPATH|$URDF_NEWPATH|g" "$URDF_DIR/$dir/human.urdf"
-    #    sed -i "s|$URDF_DIR/|$URDF_NEWPATH|g" "$URDF_DIR/$dir/human.urdf"
-    #    sed -i "s|URDF_DIR|$URDF_NEWPATH|g" "$URDF_DIR/$dir/human.urdf"
-    #    sed -i "s|\$\$/mnt/collectionssd/urdf///|$URDF_NEWPATH|g" "$URDF_DIR/$dir/human.urdf"
+       sed -i "s|$URDF_DIR/|$URDF_NEWPATH|g" "$URDF_DIR/$dir/human.urdf"
+       sed -i "s|URDF_DIR|$URDF_NEWPATH|g" "$URDF_DIR/$dir/human.urdf"
+       sed -i "s|\$\$/mnt/collectionssd/urdf///|$URDF_NEWPATH|g" "$URDF_DIR/$dir/human.urdf"
+       sed -i "s|/mnt/collectionssd/urdff|/mnt/collectionssd/urdf/f|g" "$URDF_DIR/$dir/human.urdf"
+
     fi
     count=$((count+1))
 done

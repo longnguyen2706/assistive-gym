@@ -23,10 +23,11 @@ SMPL_DIR = os.path.join(SYNTHETIC_DATA, 'smpl/smpl_data')
 URDF_DIR = os.path.join('/mnt/collectionssd', 'urdf')
 
 #### Define static configs ####
-OBJECTS = ['cane']
-FILES_FILTERS = [FileFilter('f_1', 0, 1249), FileFilter('m_10', 0, 1249)] 
+OBJECTS = ['pill']
+FILES_FILTERS = [FileFilter('f_2', 0, 499), FileFilter('m_11', 0, 499)] 
+# TODO: check failed cases in f1 0-1249 and m1 0-1249
 
-ENV = 'HumanComfort-v1_augmented_dec10'
+ENV = 'HumanComfort-v1_augmented_dec11'
 SEED = 1001
 SAVE_DIR = 'trained_models'
 RENDER_GUI = False
@@ -37,7 +38,7 @@ END_EFFECTOR = 'right_hand'
 exception_file = os.path.join(SAVE_DIR, ENV, 'exception.txt')
 
 ### DEFINE MULTIPROCESS SETTING ###
-NUM_WORKERS =1
+NUM_WORKERS =32
 
 def get_aug_files():
     files = []
@@ -56,25 +57,47 @@ def get_aug_files():
 #         if not d.startswith('f') or not d.startswith('m'):
 #             os.system('rm -rf ' + os.path.join(URDF_DIR, d))
 
-def get_dynamic_configs(re_run_failed_cases=False):
+
+def get_dynamic_configs(rerun_missing=False):
     # invalid_cases = get_invalid_cases()
     configs =[]
-    for f in get_aug_files():
+    filenames = []
+    filenames =  get_missing_files() if rerun_missing else get_aug_files()
+   
+    for f in filenames:
         smpl_file = os.path.join(SMPL_DIR,  f + '.pkl')
         for o in OBJECTS:
             configs.append((f, smpl_file, o))
+    configs.sort()
     print (len(configs), configs)
     return configs
 
 
-def get_invalid_cases():
-    # read the invalid cases from the json file
-    cases = json.loads(open('invalid_cases.json').read())
-    invalid_cases = set()
-    for case in cases:
-        invalid_cases.add(tuple(case))
+# def get_invalid_cases():
+#     # read the invalid cases from the json file
+#     cases = json.loads(open('invalid_cases.json').read())
+#     invalid_cases = set()
+#     for case in cases:
+#         invalid_cases.add(tuple(case))
 
-    return invalid_cases
+#     return invalid_cases
+
+def get_missing_files():
+    result_dir = os.path.join(SAVE_DIR, ENV)
+    result_files = os.listdir(result_dir)
+    miss_count = 0
+    processed_count =0
+    missed_files = []
+    for f in get_aug_files():
+        if f not in result_files:
+            # print (f)
+            miss_count +=1
+            missed_files.append(f)
+        else:
+            processed_count +=1
+    print ("processed: ", processed_count, "missed: ", miss_count)
+    return missed_files
+
 
 
 def do_train(config):
@@ -93,7 +116,7 @@ def do_train(config):
 if __name__ == '__main__':
     counter = 0
 
-    configs = get_dynamic_configs(re_run_failed_cases=False)
+    configs = get_dynamic_configs(rerun_missing=False)
     start = time.time()
     with concurrent.futures.ProcessPoolExecutor(max_workers=NUM_WORKERS) as executor:
         futures = {
@@ -110,3 +133,5 @@ if __name__ == '__main__':
     executor.shutdown()
     end = time.time()
     print("Total time taken: {}".format(end - start))
+
+    # get_missing_files()
