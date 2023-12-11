@@ -1,6 +1,7 @@
 import json
 import time
 
+from assistive_gym.mprocess_train import mp_train, mp_read
 from assistive_gym.train import train
 import concurrent.futures
 
@@ -14,19 +15,20 @@ import concurrent.futures
 #               'p072', 'p073', 'p074', 'p075', 'p076', 'p077', 'p078', 'p079', 'p080', 'p081', 'p082', 'p083', 'p084',
 #               'p085', 'p086', 'p087', 'p088', 'p089', 'p090', 'p091', 'p092', 'p093', 'p094', 'p095', 'p096', 'p097',
 #               'p098', 'p099', 'p100', 'p101', 'p102']
+
 PERSON_IDS = ['p072', 'p073', 'p074', 'p075', 'p076', 'p077', 'p078', 'p079', 'p080', 'p081', 'p082', 'p083', 'p084',
-               'p085', 'p086', 'p087', 'p088', 'p089', 'p090', 'p091', 'p092', 'p093', 'p094', 'p095', 'p096', 'p097',
-               'p098', 'p099', 'p100', 'p101', 'p102']
+              'p085', 'p086', 'p087', 'p088', 'p089', 'p090', 'p091', 'p092', 'p093', 'p094', 'p095', 'p096', 'p097',
+              'p098', 'p099', 'p100', 'p101', 'p102']
 
 SMPL_FILES = ['s01', 's02', 's03', 's04', 's05', 's06', 's07', 's08', 's09', 's10', 's11', 's12', 's13', 's14', 's15',
                 's16', 's17', 's18', 's19', 's20', 's21', 's22', 's23', 's24', 's25', 's26',
                 's27', 's28', 's29', 's30', 's31', 's32', 's33', 's34', 's35', 's36', 's37', 's38', 's39', 's40', 's41',
                 's42', 's43', 's44', 's45']
 
-OBJECTS = ['pill']
+OBJECTS = ['cane']
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
-ENV = 'HumanComfort-v1_dec10_2'
+ENV = 'HumanComfort-v1_rerun_dec10'
 SEED = 1001
 SAVE_DIR = 'trained_models'
 RENDER_GUI = False
@@ -68,6 +70,7 @@ def do_train(config):
     print (p, s, o)
     try:
         train(ENV, SEED, s, p, END_EFFECTOR,  SAVE_DIR, RENDER_GUI, SIMULATE_COLLISION, ROBOT_IK, o)
+        # mp_read(ENV, SEED, s, p, END_EFFECTOR,  SAVE_DIR, RENDER_GUI, SIMULATE_COLLISION, ROBOT_IK, o)
         return "Done training for {} {} {}".format(p, s, o)
     except Exception as e: 
         message= "Exception for {} {} {}, cause {} \n".format(p, s, o, e)
@@ -95,3 +98,4 @@ if __name__ == '__main__':
     executor.shutdown()
     end = time.time()
     print("Total time taken: {}".format(end - start))
+

@@ -22,6 +22,6 @@ class VariableDepthNet(nn.Module):
             x = F.relu(layer(x))
             x = F.dropout(x, self.dropout)
         x = self.layers[-1](x)  # No activation function on the output layer
-        x = F.tanh(x)
+        # x = F.tanh(x)
         return x
 

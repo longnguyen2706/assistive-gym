@@ -3,7 +3,7 @@ import torch
 import os
 from torch.utils.data import Dataset, DataLoader
 
-from deepnn.utils.data_parser import ModelInput, ModelOutput, ModelOutputHumanOnly
+from utils.data_parser import ModelInput, ModelOutput, ModelOutputHumanOnly
 
 SEARCH_INPUT_DIR = 'searchinput'
 SEARCH_OUTPUT_DIR = 'searchoutput'
@@ -47,9 +47,9 @@ class CustomDataset(Dataset):
                     object = os.path.basename(f).split('.')[0]
                     metric_file = os.path.join(subsub_metric_dir, object + '.json')
                     metric = json.load(open(metric_file, 'r'))
-                    if 'env_penetrations' not in metric and 'self_penetrations' not in metric: # valid
+                    # if 'env_penetrations' not in metric and 'self_penetrations' not in metric: # valid
                     # if 'env_penetrations' not in metric: # valid
-                        valid_output_files.append(f)
+                    valid_output_files.append(f)
 
                 # sub_outputfile_list.extend([os.path.join(subsub_output_dir, f) for f in os.listdir(subsub_output_dir) if f.endswith(object + '.json')])
                 if len(valid_output_files) >0:

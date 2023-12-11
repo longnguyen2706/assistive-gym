@@ -10,9 +10,9 @@ class Metrics:
     def cal_metrics(self):
         return self.env_collision / self.total, self.self_collision / self.total
 
+# METRICS_DIR = '../data/input/metrics2/HumanComfort-v1_rerun'
+
 METRICS_DIR = '../data/input/metrics'
-
-
 def get_data_metrics():
     person_ids = sorted([f for f in os.listdir(METRICS_DIR) if os.path.isdir(os.path.join(METRICS_DIR, f))])
     counter = {
@@ -58,8 +58,8 @@ def get_data_metrics():
     # save invalid cases
     invalid_cases = sorted(list(invalid_cases))
     print ( len(invalid_cases), invalid_cases)
-    with open('../../invalid_cases.json', 'w') as outfile:
-        outfile.write(json.dumps(invalid_cases, indent=4))
+    # with open('../../invalid_cases.json', 'w') as outfile:
+    #     outfile.write(json.dumps(invalid_cases, indent=4))
 
 
 if __name__ == '__main__':

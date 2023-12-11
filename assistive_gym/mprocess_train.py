@@ -25,7 +25,7 @@ class SubEnvProcess(multiprocessing.Process):
         self.env = None  # will be created
 
         self.env_config = env_config
-        self.search_config =                                                                                    search_config
+        self.search_config =  search_config
         self.debug_id = id
 
     def run(self):
@@ -337,6 +337,12 @@ def mp_train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl
     return action
 
 
+def mp_read(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', person_id='p001',
+             end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_physics=False,
+             robot_ik=False, handover_obj=None):
+    # save_train_result(save_dir, env_name, person_id, smpl_file, handover_obj, robot_ik)
+    read_train_result(save_dir, env_name, person_id, smpl_file, handover_obj, robot_ik)
+
 def run_trial(init_result, main_env_task_queue, main_env_result_queue, sub_env_task_queue, sub_env_result_queue):
     timestep = 0
     mean_cost, mean_dist, mean_m, mean_energy, mean_torque, mean_evolution, mean_reba = [], [], [], [], [], [], []
@@ -440,6 +446,20 @@ def save_train_result(save_dir, env_name, person_id, smpl_file, actions, key, ha
     dumped = json.dumps(actions[key]['wrt_pelvis'], cls=NumpyEncoder)
     with open(os.path.join(save_dir, handover_obj + ".json"), "w") as f:
         f.write(dumped)
+
+def read_train_result(save_dir, env_name, person_id, smpl_file, handover_obj, robot_ik):
+    key = get_actions_dict_key(handover_obj, robot_ik)
+    save_dir2 = get_save_dir(save_dir, env_name, person_id, smpl_file)
+    if os.path.exists(os.path.join(save_dir, "actions.pkl")):
+        actions = pickle.load(open(os.path.join(save_dir2, "actions.pkl"), "rb"))
+        # save_train_result(save_dir, env_name, person_id, smpl_file, actions, key, handover_obj)
+        validity= json.dumps(actions[key]['validity'].__dict__)
+
+        metric_folder =  get_save_dir('metrics', env_name, person_id, smpl_file)
+        os.makedirs(metric_folder, exist_ok=True)
+        print(os.path.join(metric_folder, handover_obj + ".json"))
+        with open(os.path.join(metric_folder, handover_obj + ".json"), "w") as f:
+            f.write(validity)
 
 
 if __name__ == '__main__':
