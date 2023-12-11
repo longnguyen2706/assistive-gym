@@ -2,12 +2,12 @@ import pickle
 import time
 
 import argparse
+import traceback
 
 from assistive_gym.envs.utils.dto import RobotSetting
 from assistive_gym.envs.utils.log_utils import get_logger
 from assistive_gym.envs.utils.point_utils import eulidean_distance
 from assistive_gym.envs.utils.train_utils import *
-from experimental.urdf_name_resolver import get_urdf_filepath, get_urdf_folderpath
 
 import argparse
 import json
@@ -235,9 +235,9 @@ def init_env(env, handover_obj):
 
 def train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', person_id='p001',
           end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False,
-          robot_ik=False, handover_obj=None):
+          robot_ik=False, handover_obj=None, is_augmented = False):
     start_time = time.time()
-    env = make_env(env_name, person_id, smpl_file, handover_obj, True)
+    env = make_env(env_name, person_id, smpl_file, handover_obj, True, is_augmented=is_augmented)
     try: 
         init_result: MainEnvInitResult = init_env(env, handover_obj)
 
@@ -293,6 +293,8 @@ def train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', 
         print("training time (s): ", time.time() - start_time)
         return action
     except Exception as e:
+        print ("Exception when training: ", e)
+        print(traceback.format_exc())
         return e 
     finally: 
         destroy_env(env)

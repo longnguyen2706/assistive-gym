@@ -379,7 +379,7 @@ def step_forward(env, x0, env_object_ids, end_effector="right_hand"):
         prev_angle = cur_joint_angles
 
 
-def make_env(env_name, person_id, smpl_file, object_name, coop=False, seed=1001):
+def make_env(env_name, person_id, smpl_file, object_name, coop=False, seed=1001, is_augmented = False):
     if not coop:
         env = gym.make('assistive_gym:' + env_name)
     else:
@@ -389,7 +389,7 @@ def make_env(env_name, person_id, smpl_file, object_name, coop=False, seed=1001)
     env.seed(seed)
     env.set_smpl_file(smpl_file)
 
-    human_urdf_path = get_urdf_filepath(get_urdf_folderpath(person_id))
+    human_urdf_path = get_urdf_filepath(get_urdf_folderpath(person_id, is_augmented=is_augmented))
     env.set_human_urdf(human_urdf_path)
 
     task = get_task_from_handover_object(object_name)
@@ -788,7 +788,7 @@ def init_optimizer2(x0, sigma, lower_bounds, upper_bounds):  # for cma library
     return es
 
 
-def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik: bool, save_to_file=False, save_metrics=False):
+def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik: bool, save_to_file=False, save_metrics=False, is_augmented = False):
     print("rendering person {} and smpl file {}".format(person_id, smpl_file))
     save_dir = get_save_dir(save_dir, env_name, person_id, smpl_file)
     actions = pickle.load(open(os.path.join(save_dir, "actions.pkl"), "rb"))
@@ -811,7 +811,7 @@ def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik: boo
                 print("no robot pose found")
 
             render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik, robot_pose,
-                          robot_joint_angles)
+                          robot_joint_angles, is_augmented=is_augmented)
     else:
         key = get_actions_dict_key(handover_obj, robot_ik)
         if key not in actions:
@@ -825,12 +825,12 @@ def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik: boo
             robot_joint_angles = action["wrt_pelvis"]["robot_joint_angles"]
         except Exception as e:
             print("no robot pose found")
-        render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik, robot_pose, robot_joint_angles, save_to_file=save_to_file, save_metrics=save_metrics)
+        render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik, robot_pose, robot_joint_angles, save_to_file=save_to_file, save_metrics=save_metrics, is_augmented=is_augmented)
 
 
 def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik: bool, robot_pose=None,
-                  robot_joint_angles=None, save_to_file=False, save_metrics = False):
-    env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=handover_obj, person_id=person_id)
+                  robot_joint_angles=None, save_to_file=False, save_metrics = False, is_augmented = False):
+    env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=handover_obj, person_id=person_id, is_augmented=is_augmented)
     if not save_to_file and not save_metrics:
         env.render()  # need to call reset after render
     env.reset()
@@ -939,8 +939,8 @@ def render_nn_result(env_name, data, person_id, smpl_file, handover_obj, real=Fa
     destroy_env(env)
 
 
-def render_pose(env_name, person_id, smpl_file):
-    env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=None, person_id=person_id)
+def render_pose(env_name, person_id, smpl_file, is_augmented = False):
+    env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=None, person_id=person_id, is_augmented=is_augmented)
     env.render()  # need to call reset after render
     env.reset()
     # eyeline_side = get_eyeline_side(env.human)
