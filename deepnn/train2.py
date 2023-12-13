@@ -53,7 +53,7 @@ def get_data_split(batch_size, object):  # 60% train, 20% val, 20% test
     train_dataset, val_dataset, test_dataset = random_split(datasets, [train_size, val_size, test_size], generator=torch.Generator().manual_seed(42))
     print ("train size: ", len(train_dataset), "val size: ", len(val_dataset), "test size: ", len(test_dataset))
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, num_workers=0) # TODO: Change back to true
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
 
@@ -82,12 +82,20 @@ def train(config, exp_name="ray", is_tune=True):
             # print (features.shape, labels.shape)
             # Move data to the defined device
             features, gt_angles = train_data['feature'], train_data['label']
+            # print (train_data['feature_path'][0], train_data['label_path'][0])
+            # print (features[0][:72])
+            # print ("gt_angles: ", gt_angles[0])
+
             # TODO: move to device here or later
             # Forward pass
             pred_angles = model(features.to(device))
-
+            # print(features[0][:72])
             gt_poses = prep_smpl_data(features, gt_angles, torch.ones((features.shape[0], 1)))
             pred_poses = prep_smpl_data(features, pred_angles, torch.ones((features.shape[0], 1)))
+            # print("gt_poses: ", gt_poses[0][:72])
+            # forward_smpl(torch.reshape(features[0], (1, -1)), vis=True)
+            # forward_smpl(torch.reshape(gt_poses[0], (1, -1)), vis=True)
+            # forward_smpl(torch.reshape(pred_poses[0], (1, -1)), vis=True)
 
             _, gt_pos = forward_smpl(gt_poses)
             _, pred_pos = forward_smpl(pred_poses)
@@ -137,24 +145,24 @@ def prep_smpl_data(features, joint_angles, end_effectors):
     """
      :param features: [batch_size, 72 + 10]
     """
-    new_features = torch.zeros(features.shape[0], 72 + 10)
+    new_features = features.detach().clone()
     for i in range(features.shape[0]):
-        new_features[i][72:] = features[i][72:]
-        new_features[i][:72] = merge_end_effector_joint_angle(features[i][:72], joint_angles[i], end_effectors[i])
+        # new_features[i][72:] = features[i][72:]
+        new_features[i][:72] = merge_end_effector_joint_angle(new_features[i][:72], joint_angles[i], end_effectors[i])
 
     return new_features
 
-def forward_smpl(features):
+def forward_smpl(features, vis=False):
     """
     :param features: [batch_size, 72 + 10]
     :return: verts: [batch_size, 6890, 3]
     :return: j_pos: [batch_size, 24, 3]
     """
     # TODO: use the correct f/ m
-    default_model_path = os.path.join(os.getcwd(), "../examples/data/SMPL_NEUTRAL.pkl")
+    default_model_path = os.path.join(os.getcwd(), "../examples/data/SMPL_MALE.pkl")
     parser = SMPL_Parser(default_model_path)
 
-    verts, j_pos = parser.get_joints_verts(features[:, :72], features[:, 72:])
+    verts, j_pos = parser.get_joints_verts(features[:, :72], features[:, 72:], th_trans=None,  vis=vis)
     return verts, j_pos
 
 
@@ -373,7 +381,7 @@ if __name__ == '__main__':
     best_config = {'lr': 0.01, 'weight_decay': 4.984018369225781e-05, 'dropout': 0.0,
                    'layer_sizes': [8192, 2048, 512, 128, 32], 'batch_size': 64, 'object': 'pill'}
     # # best_config = {'lr': 0.002, 'weight_decay': 1.8385226343464778e-05, 'layer_sizes': [384, 96, 64], 'batch_size': 16, 'dropout': 0.05,  'object': 'pill'}
-    train(best_config,exp_name='t16_aug_2', is_tune=False)
+    train(best_config,exp_name='t17_aug_2', is_tune=False)
 
     # load model and output angle to file
     # model_checkpoint= 'model_pill_epoch_200_2023-12-06 22:56:17.022110.ckpt'

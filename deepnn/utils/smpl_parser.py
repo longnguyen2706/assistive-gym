@@ -1,10 +1,11 @@
 # This script is borrowed and extended from https://github.com/nkolot/SPIN/blob/master/models/hmr.py
 # Adhere to their licence to use this script
-
+import smplx
 import torch
 import numpy as np
 import trimesh
 from smplx import SMPL as _SMPL
+import pyrender
 
 SMPL_BONE_ORDER_NAMES = [
     "Pelvis",
@@ -55,14 +56,13 @@ def merge_end_effector_joint_angle(pose, joint_angles, end_effector):  # TODO: m
     joint_angles: Bx15
     """
 
-    new_pose = pose[:]  # real joint angle
-
     joint_indices = LEFT_HAND_JOINT_INDICES if end_effector == 0 else RIGHT_HAND_JOINT_INDICES
-
+    # print(joint_indices)
     for i in range(len(joint_angles) // 3):
         joint_idx = joint_indices[i]
-        new_pose[joint_idx * 3:(joint_idx + 1) * 3] = joint_angles[i * 3:(i + 1) * 3]
-    return new_pose
+        # print (joint_idx*3, (joint_idx+1)*3, i*3, (i+1)*3)
+        pose[joint_idx * 3:(joint_idx + 1) * 3] = joint_angles[i * 3:(i + 1) * 3]
+    return pose
 class SMPL_Parser(_SMPL):
     def __init__(self, *args, **kwargs):
         """SMPL model constructor
@@ -114,37 +114,23 @@ class SMPL_Parser(_SMPL):
             will be selected
         """
         super(SMPL_Parser, self).__init__(*args, **kwargs)
-        # self.device = next(self.parameters()).device
-        # self.joint_names = SMPL_BONE_ORDER_NAMES
-        # self.joint_axes = {x: np.identity(3) for x in self.joint_names}
-        # self.joint_dofs = {x: ["z", "y", "x"] for x in self.joint_names}
-        # self.joint_range = {
-        #     x: np.hstack([np.ones([3, 1]) * -np.pi, np.ones([3, 1]) * np.pi])
-        #     for x in self.joint_names
-        # }
-        # self.joint_range["L_Elbow"] *= 4
-        # self.joint_range["R_Elbow"] *= 4
-        #
-        # self.contype = {1: self.joint_names}
-        # self.conaffinity = {1: self.joint_names}
-        # self.zero_pose = torch.zeros(1, 72).float()
         self.device = torch.device("cpu")
 
     def forward(self, *args, **kwargs):
         smpl_output = super(SMPL_Parser, self).forward(*args, **kwargs)
         return smpl_output
 
-    def get_joints_verts(self, pose, th_betas=None, th_trans=None): # TOOD: make the inference run on GPU (currently need to move to CPU)
+    def get_joints_verts(self, pose, th_betas=None, th_trans=None, vis=False): # TOOD: make the inference run on GPU (currently need to move to CPU)
         """
         Pose should be batch_size x 72
         """
-        if pose.shape[-1] != 72:
-            pose = pose.reshape(-1, 72)
-        pose = pose.float()
+        # if pose.shape[-1] != 72:
+        #     # pose = pose.reshape(-1, 72)
+        # pose = pose.float()
         pose = pose.to(self.device)
 
         if th_betas is not None:
-            th_betas = th_betas.float()
+            # th_betas = th_betas.float()
 
             if th_betas.shape[-1] == 16:
                 th_betas = th_betas[:, :10]
@@ -155,23 +141,21 @@ class SMPL_Parser(_SMPL):
         smpl_output = self.forward(
             betas=th_betas,
             transl=th_trans,
-            body_pose=pose[:, 3:],
-            global_orient=pose[:, :3],
+            body_pose=torch.reshape(pose[:, 3:], (-1, 23, 3)),
+            global_orient=torch.reshape(pose[:, :3], (-1, 1, 3)),
+            gender='neutral'
         )
         vertices = smpl_output.vertices
         joints = smpl_output.joints[:, :24]
         betas = smpl_output.betas
-
-        self.render(vertices[0])
-        # joints = smpl_output.joints[:,JOINST_TO_USE]
+        if vis:
+            self.render(vertices)
         return vertices, joints
 
     def render(self, vertices):
         """
         Render the vertices using pyrender
         """
-        import pyrender
-
         if vertices.shape[0] == 1:
             vertices = vertices.squeeze(0)
         mesh = trimesh.Trimesh(vertices.detach().cpu().numpy(), self.faces)
@@ -179,54 +163,3 @@ class SMPL_Parser(_SMPL):
         scene = pyrender.Scene()
         scene.add(mesh)
         pyrender.Viewer(scene, use_raymond_lighting=True)
-
-    # def get_mesh_offsets(self, pose, betas=torch.zeros(1, 10), flatfoot=False, transl=None):
-    #     with torch.no_grad():
-    #         joint_names = self.joint_names
-    #         if pose is not None:
-    #             verts, Jtr = self.get_joints_verts(pose, th_betas=betas, th_trans=transl)
-    #         else:
-    #             verts, Jtr = self.get_joints_verts(self.zero_pose, th_betas=betas, th_trans=transl)
-    #
-    #         verts_np = verts.detach().cpu().numpy()
-    #         verts = verts_np[0]
-    #
-    #         if flatfoot:
-    #             feet_subset = verts[:, 1] < np.min(verts[:, 1]) + 0.01
-    #             verts[feet_subset, 1] = np.mean(verts[feet_subset][:, 1])
-    #
-    #         smpl_joint_parents = self.parents.cpu().numpy()
-    #
-    #         joint_pos = Jtr[0].numpy()
-    #         joint_offsets = {
-    #             joint_names[c]: (joint_pos[c] - joint_pos[p]) if c > 0 else joint_pos[c]
-    #             for c, p in enumerate(smpl_joint_parents)
-    #         }
-    #         joint_parents = {
-    #             x: joint_names[i] if i >= 0 else None
-    #             for x, i in zip(joint_names, smpl_joint_parents)
-    #         }
-    #         # override joint limit with our limit setting
-    #         for j in range(0, len(self.joint_names)):
-    #             joint_name = self.joint_names[j]
-    #             # if joint_name in JOINT_SETTING:
-    #             #     joint_limit = np.array(JOINT_SETTING[joint_name].limit)
-    #             #     self.joint_range[joint_name] = joint_limit / 180.0 * np.pi
-    #         print(self.joint_range)
-    #         # skin_weights = smpl_layer.th_weights.numpy()
-    #         skin_weights = self.lbs_weights.numpy()
-    #
-    #         return (
-    #             verts,
-    #             joint_pos,
-    #             skin_weights,
-    #             joint_names,
-    #             joint_offsets,
-    #             joint_parents,
-    #             self.joint_axes,
-    #             self.joint_dofs,
-    #             self.joint_range,
-    #             self.contype,
-    #             self.conaffinity,
-    #         )
-
