@@ -18,16 +18,15 @@ class FileFilter:
         return False
 
 #### Define path configs ####
-SYNTHETIC_DATA= '/home/louis/Documents/Projects/synthetic_dataset/'
+SYNTHETIC_DATA= '/home/louis/Documents/hrl/synthetic_dataset/'
 SMPL_DIR = os.path.join(SYNTHETIC_DATA, 'smpl/smpl_data')
-URDF_DIR = os.path.join('/mnt/collectionssd', 'urdf')
+URDF_DIR = os.path.join(SYNTHETIC_DATA, 'urdf')
 
 #### Define static configs ####
-OBJECTS = ['pill']
-FILES_FILTERS = [FileFilter('f_2', 0, 499), FileFilter('m_11', 0, 499)] 
-# TODO: check failed cases in f1 0-1249 and m1 0-1249
+OBJECTS = ['cane']
+FILES_FILTERS = [FileFilter('f_2', 0, 1999), FileFilter('m_11', 0, 1999)] 
 
-ENV = 'HumanComfort-v1_augmented_dec11'
+ENV = 'HumanComfort-v1_augmented_cane'
 SEED = 1001
 SAVE_DIR = 'trained_models'
 RENDER_GUI = False
@@ -38,7 +37,7 @@ END_EFFECTOR = 'right_hand'
 exception_file = os.path.join(SAVE_DIR, ENV, 'exception.txt')
 
 ### DEFINE MULTIPROCESS SETTING ###
-NUM_WORKERS =32
+NUM_WORKERS =24
 
 def get_aug_files():
     files = []
@@ -56,7 +55,6 @@ def get_aug_files():
 #     for d in dirs:
 #         if not d.startswith('f') or not d.startswith('m'):
 #             os.system('rm -rf ' + os.path.join(URDF_DIR, d))
-
 
 def get_dynamic_configs(rerun_missing=False):
     # invalid_cases = get_invalid_cases()
@@ -98,8 +96,6 @@ def get_missing_files():
     print ("processed: ", processed_count, "missed: ", miss_count)
     return missed_files
 
-
-
 def do_train(config):
     p, s, o = config
     print (p, s, o)
@@ -133,5 +129,3 @@ if __name__ == '__main__':
     executor.shutdown()
     end = time.time()
     print("Total time taken: {}".format(end - start))
-
-    # get_missing_files()
