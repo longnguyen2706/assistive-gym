@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import datetime
+from timeit import timeit
 
 import numpy as np
 import torch
@@ -12,6 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from ray.tune.schedulers import ASHAScheduler
 
+from deepnn.utils.misc import timing
 from utils.smpl_parser import SMPL_Parser, merge_end_effector_joint_angle
 from deepnn.preprocess.augmented_dataset import AugmentedDataset
 from model.variable_depth_net import VariableDepthNet
@@ -32,6 +34,8 @@ output_size_human_only = 15
 num_epochs = 500
 OUTPUT_HUMAN_ONLY = True
 
+default_model_path = os.path.join(os.getcwd(), "../examples/data/SMPL_MALE.pkl")
+smpl_parser =  SMPL_Parser(default_model_path)
 def get_output_size():
     return output_size_human_only if OUTPUT_HUMAN_ONLY else output_size
 
@@ -45,15 +49,15 @@ def get_model(config):
 def get_data_split(batch_size, object):  # 60% train, 20% val, 20% test
     smpl_dataset = SMPLDataset(INPUT_PATH, object, transform=None, human_only = OUTPUT_HUMAN_ONLY)
     augmented_dataset = AugmentedDataset(AUGMENTED_PATH, object, transform=None, human_only = OUTPUT_HUMAN_ONLY)
-    datasets = torch.utils.data.ConcatDataset([smpl_dataset, augmented_dataset])
-    # datasets = smpl_dataset
+    # datasets = torch.utils.data.ConcatDataset([smpl_dataset, augmented_dataset])
+    datasets = smpl_dataset
     train_size, val_size = int(len(datasets) * 0.8), int(len(datasets) * 0.0)
     test_size = len(datasets) - train_size - val_size
 
     train_dataset, val_dataset, test_dataset = random_split(datasets, [train_size, val_size, test_size], generator=torch.Generator().manual_seed(42))
     print ("train size: ", len(train_dataset), "val size: ", len(val_dataset), "test size: ", len(test_dataset))
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, num_workers=0) # TODO: Change back to true
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0) # TODO: Change back to true
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
 
@@ -79,16 +83,20 @@ def train(config, exp_name="ray", is_tune=True):
     # Train the model
     for epoch in range(num_epochs):
         for i, train_data in enumerate(train_loader):
+            model.train(True)
             # print (features.shape, labels.shape)
             # Move data to the defined device
             features, gt_angles = train_data['feature'], train_data['label']
+            features = features.to(device)
+            gt_angles = gt_angles.to(device)
             # print (train_data['feature_path'][0], train_data['label_path'][0])
             # print (features[0][:72])
             # print ("gt_angles: ", gt_angles[0])
 
             # TODO: move to device here or later
             # Forward pass
-            pred_angles = model(features.to(device))
+            optimizer.zero_grad()
+            pred_angles = model(features)
             # print(features[0][:72])
             gt_poses = prep_smpl_data(features, gt_angles, torch.ones((features.shape[0], 1)))
             pred_poses = prep_smpl_data(features, pred_angles, torch.ones((features.shape[0], 1)))
@@ -102,21 +110,21 @@ def train(config, exp_name="ray", is_tune=True):
             loss = cal_loss(pred_angles.to(device), pred_pos.to(device), gt_angles.to(device), gt_pos.to(device), criterion)
 
             # Backward pass and optimization
-            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
             if is_tune:
                 # Report the metric to optimize
                 tune.report(loss=loss.item())
             else:
-                if (i + 1) % 100 == 0:
+                if (i + 1) % 50 == 0:
                     # Log the loss value to TensorBoard
                     train_loss, train_err, = get_dataset_loss(model, criterion, train_loader, device)
                     print(f'Epoch [{epoch + 1}/{num_epochs}], Step [{i + 1}/{len(train_loader)}], Loss: {loss.item():.4f}, Train Loss: {train_loss:.4f}', f'Train Error: {train_err:.4f}')
                     writer.add_scalar('loss', loss, epoch * len(train_loader) + i)
                     writer.add_scalar('training loss', train_loss, epoch * len(train_loader) + i)
                     writer.add_scalar('training err', train_err, epoch * len(train_loader) + i)
-                if (i + 1) % 100 == 0:
+                if (i + 1) % 50 == 0:
                     # Calculate the validation loss
                     val_loss, val_err = get_dataset_loss(model, criterion, test_loader, device)
                     print(
@@ -141,6 +149,7 @@ def cal_loss(predict_angles, predict_j_pos, gt_angles, gt_j_pos, criterion):
     return 100*(angle_loss + joint_pos_loss)
 
 
+# @timing
 def prep_smpl_data(features, joint_angles, end_effectors):
     """
      :param features: [batch_size, 72 + 10]
@@ -152,6 +161,7 @@ def prep_smpl_data(features, joint_angles, end_effectors):
 
     return new_features
 
+# @timing
 def forward_smpl(features, vis=False):
     """
     :param features: [batch_size, 72 + 10]
@@ -159,14 +169,12 @@ def forward_smpl(features, vis=False):
     :return: j_pos: [batch_size, 24, 3]
     """
     # TODO: use the correct f/ m
-    default_model_path = os.path.join(os.getcwd(), "../examples/data/SMPL_MALE.pkl")
-    parser = SMPL_Parser(default_model_path)
-
-    verts, j_pos = parser.get_joints_verts(features[:, :72], features[:, 72:], th_trans=None,  vis=vis)
+    verts, j_pos = smpl_parser.get_joints_verts(features[:, :72], features[:, 72:], th_trans=None,  vis=vis)
     return verts, j_pos
 
-
+@timing
 def get_dataset_loss(model, criterion, loader, device):
+    model.eval()
     with torch.no_grad():
         # Calculate the loss
         loss = 0.0
@@ -190,37 +198,13 @@ def get_dataset_loss(model, criterion, loader, device):
         # print ("loss: ", loss, "len: ", len(loader.dataset))
         average_val_loss = loss / len(loader.dataset)
         average_err = err / len(loader.dataset)
-        print (len(loader.dataset))
-    model.train()
     return average_val_loss, average_err
 
 def cal_per_joint_err(labels, outputs):
-    # label = label.cpu().numpy()
-    # output = output.cpu().numpy()
-    # label_obj = get_output_class().from_tensor(label)
-    # output_obj = get_output_class().from_tensor(output)
     err = torch.norm ((labels - outputs),p=1, dim=1) * 180 / labels.shape[1]/ np.pi #/ labels.shape[1]
     err = torch.mean(err)
-
-    # err = {}
-    # if OUTPUT_HUMAN_ONLY:  # only calculate human joint angle loss
-    #     # human_joint_angle_loss = cal_joint_angle_loss(label_obj.human_joint_angles, output_obj.human_joint_angles)
-    #     # print(f'Human joint angle err (deg): {human_joint_angle_loss}', ' file: ', test_data['feature_path'][i])
-    #     err['human_joint_angle_loss'] = human_joint_angle_loss
-    # else:
-    #     human_joint_angle_loss, robot_joint_angle_loss, robot_base_loss, robot_base_rot_loss = cal_loss(
-    #         label_obj, output_obj)
-    #     # print(
-    #     #     f'Human joint angle err (deg): {human_joint_angle_loss}, Robot joint angle err (deg): {robot_joint_angle_loss}, '
-    #     #     f'robot base pos err (m): {robot_base_loss}, robot base orient err: {robot_base_rot_loss}')
-    #     err = {
-    #         'human_joint_angle_loss': human_joint_angle_loss,
-    #         'robot_joint_angle_loss': robot_joint_angle_loss,
-    #         'robot_base_loss': robot_base_loss,
-    #         'robot_base_rot_loss': robot_base_rot_loss
-    #     }
-    # return err
     return err
+
 def test_model(model, test_loader, criterion):
     """
     Evaluate the performance of a neural network model on a test dataset.

@@ -7,6 +7,8 @@ import trimesh
 from smplx import SMPL as _SMPL
 import pyrender
 
+from deepnn.utils.misc import timing
+
 SMPL_BONE_ORDER_NAMES = [
     "Pelvis",
     "L_Hip",
@@ -114,12 +116,12 @@ class SMPL_Parser(_SMPL):
             will be selected
         """
         super(SMPL_Parser, self).__init__(*args, **kwargs)
-        self.device = torch.device("cpu")
 
     def forward(self, *args, **kwargs):
         smpl_output = super(SMPL_Parser, self).forward(*args, **kwargs)
         return smpl_output
 
+    # @timing
     def get_joints_verts(self, pose, th_betas=None, th_trans=None, vis=False): # TOOD: make the inference run on GPU (currently need to move to CPU)
         """
         Pose should be batch_size x 72
@@ -127,16 +129,17 @@ class SMPL_Parser(_SMPL):
         # if pose.shape[-1] != 72:
         #     # pose = pose.reshape(-1, 72)
         # pose = pose.float()
-        pose = pose.to(self.device)
+        # pose = pose.to(self.device)
 
         if th_betas is not None:
             # th_betas = th_betas.float()
 
             if th_betas.shape[-1] == 16:
                 th_betas = th_betas[:, :10]
-            th_betas = th_betas.to(self.device)
+            # th_betas = th_betas.to(self.device)
         if th_trans is not None:
-            th_trans = th_trans.to(self.device)
+            # th_trans = th_trans.to(self.device)
+            pass
 
         smpl_output = self.forward(
             betas=th_betas,
