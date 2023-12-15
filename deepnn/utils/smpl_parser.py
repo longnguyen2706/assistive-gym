@@ -7,7 +7,7 @@ import trimesh
 from smplx import SMPL as _SMPL
 import pyrender
 
-from deepnn.utils.misc import timing
+from utils.misc import timing
 
 SMPL_BONE_ORDER_NAMES = [
     "Pelvis",

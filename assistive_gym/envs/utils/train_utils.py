@@ -4,7 +4,6 @@ import os
 import pickle
 from datetime import datetime
 from typing import Set, Optional
-from assistive_gym.envs.utils.debug_utils import timing
 import gc
 
 import gym
@@ -16,9 +15,9 @@ from cmaes import CMA
 from deprecation import deprecated
 from torch.utils.hipify.hipify_python import bcolors
 
-from assistive_gym.envs.utils.dto import HandoverObject, HandoverObjectConfig, MaximumHumanDynamics, HumanInfo
+from assistive_gym.envs.utils.dto import HandoverObject, HandoverObjectConfig, MaximumHumanDynamics, HumanInfo, \
+    NumpyEncoder
 from assistive_gym.envs.utils.log_utils import get_logger
-from assistive_gym.envs.utils.plot_utils import plot_cmaes_metrics, plot_mean_evolution
 from assistive_gym.envs.utils.point_utils import fibonacci_evenly_sampling_range_sphere, eulidean_distance
 from experimental.urdf_name_resolver import get_urdf_filepath, get_urdf_folderpath
 
@@ -120,11 +119,11 @@ def find_robot_ik_solution(env, end_effector: str, handover_obj: str, init_robot
     """
 
     human, robot, furniture, tool = env.human, env.robot, env.furniture, env.tool
-    if not init_robot_setting:
-        robot_base_pos, robot_base_orient, side = find_robot_start_pos_orient(env, end_effector)
-    else:
-        robot_base_pos, robot_base_orient, side = init_robot_setting.base_pos, init_robot_setting.base_orient, init_robot_setting.robot_side
-
+    # if not init_robot_setting:
+    #     robot_base_pos, robot_base_orient, side = find_robot_start_pos_orient(env, end_effector)
+    # else:
+    #     robot_base_pos, robot_base_orient, side = init_robot_setting.base_pos, init_robot_setting.base_orient, init_robot_setting.robot_side
+    robot_base_pos, robot_base_orient, side = find_robot_start_pos_orient(env, end_effector)
     ee_pos, target_pos = find_ee_ik_goal(human, end_effector, handover_obj)
     # p.addUserDebugLine(ee_pos, target_pos, [1, 0, 0], 5, 0.1)
 
@@ -132,7 +131,7 @@ def find_robot_ik_solution(env, end_effector: str, handover_obj: str, init_robot
                                                                                    [(target_pos, None)],
                                                                                    [(target_pos, None)], human,
                                                                                    base_euler_orient=robot_base_orient,
-                                                                                   attempts=5,
+                                                                                   attempts=10,
                                                                                    random_position=0.3,
                                                                                    max_ik_iterations=50,
                                                                                    collision_objects={
@@ -209,7 +208,7 @@ def find_robot_start_pos_orient(env, end_effector="right_hand", initial_side=Non
         #     side = eyeline_side
         # print ("robot side: ", side, eyeline_side)
         side = "right" if ee_pos[0] > bed_pos[0] else "left"
-        print ("robot side: ", side, " end effector: ", end_effector)
+        # print ("robot side: ", side, " end effector: ", end_effector)
         bed_xx, bed_yy, bed_zz = bed_bb[1] if side == "right" else bed_bb[0]
 
         # find robot base and bb
@@ -1084,14 +1083,3 @@ def translate_bed_to_realworld(env, cord):
     return np.array(cord) - corner
 
 
-class NumpyEncoder(json.JSONEncoder):
-    """ Special json encoder for numpy types """
-
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        elif isinstance(obj, np.floating):
-            return float(obj)
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        return json.JSONEncoder.default(self, obj)

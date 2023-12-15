@@ -1,7 +1,6 @@
 import json
 import os
 from datetime import datetime
-from timeit import timeit
 
 import numpy as np
 import torch
@@ -13,9 +12,9 @@ from torch.utils.tensorboard import SummaryWriter
 
 from ray.tune.schedulers import ASHAScheduler
 
-from deepnn.utils.misc import timing
+from utils.misc import timing
 from utils.smpl_parser import SMPL_Parser, merge_end_effector_joint_angle
-from deepnn.preprocess.augmented_dataset import AugmentedDataset
+from preprocess.augmented_dataset import AugmentedDataset
 from model.variable_depth_net import VariableDepthNet
 from preprocess.custom_dataset import SMPLDataset
 from utils.data_parser import ModelOutput, ModelOutputHumanOnly
@@ -50,16 +49,16 @@ def get_data_split(batch_size, object):  # 60% train, 20% val, 20% test
     smpl_dataset = SMPLDataset(INPUT_PATH, object, transform=None, human_only = OUTPUT_HUMAN_ONLY)
     augmented_dataset = AugmentedDataset(AUGMENTED_PATH, object, transform=None, human_only = OUTPUT_HUMAN_ONLY)
     # datasets = torch.utils.data.ConcatDataset([smpl_dataset, augmented_dataset])
-    datasets = smpl_dataset
+    datasets = augmented_dataset
     train_size, val_size = int(len(datasets) * 0.8), int(len(datasets) * 0.0)
     test_size = len(datasets) - train_size - val_size
 
     train_dataset, val_dataset, test_dataset = random_split(datasets, [train_size, val_size, test_size], generator=torch.Generator().manual_seed(42))
     print ("train size: ", len(train_dataset), "val size: ", len(val_dataset), "test size: ", len(test_dataset))
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0) # TODO: Change back to true
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=8) # TODO: Change back to true
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
 
     return train_loader, val_loader, test_loader
 
@@ -93,7 +92,6 @@ def train(config, exp_name="ray", is_tune=True):
             # print (features[0][:72])
             # print ("gt_angles: ", gt_angles[0])
 
-            # TODO: move to device here or later
             # Forward pass
             optimizer.zero_grad()
             pred_angles = model(features)
@@ -107,7 +105,7 @@ def train(config, exp_name="ray", is_tune=True):
 
             _, gt_pos = forward_smpl(gt_poses)
             _, pred_pos = forward_smpl(pred_poses)
-            loss = cal_loss(pred_angles.to(device), pred_pos.to(device), gt_angles.to(device), gt_pos.to(device), criterion)
+            loss = cal_loss(pred_angles, pred_pos, gt_angles, gt_pos, criterion)
 
             # Backward pass and optimization
             loss.backward()
@@ -281,7 +279,7 @@ def train_with_ray(config):
     # Run the experiment
     result = tune.run(
         train,
-        resources_per_trial={"cpu": 1},
+        resources_per_trial={"cpu": 1, "gpu": 1},
         config=config,
         num_samples=1,
         scheduler=scheduler,
@@ -344,16 +342,16 @@ if __name__ == '__main__':
     # }
 
     # config = {
-    #     "lr": tune.loguniform(1e-5, 0.25 * 1e-1),
+    #     "lr": tune.loguniform(1e-4, 0.25 * 1e-1),
     #     "weight_decay": tune.loguniform(1e-5, 1e-1),
     #     # "dropout": tune.loguniform(0.5*1e-2, 0.5*1e-1),
     #     # "dropout": tune.loguniform(1e-2, 1e-1),
     #     "dropout": tune.choice([0.025,0.05,0.1]),
     #     "layer_sizes": [
-    #         tune.grid_search(list(range(1024, 8192, 512))),
-    #         tune.grid_search(list(range(512, 4096, 256))), tune.grid_search(list(range(256, 1024, 128))),
-    #                     tune.grid_search(list(range(64, 128, 32))), tune.grid_search(list(range(32, 64, 16)))],
-    #     "batch_size": tune.choice([16]),
+    #         tune.grid_search(list(range(1024, 8192, 1024))),
+    #         tune.grid_search(list(range(512, 4096, 512))), tune.grid_search(list(range(256, 1024, 256))),
+    #                     tune.grid_search(list(range(64, 256, 64))), tune.grid_search(list(range(32, 64, 32)))],
+    #     "batch_size": tune.choice([64]),
     #     "object": "pill"
     # }
     # # # hyper param tuning and train with best config
@@ -362,10 +360,14 @@ if __name__ == '__main__':
     # config: {'lr': 0.0032217072742219115, 'weight_decay': 0.0010331504822697504, 'dropout': 0.025,
     #          'layer_sizes': [1536, 1792, 256, 64, 32], 'batch_size': 16, 'object': 'pill'}
     #train with best config
-    best_config = {'lr': 0.01, 'weight_decay': 4.984018369225781e-05, 'dropout': 0.0,
-                   'layer_sizes': [8192, 2048, 512, 128, 32], 'batch_size': 64, 'object': 'pill'}
-    # # best_config = {'lr': 0.002, 'weight_decay': 1.8385226343464778e-05, 'layer_sizes': [384, 96, 64], 'batch_size': 16, 'dropout': 0.05,  'object': 'pill'}
-    train(best_config,exp_name='t17_aug_2', is_tune=False)
+    # best_config = {'lr': 0.001, 'weight_decay': 4.984018369225781e-05, 'dropout': 0.0,
+    #                'layer_sizes': [8192, 2048, 512, 128, 32], 'batch_size': 64, 'object': 'pill'}
+    # # # best_config = {'lr': 0.002, 'weight_decay': 1.8385226343464778e-05, 'layer_sizes': [384, 96, 64], 'batch_size': 16, 'dropout': 0.05,  'object': 'pill'}
+
+    best_config = {'lr': 0.00034736271280210167, 'weight_decay': 0.012936570242830842, 'dropout': 0.025, 'layer_sizes': [7168, 3584, 256, 128, 32], 'batch_size': 64, 'object': 'pill'}
+
+
+    train(best_config,exp_name='t18_aug_2', is_tune=False)
 
     # load model and output angle to file
     # model_checkpoint= 'model_pill_epoch_200_2023-12-06 22:56:17.022110.ckpt'

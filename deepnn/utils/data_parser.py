@@ -1,7 +1,7 @@
 import torch
 from pytorch3d import transforms as t3d
 
-from deepnn.utils.misc import timing
+from utils.misc import timing
 
 
 # Copied from pytorch3d. We currently using 0.3.0, but the latest version is 0.7.5 and they only distribute it via conda

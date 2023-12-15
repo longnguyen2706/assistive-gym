@@ -1,3 +1,4 @@
+import json
 from typing import Optional
 
 import numpy as np
@@ -20,6 +21,43 @@ class HandoverObject(Enum):
         else:
             raise ValueError(f"Invalid handover object label: {label}")
 
+class NumpyEncoder(json.JSONEncoder):
+    """ Special json encoder for numpy types """
+
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
+
+class PosTransPos:
+    def __init__(self, original, transform):
+        self.original = original
+        self.transform = transform
+
+    def to_json(self):
+        return json.dumps(self, default=lambda o: o.__dict__,
+                          sort_keys=True, indent=4, cls=NumpyEncoder)
+
+# TODO: Fix non serializable error
+class HumanRobotResult:
+    def __init__(self, pelvis: list, joint_angles: list, ee: PosTransPos, ik_target: PosTransPos,
+                 robot: PosTransPos, robot_joint_angles: list):
+        self.pelvis =  pelvis
+        self.joint_angles = joint_angles
+        self.ee = ee
+        self.ik_target = ik_target
+        self.robot = robot
+        self.robot_joint_angles = robot_joint_angles
+        self.ik_target = ik_target
+
+    def to_json(self):
+        print (self.__dict__)
+        return json.dumps(self, default=lambda o: o.__dict__,
+                          sort_keys=True, indent=4, cls=NumpyEncoder)
 
 class HumanInfo:
     def __init__(self, original_angles: np.ndarray, original_link_positions: np.ndarray, original_self_collisions,
@@ -51,6 +89,10 @@ class InitRobotSetting:
         self.base_pos = base_pos
         self.base_orient = base_orient
         self.robot_side = side
+
+    def to_json(self):
+        return json.dumps(self, default=lambda o: o.__dict__,
+                          sort_keys=True, indent=4, cls=NumpyEncoder)
 
 
 class HandoverObjectConfig:
@@ -89,6 +131,14 @@ class HandoverValidity:
         self.new_env_penetrations = new_env_penetrations
         self.robot_penetrations = robot_penetrations
         self.robot_dist_to_target = robot_dist_to_target
+
+    def to_json(self):
+        return {
+            "new_self_penetrations": json.dumps(self.new_self_penetrations, cls=NumpyEncoder),
+            "new_env_penetrations": json.dumps(self.new_env_penetrations, cls=NumpyEncoder),
+            "robot_penetrations": json.dumps(self.robot_penetrations, cls=NumpyEncoder),
+            "robot_dist_to_target": self.robot_dist_to_target
+        }
 
 
 
@@ -179,3 +229,6 @@ class TrialResult:
         self.mean_kinematic_result = mean_kinematic_result
         self.robot_setting = robot_setting
         self.handover_validity = handover_validity
+
+
+

@@ -1,22 +1,10 @@
-import pickle
-import time
-
-import argparse
 import traceback
 
-from assistive_gym.envs.utils.dto import RobotSetting
-from assistive_gym.envs.utils.log_utils import get_logger
-from assistive_gym.envs.utils.point_utils import eulidean_distance
-from assistive_gym.envs.utils.train_utils import *
-
 import argparse
-import json
-import multiprocessing
-import os
 import time
+
 from assistive_gym.envs.utils.dto import RobotSetting, InitRobotSetting, EnvConfig, SearchConfig, MainEnvInitResult, \
-    SearchResult, MainEnvProcessInitTask, MainEnvProcessTask, MainEnvProcessTaskType, MainEnvProcessRenderTask, \
-    MainEnvProcessGetHumanRobotInfoTask, TrialResult, HandoverValidity, BestKinematicResult, MeanKinematicResult
+    SearchResult, TrialResult, HandoverValidity, BestKinematicResult, MeanKinematicResult, PosTransPos, HumanRobotResult
 from assistive_gym.envs.utils.train_utils import *
 
 
@@ -42,7 +30,7 @@ def render_robot(env, robot_setting):
     env.tool.reset_pos_orient()
 
 def check_validity(handover_validity: HandoverValidity):
-    if len(handover_validity.new_env_penetrations) or len(handover_validity.new_self_penetrations):
+    if len(handover_validity.new_env_penetrations) or len(handover_validity.new_self_penetrations) or handover_validity.robot_dist_to_target>0.1:
         return False
     return True
 
@@ -53,6 +41,22 @@ def get_human_robot_info(env, result: TrialResult, env_config: EnvConfig):
     human.set_joint_angles(human.controllable_joint_indices, result.joint_angles)
     render_robot(env, robot_setting)
     _, ik_target_pos = find_ee_ik_goal(human, end_effector, handover_obj)
+
+    # return HumanRobotResult(
+    #     pelvis=human.get_pos_orient(human.human_dict.get_fixed_joint_id("pelvis"), center_of_mass=True),
+    #     joint_angles=result.joint_angles,
+    #     ee=PosTransPos(human.get_ee_pos_orient(end_effector), translate_wrt_human_pelvis(human, np.array(
+    #         human.get_ee_pos_orient(end_effector)[0]), np.array(
+    #         human.get_ee_pos_orient(end_effector)[
+    #             1]))),
+    #     ik_target=PosTransPos([np.array(ik_target_pos), np.array(robot_setting.gripper_orient)],
+    #                           translate_wrt_human_pelvis(human, np.array(ik_target_pos),
+    #                                                      np.array(robot_setting.gripper_orient))),
+    #     robot=PosTransPos([np.array(robot_setting.base_pos), np.array(robot_setting.base_orient)],
+    #                       translate_wrt_human_pelvis(human, np.array(robot_setting.base_pos),
+    #                                                  np.array(robot_setting.base_orient))),
+    #     robot_joint_angles=robot_setting.robot_joint_angles)
+
 
     return {
         'pelvis': human.get_pos_orient(human.human_dict.get_fixed_joint_id("pelvis"), center_of_mass=True),
@@ -147,7 +151,6 @@ def run_trial(env, init_result: MainEnvInitResult, search_config: SearchConfig):
         timestep += 1
         solutions = optimizer.ask()
         fitness_values, dists, manipus, energy_changes, torques = [], [], [], [], []
-            
 
         for joint_angles in solutions:
             sr: SearchResult = get_search_result(env, joint_angles, search_config)
@@ -178,7 +181,8 @@ def run_trial(env, init_result: MainEnvInitResult, search_config: SearchConfig):
         if timestep >50 and validity_count / len(solutions) / timestep < 0.25:  # stuck
             LOG.info(
                 f"{bcolors.OKBLUE} Stuck at step: {timestep}, validity count: {validity_count}, validity ratio: {validity_count / len(solutions) / timestep}, {bcolors.ENDC}")
-            break
+            # reinit optimizer
+            optimizer = init_optimizer(x0, 0.05, init_result.joint_lower_limits, init_result.joint_upper_limits)
 
     # # get the kinematic result for best solution
     sr: SearchResult = get_search_result(env, best_angle, search_config)
@@ -264,7 +268,7 @@ def train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', 
         action = {
             "solution": best_trial_result.joint_angles,
             "cost": best_trial_result.best_kinematic_result.cost,
-            "end_effector": end_effector,
+            "end_effector": env_config.end_effector,
             "m": best_trial_result.best_kinematic_result.m,
             "dist": best_trial_result.best_kinematic_result.dist,
             "energy": best_trial_result.best_kinematic_result.energy,
@@ -315,7 +319,16 @@ def save_train_result(save_dir, env_name, person_id, smpl_file, actions, key, ha
 
     pickle.dump(actions, open(os.path.join(save_dir, "actions.pkl"), "wb"))
 
-    dumped = json.dumps(actions[key]['wrt_pelvis'], cls=NumpyEncoder)
+    json_data = {}
+    action = actions[key]
+
+    
+    for key in ["cost", "end_effector", "m", "dist", "energy", "torque"]:
+        json_data[key] = action[key]
+    json_data["wrt_pelvis"] = json.dumps(action["wrt_pelvis"], cls=NumpyEncoder)
+    json_data["validity"] = action["validity"].to_json()
+    dumped = json.dumps(json_data, indent=4) # dump the whole action dict
+    # dumped = jsonpickle.encode (json_data) # dump the whole action dict
     with open(os.path.join(save_dir, handover_obj + ".json"), "w") as f:
         f.write(dumped)
     f.close()
