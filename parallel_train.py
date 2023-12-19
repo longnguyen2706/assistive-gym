@@ -7,6 +7,7 @@ import gym
 
 from experimental.urdf_name_resolver import get_urdf_filepath, get_urdf_folderpath
 
+# TODO: clean up
 NUM_WORKERS = 5
 class HandoverObject(Enum):
     PILL = "pill"

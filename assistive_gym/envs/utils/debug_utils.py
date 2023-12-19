@@ -40,3 +40,19 @@ def add_debug_line_wrt_parent_frame(pos, orient, parent_id, parent_link_id):
                                 parentObjectUniqueId=parent_id,
                                 parentLinkIndex=parent_link_id)
 
+
+from functools import wraps
+from time import time
+
+def timing(f):
+    @wraps(f)
+    def wrap(*args, **kw):
+        ts = time()
+        result = f(*args, **kw)
+        te = time()
+        # print('func:%r args:[%r, %r] took: %2.4f sec' % \
+        #   (f.__name__, args, kw, te-ts))
+        print('func:%r took: %2.4f sec' % \
+          (f.__name__, te-ts))
+        return result
+    return wrap

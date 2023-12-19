@@ -70,7 +70,7 @@ if __name__ == "__main__":
     parser.add_argument('--mode', default='generate', help='Mode: generate or test')
     args = parser.parse_args()
     if args.mode == 'generate':
-        generate_urdf(args)
-        # generate_urdfs()
+        # generate_urdf(args)
+        generate_urdfs()
     else:
         raise NotImplementedError()

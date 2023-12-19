@@ -12,7 +12,7 @@ class HumanComfortEnv(AssistiveEnv):
     def __init__(self):
         self.robot = StretchDex('wheel_right')
         self.human = HumanUrdf()
-
+        self.gpu = True
         super(HumanComfortEnv, self).__init__(robot=self.robot, human=self.human, task='', obs_robot_len=len(self.robot.controllable_joint_indices), 
                                          obs_human_len=len(self.human.controllable_joint_indices), render=False) #hardcoded
         self.target_pos = np.array([0, 0, 0])
@@ -75,7 +75,7 @@ class HumanComfortEnv(AssistiveEnv):
                 return human_obs
 
             return {'robot': robot_obs, 'human': human_obs}
-        return robot_obsdrinking
+        return robot_obs
 
     def reset_human(self, is_collision):
         if not is_collision:

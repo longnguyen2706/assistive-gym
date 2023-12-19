@@ -1,137 +1,175 @@
-import pickle
-import time
+import traceback
 
 import argparse
-import gym
-import importlib
+import time
 
-from assistive_gym.envs.utils.dto import RobotSetting
-from assistive_gym.envs.utils.log_utils import get_logger
-from assistive_gym.envs.utils.point_utils import eulidean_distance
+from assistive_gym.envs.utils.dto import RobotSetting, InitRobotSetting, EnvConfig, SearchConfig, MainEnvInitResult, \
+    SearchResult, TrialResult, HandoverValidity, BestKinematicResult, MeanKinematicResult, PosTransPos, HumanRobotResult
 from assistive_gym.envs.utils.train_utils import *
-from experimental.urdf_name_resolver import get_urdf_filepath, get_urdf_folderpath
+
 
 LOG = get_logger()
-MAX_ITERATIONS = 100
-def train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', person_id='p001',
-          end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False,
-          robot_ik=False, handover_obj=None):
-    start_time = time.time()
-    # init
-    env = make_env(env_name, person_id, smpl_file, handover_obj, coop=True)
-    print("person_id: ", person_id, smpl_file)
-    if render:
-        env.render()
-    env.reset()
-    p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_file), [0, 0, 1], textColorRGB=[1, 0, 0])
+MAX_ITERATION = 500
+RENDER_UI = False
+MAX_TRIAL = 1
+DEBUG= False
 
-    human, robot, furniture, plane = env.human, env.robot, env.furniture, env.plane
+def cal_object_specific_cost(env, handover_object, bedside, end_effector):
+    if handover_object == 'cup':
+        return get_gripper_z_angle_cost(env, bedside, GRIPPER_Z_ANGLE_LIMIT['cup'])
+    elif handover_object == 'cane':
+        return cal_ee_bedside_dist_cost(env, bedside, end_effector, GRIPPER_BEDSIDE_OFFSET['cane'])
+    else:
+        return 0
+    
+def render_robot(env, robot_setting):
+    # print('render robot', robot_setting.robot_joint_angles)
+    env.robot.set_base_pos_orient(robot_setting.base_pos, robot_setting.base_orient)
+    env.robot.set_joint_angles(
+        env.robot.right_arm_joint_indices if robot_setting.robot_side == 'right' else env.robot.left_arm_joint_indices,
+        robot_setting.robot_joint_angles)
+    env.tool.reset_pos_orient()
 
-    # choose end effector
-    handover_obj_config = get_handover_object_config(handover_obj, env)
-    if handover_obj_config and handover_obj_config.end_effector:  # reset the end effector based on the object
-        human.reset_controllable_joints(handover_obj_config.end_effector)
-        end_effector = handover_obj_config.end_effector
+def check_validity(handover_validity: HandoverValidity):
+    if len(handover_validity.new_env_penetrations) or len(handover_validity.new_self_penetrations) or handover_validity.robot_dist_to_target>0.1:
+        return False
+    return True
 
-    # init collision check
-    env_object_ids = [furniture.body, plane.body]  # set env object for collision check
-    human_link_robot_collision = get_human_link_robot_collision(human, end_effector)
+def get_human_robot_info(env, result: TrialResult, env_config: EnvConfig): 
+    human, robot= env.human, env.robot
+    robot_setting, end_effector, handover_obj = result.robot_setting, env_config.end_effector, env_config.handover_obj
+    
+    human.set_joint_angles(human.controllable_joint_indices, result.joint_angles)
+    render_robot(env, robot_setting)
+    _, ik_target_pos = find_ee_ik_goal(human, end_effector, handover_obj)
 
-    # init original info and max dynamics
-    original_info = build_original_human_info(human, env_object_ids, end_effector)
-    max_dynamics = build_max_human_dynamics(env, end_effector, original_info)
+    # return HumanRobotResult(
+    #     pelvis=human.get_pos_orient(human.human_dict.get_fixed_joint_id("pelvis"), center_of_mass=True),
+    #     joint_angles=result.joint_angles,
+    #     ee=PosTransPos(human.get_ee_pos_orient(end_effector), translate_wrt_human_pelvis(human, np.array(
+    #         human.get_ee_pos_orient(end_effector)[0]), np.array(
+    #         human.get_ee_pos_orient(end_effector)[
+    #             1]))),
+    #     ik_target=PosTransPos([np.array(ik_target_pos), np.array(robot_setting.gripper_orient)],
+    #                           translate_wrt_human_pelvis(human, np.array(ik_target_pos),
+    #                                                      np.array(robot_setting.gripper_orient))),
+    #     robot=PosTransPos([np.array(robot_setting.base_pos), np.array(robot_setting.base_orient)],
+    #                       translate_wrt_human_pelvis(human, np.array(robot_setting.base_pos),
+    #                                                  np.array(robot_setting.base_orient))),
+    #     robot_joint_angles=robot_setting.robot_joint_angles)
 
-    # draw original ee pos
-    original_ee_pos = human.get_pos_orient(human.human_dict.get_dammy_joint_id(end_effector), center_of_mass=True)[0]
-    draw_point(original_ee_pos, size=0.01, color=[0, 1, 0, 1])
 
+    return {
+        'pelvis': human.get_pos_orient(human.human_dict.get_fixed_joint_id("pelvis"), center_of_mass=True),
+        'joint_angles': result.joint_angles,
+        "ee": {
+            'original': human.get_ee_pos_orient(end_effector),
+            'transform': translate_wrt_human_pelvis(human, np.array(
+                human.get_ee_pos_orient(end_effector)[0]),
+                                                    np.array(
+                                                        human.get_ee_pos_orient(end_effector)[
+                                                            1])),
+        },
+        "ik_target": {
+            'original': [np.array(ik_target_pos), np.array(robot_setting.gripper_orient)],  # [pos, orient
+            'transform': translate_wrt_human_pelvis(human, np.array(ik_target_pos),
+                                                    np.array(robot_setting.gripper_orient)),
+        },
+        'robot': {
+            'original': [np.array(robot_setting.base_pos), np.array(robot_setting.base_orient)],
+            'transform': translate_wrt_human_pelvis(human, np.array(robot_setting.base_pos),
+                                                    np.array(robot_setting.base_orient)),
+        },
+        'robot_joint_angles': robot_setting.robot_joint_angles
+    }
+
+
+def get_search_result(env, joint_angles, search_config: SearchConfig):
+    # TODO: remove reset_controllable_joints
+    human, end_effector, handover_obj = env.human, search_config.handover_obj_config.end_effector, search_config.handover_obj
+    # print("s: ", s, 'human', human.controllable_joint_indices, 'end_effector', end_effector, 'handover_obj', handover_obj)
+    # set angle directly
+    human.reset_controllable_joints(end_effector)
+    human.set_joint_angles(human.controllable_joint_indices, joint_angles)  # force set joint angle
+
+    # check collision
+    env_collisions, self_collisions = human.check_env_collision(search_config.env_object_ids,
+                                                                end_effector), human.check_self_collision(end_effector)
+    new_self_penetrations, new_env_penetrations = detect_collisions(search_config.original_info, self_collisions,
+                                                                    env_collisions,
+                                                                    human,
+                                                                    end_effector)
+    # print ('end_effector', end_effector)
+    # cal dist to bedside
+    object_specific_cost = cal_object_specific_cost(env, handover_obj, search_config.initial_robot_setting.robot_side,
+                                                    end_effector)
+    if search_config.robot_ik:  # solve robot ik when doing training
+        has_valid_robot_ik, robot_joint_angles, robot_base_pos, robot_base_orient, robot_side, robot_penetrations, robot_dist_to_target, gripper_orient = find_robot_ik_solution(
+            env,
+            end_effector,
+            handover_obj, search_config.initial_robot_setting)
+    else:
+        ee_link_idx = human.human_dict.get_dammy_joint_id(end_effector)
+        ee_collision_radius = COLLISION_OBJECT_RADIUS[search_config.handover_obj]  # 20cm range
+        ee_collision_body = human.add_collision_object_around_link(ee_link_idx,
+                                                                   radius=ee_collision_radius)  # TODO: ignore collision with hand`
+
+        ee_collision_body_pos, ee_collision_body_orient = human.get_ee_collision_shape_pos_orient(end_effector,
+                                                                                                  ee_collision_radius)
+        p.resetBasePositionAndOrientation(ee_collision_body, ee_collision_body_pos, ee_collision_body_orient,
+                                          physicsClientId=env.id)
+        has_valid_robot_ik = True
+
+    cost, m, dist, energy, torque = cost_func(human, end_effector, joint_angles,
+                                              search_config.original_info.original_ee_pos, search_config.original_info,
+                                              search_config.max_dynamics, new_self_penetrations, new_env_penetrations,
+                                              has_valid_robot_ik, robot_penetrations, robot_dist_to_target,
+                                              0, search_config.handover_obj_config, search_config.robot_ik,
+                                              object_specific_cost)
+
+    robot_setting = RobotSetting(robot_base_pos, robot_base_orient, robot_joint_angles, robot_side,
+                                 gripper_orient)
+    handover_validity = HandoverValidity(new_self_penetrations, new_env_penetrations, robot_penetrations,
+                                         robot_dist_to_target)
+    # print ("sub process ", robot_setting.robot_joint_angles)
+    # restore joint angle
+    # human.set_joint_angles(human.controllable_joint_indices, original_info.angles)
+    return SearchResult(joint_angles, cost, m, dist, energy, torque, robot_setting, handover_validity)
+
+
+def run_trial(env, init_result: MainEnvInitResult, search_config: SearchConfig):
+    # print (init_result, search_config)
     timestep = 0
     mean_cost, mean_dist, mean_m, mean_energy, mean_torque, mean_evolution, mean_reba = [], [], [], [], [], [], []
-
     # init optimizer
-    x0 = np.array(original_info.angles)
-    optimizer = init_optimizer(x0, 0.1, human.controllable_joint_lower_limits, human.controllable_joint_upper_limits)
+    x0 = np.array(init_result.original_info.angles)
+    optimizer = init_optimizer(x0, 0.05, init_result.joint_lower_limits, init_result.joint_upper_limits)
 
-    if not robot_ik:  # simulate collision
-        ee_link_idx = human.human_dict.get_dammy_joint_id(end_effector)
-        ee_collision_radius = COLLISION_OBJECT_RADIUS[handover_obj]  # 20cm range
-        ee_collision_body = human.add_collision_object_around_link(ee_link_idx,
-                                                                   radius=ee_collision_radius)  # TODO: ignore collision with hand
+    best_cost, best_angle, best_robot_setting = float('inf'), None, None
+    validity_count = 0
 
-    smpl_name = os.path.basename(smpl_file)
-    p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_name), [0, 0, 1], textColorRGB=[1, 0, 0])
-
-    while timestep < MAX_ITERATIONS and not optimizer.stop():
+    while timestep < MAX_ITERATION and not optimizer.stop():
         timestep += 1
         solutions = optimizer.ask()
-        best_cost, best_angle, best_robot_setting = float('inf'), None, None
         fitness_values, dists, manipus, energy_changes, torques = [], [], [], [], []
-        for s in solutions:
 
-            if simulate_collision:
-                # step forward env
-                angle_dist, _, env_collisions, _ = step_forward(env, s, env_object_ids, end_effector)
-                self_collisions = human.check_self_collision()
-                new_self_collision, new_env_collision = detect_collisions(original_info, self_collisions,
-                                                                          env_collisions, human, end_effector)
-                # cal dist to bedside
-                dist_to_bedside = cal_dist_to_bedside(env, end_effector)
-                cost, m, dist, energy, torque = cost_func(human, end_effector, s, original_ee_pos, original_info,
-                                                          max_dynamics, new_self_collision, new_env_collision,
-                                                          has_valid_robot_ik,
-                                                          angle_dist, handover_obj_config, robot_ik, dist_to_bedside)
-                env.reset_human(is_collision=True)
-                LOG.info(
-                    f"{bcolors.OKGREEN}timestep: {timestep}, cost: {cost}, angle_dist: {angle_dist} , dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
-            else:
-                # set angle directly
-                human.set_joint_angles(human.controllable_joint_indices, s)  # force set joint angle
+        for joint_angles in solutions:
+            sr: SearchResult = get_search_result(env, joint_angles, search_config)
+            # print (result)
+            fitness_values.append(sr.cost)
+            dists.append(sr.dist)
+            manipus.append(sr.manipulability)
+            energy_changes.append(sr.energy)
+            torques.append(sr.torque)
 
-                # check collision
-                env_collisions, self_collisions = human.check_env_collision(
-                    env_object_ids), human.check_self_collision()
-                new_self_collision, new_env_collision = detect_collisions(original_info, self_collisions,
-                                                                          env_collisions, human, end_effector)
-                # move_robot(env)
-                # cal dist to bedside
-                dist_to_bedside = cal_dist_to_bedside(env, end_effector)
-                if robot_ik:  # solve robot ik when doing training
-                    has_valid_robot_ik, robot_joint_angles, robot_base_pos, robot_base_orient, robot_side, robot_penetrations, robot_dist_to_target, gripper_orient = find_robot_ik_solution(
-                        env, end_effector, handover_obj)
-                else:
-                    ee_collision_body_pos, ee_collision_body_orient = human.get_ee_collision_shape_pos_orient(
-                        end_effector, ee_collision_radius)
-                    p.resetBasePositionAndOrientation(ee_collision_body, ee_collision_body_pos,
-                                                      ee_collision_body_orient, physicsClientId=env.id)
-                    has_valid_robot_ik = True
-
-                cost, m, dist, energy, torque, reba = cost_func(human, end_effector, s, original_ee_pos, original_info,
-                                                                max_dynamics, new_self_collision, new_env_collision,
-                                                                has_valid_robot_ik, robot_penetrations,
-                                                                robot_dist_to_target,
-                                                                0, handover_obj_config, robot_ik, dist_to_bedside)
-                LOG.info(
-                    f"{bcolors.OKGREEN}timestep: {timestep}, cost: {cost}, dist: {dist}, manipulibility: {m}, energy: {energy}, torque: {torque}{bcolors.ENDC}")
-                if cost < best_cost:
-                    best_cost = cost
-                    best_angle = s
-                    best_robot_setting = RobotSetting(robot_base_pos, robot_base_orient, robot_joint_angles, robot_side,
-                                                      gripper_orient)
-                # restore joint angle
-                # human.set_joint_angles(human.controllable_joint_indices, original_info.angles)
-
-                # robot_ee = robot.get_pos_orient(robot.right_end_effector, center_of_mass=True)
-                # robot_ee_transform = translate_wrt_human_pelvis(human, robot_ee[0], robot_ee[1])
-                #
-                # add_debug_line_wrt_parent_frame(robot_ee_transform[0], robot_ee_transform[1], human.body,
-                #                           human.human_dict.get_fixed_joint_id("pelvis"))
-
-            fitness_values.append(cost)
-            dists.append(dist)
-            manipus.append(m)
-            energy_changes.append(energy)
-            torques.append(torque)
-
+            if check_validity(sr.handover_validity):
+                validity_count += 1
+            if sr.cost < best_cost and check_validity(sr.handover_validity):
+                best_cost = sr.cost
+                best_angle = sr.joint_angles
+                best_robot_setting = sr.robot_setting
+        if timestep%10 ==0: 
+            LOG.info ("step: ", timestep)
         optimizer.tell(solutions, fitness_values)
 
         mean_evolution.append(np.mean(solutions, axis=0))
@@ -141,69 +179,164 @@ def train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', 
         mean_energy.append(np.mean(energy_changes, axis=0))
         mean_torque.append(np.mean(torques, axis=0))
 
+        if timestep >50 and validity_count / len(solutions) / timestep < 0.25:  # stuck
+            LOG.info(
+                f"{bcolors.OKBLUE} Stuck at step: {timestep}, validity count: {validity_count}, validity ratio: {validity_count / len(solutions) / timestep}, {bcolors.ENDC}")
+            # reinit optimizer
+            optimizer = init_optimizer(x0, 0.05, init_result.joint_lower_limits, init_result.joint_upper_limits)
+
+    # # get the kinematic result for best solution
+    sr: SearchResult = get_search_result(env, best_angle, search_config)
+    best_dist, best_m, best_energy, best_torque = sr.dist, sr.manipulability, sr.energy, sr.torque
+
+    best_kinematic_result = BestKinematicResult(best_energy, best_cost, best_dist, best_m, best_torque)
+    mean_kinematic_result = MeanKinematicResult(mean_energy, mean_cost, mean_dist, mean_m, mean_torque, mean_evolution)
+    result = TrialResult(best_angle, best_kinematic_result, mean_kinematic_result, sr.robot_setting,
+                         sr.handover_validity)
+
     LOG.info(
-        f"{bcolors.OKBLUE} Best cost: {best_cost}, best cost 2: {optimizer.best.f}, best angle: {best_angle}, best angle2: {optimizer.best.x}, best robot setting: {best_robot_setting}{bcolors.ENDC}, ")
-    human.set_joint_angles(env.human.controllable_joint_indices, best_angle)
+        f"{bcolors.OKBLUE} Best cost: {optimizer.best.f} {best_cost} {bcolors.ENDC}")
+    return result
 
-    robot.set_base_pos_orient(best_robot_setting.base_pos, best_robot_setting.base_orient)
-    env.robot.set_joint_angles(
-        env.robot.right_arm_joint_indices if best_robot_setting.robot_side == 'right' else env.robot.left_arm_joint_indices,
-        best_robot_setting.robot_joint_angles)
-    env.tool.reset_pos_orient()
-    ee_pos, ik_target_pos = find_ee_ik_goal(human, end_effector, handover_obj)
+def init_env(env, handover_obj, person_id="", pose_id=""):
+    
+    env.reset()
 
-    action = {
-        "solution": optimizer.best.x,
-        "cost": cost,
-        "end_effector": end_effector,
-        "m": m,
-        "dist": dist,
-        "mean_energy": mean_energy,
-        "target": original_ee_pos,
-        "mean_cost": mean_cost,
-        "mean_dist": mean_dist,
-        "mean_m": mean_m,
-        "mean_evolution": mean_evolution,
-        "mean_torque": mean_torque,
-        "mean_reba": mean_reba,
-        "robot_settings": {
-            "joint_angles": robot_joint_angles,
-            "base_pos": robot_base_pos,
-            "base_orient": robot_base_orient,
-            "side": robot_side
-        },
-        "wrt_pelvis": {
-            'pelvis': human.get_pos_orient(human.human_dict.get_fixed_joint_id("pelvis"), center_of_mass=True),
-            "ee": {
-                'original': human.get_ee_pos_orient(end_effector),
-                'transform': translate_wrt_human_pelvis(human, np.array(human.get_ee_pos_orient(end_effector)[0]),
-                                                        np.array(human.get_ee_pos_orient(end_effector)[1])),
-            },
-            "ik_target": {
-                'original': [np.array(ik_target_pos), np.array(gripper_orient)],  # [pos, orient
-                'transform': translate_wrt_human_pelvis(human, np.array(ik_target_pos), np.array(gripper_orient)),
-            },
-            'robot': {
-                'original': [np.array(robot_base_pos), np.array(robot_base_orient)],
-                'transform': translate_wrt_human_pelvis(human, np.array(robot_base_pos), np.array(robot_base_orient)),
-            },
-            'robot_joint_angles': robot_joint_angles
+    # time.sleep(100)
+    human, robot, furniture, plane = env.human, env.robot, env.furniture, env.plane
+
+    # choose end effector
+    handover_obj_config = get_handover_object_config(handover_obj, env)
+    # reset the end effector based on the object
+    end_effector = handover_obj_config.end_effector
+    human.reset_controllable_joints(end_effector)
+    robot_base, robot_orient, robot_side = find_robot_start_pos_orient(env, end_effector, handover_obj_config.robot_side)
+
+    print ("end effector: ", end_effector)
+    robot_setting = InitRobotSetting(robot_base, robot_orient, robot_side)
+    # init collision check
+    env_object_ids = [furniture.body, plane.body]  # set env object for collision check
+    human_link_robot_collision = get_human_link_robot_collision(human, end_effector)
+
+    # init original info and max dynamics
+    original_info = build_human_info(human, env_object_ids, end_effector)
+    max_dynamics = build_max_human_dynamics(env, end_effector, original_info)
+
+    if RENDER_UI:
+        env.render()
+
+    env.reset()
+
+    # draw original ee pos
+    original_ee_pos = human.get_pos_orient(human.human_dict.get_dammy_joint_id(end_effector), center_of_mass=True)[0]
+    draw_point(original_ee_pos, size=0.01, color=[0, 1, 0, 1])
+    original_info.original_ee_pos = original_ee_pos  # TODO: refactor
+
+    if DEBUG:
+        p.addUserDebugText("person: {}, smpl: {}".format(person_id, pose_id), [0, 0, 1], textColorRGB=[1, 0, 0])
+        get_pelvis_side(env.human)
+        get_eyeline_side(env.human)
+
+    return MainEnvInitResult(original_info, max_dynamics, env_object_ids, human_link_robot_collision, end_effector,
+                             handover_obj_config,
+                             human.controllable_joint_lower_limits, human.controllable_joint_upper_limits,
+                             robot_setting)
+
+def train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', person_id='p001',
+          end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False,
+          robot_ik=False, handover_obj=None, is_augmented = False):
+    start_time = time.time()
+    env = make_env(env_name, person_id, smpl_file, handover_obj, True, is_augmented=is_augmented)
+    try: 
+        init_result: MainEnvInitResult = init_env(env, handover_obj, person_id, smpl_file)
+
+        env_config: EnvConfig =  EnvConfig(env_name, person_id, smpl_file, handover_obj, init_result.end_effector, True)
+
+        # init sub env processes
+        search_config = SearchConfig(robot_ik, init_result.env_object_ids, init_result.original_info,
+                                    init_result.max_dynamics, handover_obj,
+                                    init_result.handover_obj_config, init_result.robot_setting)
+
+
+        # smpl_name = os.path.basename(smpl_file)
+        # p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_name), [0, 0, 1], textColorRGB=[1, 0, 0])
+
+        # best_mean_cost,  best_mean_dist, best_mean_m, best_mean_energy, best_mean_torque, best_mean_evolution, best_mean_reba = [], [], [], [], [], [], []
+        best_trial_cost, best_trial_result = float('inf'), None
+        for i in range(MAX_TRIAL):
+            result = run_trial(env, init_result, search_config)
+            if result.best_kinematic_result.cost < best_trial_cost:
+                best_trial_cost = result.best_kinematic_result.cost
+                best_trial_result = result
+        
+        human_robot_info = get_human_robot_info(env, best_trial_result, env_config)
+        action = {
+            "solution": best_trial_result.joint_angles,
+            "cost": best_trial_result.best_kinematic_result.cost,
+            "end_effector": env_config.end_effector,
+            "m": best_trial_result.best_kinematic_result.m,
+            "dist": best_trial_result.best_kinematic_result.dist,
+            "energy": best_trial_result.best_kinematic_result.energy,
+            "torque": best_trial_result.best_kinematic_result.torque,
+            "mean_energy": best_trial_result.mean_kinematic_result.mean_energy,
+            # "target": init_result.original_info.original_ee_pos,
+            "mean_cost": best_trial_result.mean_kinematic_result.mean_cost,
+            "mean_dist": best_trial_result.mean_kinematic_result.mean_dist,
+            "mean_m": best_trial_result.mean_kinematic_result.mean_m,
+            "mean_evolution": best_trial_result.mean_kinematic_result.mean_evolution,
+            "mean_torque": best_trial_result.mean_kinematic_result.mean_torque,
+            "initial_robot_settings": init_result.robot_setting,
+            "wrt_pelvis": human_robot_info,
+            "validity": best_trial_result.handover_validity
         }
-    }
 
-    actions = {}
-    key = get_actions_dict_key(handover_obj, robot_ik)
-    actions[key] = action
-    # plot_cmaes_metrics(mean_cost, mean_dist, mean_m, mean_energy, mean_torque)
-    # plot_mean_evolution(mean_evolution)
+        # print('human_robot_info:', human_robot_info)
 
-    save_train_result(save_dir, env_name, person_id, smpl_file, actions)
+        actions = {}
+        key = get_actions_dict_key(handover_obj, robot_ik)
+        actions[key] = action
+        # # plot_cmaes_metrics(mean_cost, mean_dist, mean_m, mean_energy, mean_torque)
+        # # plot_mean_evolution(mean_evolution)
+        save_train_result(save_dir, env_name, person_id, smpl_file, actions, key, handover_obj)
 
-    print("training time (s): ", time.time() - start_time)
-    env.disconnect()
-    return env, actions, action
+        print("training time (s): ", time.time() - start_time)
+        return action
+    except Exception as e:
+        print ("Exception when training: ", e)
+        print(traceback.format_exc())
+        return e 
+    finally: 
+        destroy_env(env)
+    
 
 
+def save_train_result(save_dir, env_name, person_id, smpl_file, actions, key, handover_obj):
+    save_dir = get_save_dir(save_dir, env_name, person_id, smpl_file)
+    os.makedirs(save_dir, exist_ok=True)
+
+    if os.path.exists(os.path.join(save_dir, "actions.pkl")):
+        old_actions = pickle.load(open(os.path.join(save_dir, "actions.pkl"), "rb"))
+        # merge
+        if old_actions:
+            for key in old_actions.keys():
+                if key not in actions.keys():
+                    actions[key] = old_actions[key]
+
+    pickle.dump(actions, open(os.path.join(save_dir, "actions.pkl"), "wb"))
+
+    json_data = {}
+    action = actions[key]
+
+    
+    for key in ["cost", "end_effector", "m", "dist", "energy", "torque"]:
+        json_data[key] = action[key]
+    json_data["wrt_pelvis"] = json.dumps(action["wrt_pelvis"], cls=NumpyEncoder)
+    json_data["validity"] = action["validity"].to_json()
+    dumped = json.dumps(json_data, indent=4) # dump the whole action dict
+    # dumped = jsonpickle.encode (json_data) # dump the whole action dict
+    with open(os.path.join(save_dir, handover_obj + ".json"), "w") as f:
+        f.write(dumped)
+    f.close()
 
 
 if __name__ == '__main__':

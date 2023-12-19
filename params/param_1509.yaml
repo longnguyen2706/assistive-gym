@@ -14,7 +14,7 @@ cane:
 
 cup:
   weights: {
-    'dist': 2,
+    'dist': 1,
     'manipulibility': 2,
     'energy': 10,
     'torque': 2,

@@ -38,6 +38,8 @@ def load_smpl(filepath) -> SMPLData:
 
         if len(data["body_pose"]) == 69: # we need to extends the dimension of the smpl_data['pose'] from 69 to 72 to match the urdf
             data["body_pose"] = np.concatenate((np.array([0.0, 0.0, 0.0]), data["body_pose"]))
+        else: 
+            data["body_pose"] = np.array(data["body_pose"])
     if "transl" not in data:
         data["transl"] = None
     smpl_data: SMPLData = SMPLData(data["body_pose"], data["betas"], data["global_orient"], data["transl"])

@@ -1,7 +1,7 @@
 import logging
 
 APP_NAME = "assistive_gym"
-LOG_LEVEL = logging.INFO
+LOG_LEVEL = logging.ERROR
 def get_logger():
     logger = logging.getLogger(APP_NAME)
     # # Create a handler
