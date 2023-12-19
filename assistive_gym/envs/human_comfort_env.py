@@ -5,7 +5,7 @@ from assistive_gym.envs.agents.stretch_dex import StretchDex
 from assistive_gym.envs.env import AssistiveEnv
 from assistive_gym.envs.utils.human_utils import set_self_collisions, disable_self_collisions
 from assistive_gym.envs.utils.urdf_utils import load_smpl
-from experimental.human_urdf import HumanUrdf
+from assistive_gym.envs.urdf.human_urdf import HumanUrdf
 
 
 class HumanComfortEnv(AssistiveEnv):
@@ -21,8 +21,7 @@ class HumanComfortEnv(AssistiveEnv):
 
 
     def get_comfort_score(self):
-        return np.random.rand() #TODO: implement this
-    # TODO: refactor train to move the score return to env.step
+        return np.random.rand()
 
     def set_smpl_file(self, smpl_file):
         self.smpl_file = smpl_file
@@ -42,23 +41,6 @@ class HumanComfortEnv(AssistiveEnv):
 
         self.take_step(action)
 
-        obs = self._get_obs()
-
-        # comfort_score = self.get_comfort_score()
-        # reward = comfort_score
-        # if self.gui and comfort_score != 0:
-        #     # print('Task success:', self.task_success, 'Food reward:', comfort_score)
-        #     pass
-        #
-        # info = {'comfort_score': comfort_score}
-        # done = self.iteration >= 200
-        # print (done, self.iteration)
-        # if not self.human.controllable:
-        #     return obs, reward, done, info
-        # else:
-        #     # Co-optimization with both human and robot controllable
-        #     return obs, {'robot': reward, 'human': reward}, {'robot': done, 'human': done, '__all__': done}, {
-        #         'robot': info, 'human': info}
         return None
 
     def _get_obs(self, agent=None): # not needed
@@ -99,15 +81,14 @@ class HumanComfortEnv(AssistiveEnv):
         self.build_assistive_env("realsize_bed")
 
         bed_height, bed_base_height = self.furniture.get_heights(set_on_ground=True)
-        min_pos, max_pos = p.getAABB(self.furniture.body, physicsClientId=self.id)
-        # print("bed height ", bed_height, bed_base_height, "bed pos ", min_pos, max_pos)
-        # reset human pose
         # disable self collision before dropping on bed
         num_joints = p.getNumJoints(self.human.body, physicsClientId=self.id)
         disable_self_collisions(self.human.body, num_joints, self.id)
         smpl_data = load_smpl(self.smpl_file)
         self.human.set_joint_angles_with_smpl(smpl_data, False)
-        height, base_height = self.human.get_heights()
+
+        # debug human size
+        #height, base_height = self.human.get_heights()
         # print ("human height ", height, base_height, "bed height ", bed_height, bed_base_height)
         self.human.set_global_orientation(smpl_data, [0, 0,  bed_height+0.2])
         # p.resetBasePositionAndOrientation(self.human.body, [0, 0,  bed_height] , [0, 0, 0, 1], physicsClientId=self.id)

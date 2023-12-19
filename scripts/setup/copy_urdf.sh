@@ -1,5 +1,8 @@
-# URDF DIR 
-URDF_DST='/mnt/collectionssd/urdf'
+# copy all urdf files from URDF_SRC to URDF_DST (skip the existing files)
+# also, count the number of copied file
+
+# URDF DIR
+URDF_DST='/home/louis/Documents/hrl/synthetic_dataset/urdf'
 URDF_SRC='/media/louis/Data/hrl/synthetic_dataset/urdf'
 
 # count 

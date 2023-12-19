@@ -1,18 +1,18 @@
 import concurrent
+import gc
 import json
 import os
 import time
 
 from assistive_gym.envs.utils.train_utils import get_save_dir, render_nn_result
 
+# Render the results from the deepnn and the original CMAES side by side
+
 #### Define dynamic configs ####
 PERSON_IDS = ['p001']
 SMPL_FILES = ['s13','s14', 's15', 's16', 's17', 's18', 's19', 's20', 's21', 's22', 's23', 's24', 's25', 's26']
-#
-# PERSON_IDS = ['p047']
-# SMPL_FILES = ['s15']
-
 OBJECTS = ['pill']
+
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
 ENV = "HumanComfort-v1"
@@ -66,6 +66,7 @@ if __name__ == '__main__':
                 try:
                     print('Done rendering for {}'.format(res))
                     del futures[future]
+                    gc.collect()
                 except Exception as exc:
                     print('%r generated an exception: %s' % (res, exc))
 

@@ -3,7 +3,6 @@ import json
 import os
 import pickle
 from datetime import datetime
-import shutil
 from typing import Set, Optional
 import gc
 
@@ -20,7 +19,7 @@ from assistive_gym.envs.utils.dto import HandoverObject, HandoverObjectConfig, M
     NumpyEncoder, InitRobotSetting
 from assistive_gym.envs.utils.log_utils import get_logger
 from assistive_gym.envs.utils.point_utils import fibonacci_evenly_sampling_range_sphere, eulidean_distance
-from experimental.urdf_name_resolver import get_urdf_filepath, get_urdf_folderpath
+from assistive_gym.envs.urdf.urdf_name_resolver import get_urdf_filepath, get_urdf_folderpath
 
 from PIL import Image
 
@@ -51,7 +50,7 @@ OBJECT_PALM_OFFSET = {
 
 GRIPPER_Z_ANGLE_LIMIT = {
     "pill": None,
-    "cup": [-10, 10],  # degree
+    "cup": [-10, 10],  # degree, not radian
     "cane": None
 }
 
@@ -67,9 +66,10 @@ objectTaskMapping = {
     HandoverObject.CANE: "comfort_standing_up"
 }
 
-YAML_FILE = os.path.join(os.getcwd(), 'params/param_1509.yaml')
+YAML_FILE = os.path.join(os.getcwd(), 'params/param_1509.yaml') # for hyper param config in CMAES cost function
+IMG_SIZE = (1920, 1080) # for rendering the result to file
 
-IMG_SIZE = (1920, 1080)
+
 def load_yaml(yaml_file):
     with open(yaml_file) as f:
         params = yaml.safe_load(f)
@@ -111,7 +111,8 @@ def find_ee_ik_goal(human, end_effector, handover_obj):
         handover_obj]  # need to depends on the size of the object as well
     return ee_pos, target_pos
 
-#@timing
+
+# @timing
 def find_robot_ik_solution(env, end_effector: str, handover_obj: str, init_robot_setting: InitRobotSetting):
     """
     Find robot ik solution with TOC. Place the robot in best base position and orientation.
@@ -126,7 +127,8 @@ def find_robot_ik_solution(env, end_effector: str, handover_obj: str, init_robot
     #     robot_base_pos, robot_base_orient, side = find_robot_start_pos_orient(env, end_effector)
     # else:
     #     robot_base_pos, robot_base_orient, side = init_robot_setting.base_pos, init_robot_setting.base_orient, init_robot_setting.robot_side
-    robot_base_pos, robot_base_orient, side = find_robot_start_pos_orient(env, end_effector, init_robot_setting.robot_side)
+    robot_base_pos, robot_base_orient, side = find_robot_start_pos_orient(env, end_effector,
+                                                                          init_robot_setting.robot_side)
     ee_pos, target_pos = find_ee_ik_goal(human, end_effector, handover_obj)
     # p.addUserDebugLine(ee_pos, target_pos, [1, 0, 0], 5, 0.1)
 
@@ -190,13 +192,15 @@ def find_max_val(human, cost_fn, original_joint_angles, original_link_positions,
     human.set_joint_angles(human.controllable_joint_indices, optimizer.best.x)
     return optimizer.best.x, 1.0 / optimizer.best.f
 
+
 def get_bed_side(env, side="right"):
     bed = env.furniture
     bed_bb = p.getAABB(bed.body, physicsClientId=env.id)
     bed_xx, bed_yy, bed_zz = bed_bb[1] if side == "right" else bed_bb[0]
     return bed_xx, bed_yy, bed_zz
 
-#@timing
+
+# @timing
 def find_robot_start_pos_orient(env, end_effector, side):
     bed_xx, bed_yy, bed_zz = get_bed_side(env, side)
     robot_bb = p.getAABB(env.robot.body, physicsClientId=env.id)
@@ -235,13 +239,14 @@ def get_eyeline_side(human):
     normal_vec = rotation_matrix[:, 2] / np.linalg.norm(rotation_matrix[:, 2])
 
     # draw for debug
-    p.addUserDebugLine(head_pos, head_pos + normal_vec*10, [1, 0, 0], 5, 0.5)
+    p.addUserDebugLine(head_pos, head_pos + normal_vec * 10, [1, 0, 0], 5, 0.5)
     z_axis = np.array([0, 0, 1])
-    p.addUserDebugLine(head_pos, head_pos + z_axis*10, [0, 1, 0], 5, 0.5)
+    p.addUserDebugLine(head_pos, head_pos + z_axis * 10, [0, 1, 0], 5, 0.5)
 
     z_angle = get_angle_with_z_axis(rotation_matrix)
     # print ("normal vec", normal_vec, "z angle: ", z_angle)
     return "right" if z_angle > np.pi / 6 else "left" if z_angle < -np.pi / 6 else None
+
 
 def get_pelvis_side(human):
     '''
@@ -254,10 +259,10 @@ def get_pelvis_side(human):
     normal_vec = rotation_matrix[:, 2] / np.linalg.norm(rotation_matrix[:, 2])
 
     # draw for debug
-    p.addUserDebugLine(pelvis_pos, pelvis_pos + normal_vec*10, [1, 0, 0], 5, 0.5)
+    p.addUserDebugLine(pelvis_pos, pelvis_pos + normal_vec * 10, [1, 0, 0], 5, 0.5)
     z_axis = np.array([0, 0, 1])
 
-    p.addUserDebugLine(pelvis_pos, pelvis_pos + z_axis*10, [0, 1, 0], 5, 0.5)
+    p.addUserDebugLine(pelvis_pos, pelvis_pos + z_axis * 10, [0, 1, 0], 5, 0.5)
     z_angle = get_angle_with_z_axis(rotation_matrix)
     return "right" if z_angle > np.pi / 4 else "left" if z_angle < -np.pi / 4 else None
 
@@ -278,7 +283,7 @@ def get_hand_closer_to_bedside(env):
     return "left_hand" if dist_left < dist_right else "right_hand"
 
 
-def get_hand_based_on_eyesight(env): # only call this function if human is straight up
+def get_hand_based_on_eyesight(env):  # only call this function if human is straight up
     '''
         Get the hand that closer to eyesight side
         :param env
@@ -290,6 +295,7 @@ def get_hand_based_on_eyesight(env): # only call this function if human is strai
         return None
     else:
         return "left_hand" if eye_side == "left" else "right_hand"
+
 
 def get_shoulder_side(human, end_effector):
     '''
@@ -321,40 +327,36 @@ def get_robot_and_hand_config(env):
     - robot: place robot on the side of the shoulder of the chosen hand
     """
     human_side = get_pelvis_side(env.human)
-    if human_side == None: # human is not heavy left or right
+    if human_side == None:  # human is not heavy left or right
         hand = get_hand_based_on_eyesight(env)
-        if hand == None: # human is looking up
+        if hand == None:  # human is looking up
             hand = get_hand_closer_to_bedside(env)
         robot_side = get_shoulder_side(env.human, hand)
-    else: # human is heavy left or right
+    else:  # human is heavy left or right
         robot_side = human_side
 
         hand = choose_upper_hand(env.human)
     return robot_side, hand
 
 
-
 def get_handover_object_config(object_name, env) -> Optional[HandoverObjectConfig]:
-    human = env.human
-    # eyeline_side = get_eyeline_side(human)
-    # default_ee = get_preferable_hand(env)  # default end effector is the hand closer to the bed side'
-    # if eyeline_side == None:  # head look upward, undecided. return default
-    #     ee = default_ee
-    # else:  # head look left or right
-    #     upper_hand = choose_upper_hand(env.human)  # choose the upper hand if it is heavy 1 higher than the other
-    #     ee = upper_hand if upper_hand is not None else default_ee  # fall back to default if no upper hand
+
     robot_side, ee = get_robot_and_hand_config(env)
     if object_name is None:  # case: no handover object
-        return HandoverObjectConfig(None, weights=[0], limits=[0], end_effector=ee, robot_side =robot_side)  # original = 6
+        return HandoverObjectConfig(None, weights=[0], limits=[0], end_effector=ee,
+                                    robot_side=robot_side)  # original = 6
     # TODO: revise the hand choice
     # print ("object name: ", object_name)
     object_type = HandoverObject.from_string(object_name)
     if object_name == "pill":
-        return HandoverObjectConfig(object_type, weights=[0], limits=[0.27], end_effector=ee,  robot_side =robot_side)  # original = 6
+        return HandoverObjectConfig(object_type, weights=None, limits=None, end_effector=ee,
+                                    robot_side=robot_side)
     elif object_name == "cup":
-        return HandoverObjectConfig(object_type, weights=[0], limits=[0.23], end_effector=ee, robot_side =robot_side)  # original = 6
+        return HandoverObjectConfig(object_type, weights=None, limits=None, end_effector=ee,
+                                    robot_side=robot_side)
     elif object_name == "cane":
-        return HandoverObjectConfig(object_type, weights=[0], limits=[0.23], end_effector=ee, robot_side =robot_side)  # original = 6
+        return HandoverObjectConfig(object_type, weights=None, limits=None, end_effector=ee,
+                                    robot_side=robot_side)
 
 
 def solve_ik(env, target_pos, end_effector="right_hand"):
@@ -409,7 +411,6 @@ TODO:
 3. check if the target angle is reached. break
 """
 
-
 def step_forward(env, x0, env_object_ids, end_effector="right_hand"):
     human = env.human
     # p.setJointMotorControlArray(human.body, jointIndices=human.controllable_joint_indices,
@@ -452,7 +453,7 @@ def step_forward(env, x0, env_object_ids, end_effector="right_hand"):
         prev_angle = cur_joint_angles
 
 
-def make_env(env_name, person_id, smpl_file, object_name, coop=False, seed=1001, is_augmented = False):
+def make_env(env_name, person_id, smpl_file, object_name, coop=False, seed=1001, is_augmented=False):
     if not coop:
         env = gym.make('assistive_gym:' + env_name)
     else:
@@ -583,8 +584,6 @@ def cal_mid_angle(lower_bounds, upper_bounds):
 
 
 def count_new_collision(old_collisions: Set, new_collisions: Set, human, end_effector, penetration_threshold) -> int:
-    # TODO: remove magic number (might need to check why self colllision happen in such case)
-    # TODO: return number of collisions instead and use that to scale the cost
     link_ids = set(human.human_dict.get_real_link_indices(end_effector))
     # print ("link ids", link_ids)
 
@@ -652,10 +651,6 @@ def cal_torque_magnitude(human, end_effector):
         for i in range(0, len(torques), 3):
             LOG.debug(f"{link_names[i // 3]}: {torques[i: i + 3]}")
 
-    # torques = human.inverse_dynamic(end_effector)
-    # print ("torques ee: ", len(torques), torques)
-    # torques = human.inverse_dynamic()
-    # print ("torques: ", len(torques), torques)
     torques = human.inverse_dynamic(end_effector)
     # print("torques ee: ", torques)
     # print ("----------------------------------")
@@ -823,7 +818,8 @@ def init_optimizer2(x0, sigma, lower_bounds, upper_bounds):  # for cma library
     return es
 
 
-def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik: bool, save_to_file=False, save_metrics=False, is_augmented = False):
+def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik: bool, save_to_file=False,
+           save_metrics=False, is_augmented=False):
     print("rendering person {} and smpl file {}".format(person_id, smpl_file))
     save_dir = get_save_dir(save_dir, env_name, person_id, smpl_file)
     actions = pickle.load(open(os.path.join(save_dir, "actions.pkl"), "rb"))
@@ -860,14 +856,18 @@ def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik: boo
             robot_joint_angles = action["wrt_pelvis"]["robot_joint_angles"]
         except Exception as e:
             print("no robot pose found")
-        render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik, robot_pose, robot_joint_angles, save_to_file=save_to_file, save_metrics=save_metrics, is_augmented=is_augmented)
+        render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik, robot_pose, robot_joint_angles,
+                      save_to_file=save_to_file, save_metrics=save_metrics, is_augmented=is_augmented)
+
 
 def save_render_to_file(env, save_dir, person_id, pose_id, object):
     width, height = IMG_SIZE
-    view_matrix = p.computeViewMatrixFromYawPitchRoll(cameraTargetPosition=[0, 0, 0.5], distance=1.75, yaw=-25, pitch=-45, roll=0, upAxisIndex=2)
-    projection_matrix = p.computeProjectionMatrixFOV(fov=90, aspect=float(width)/height, nearVal=0.1, farVal=7.5)
+    view_matrix = p.computeViewMatrixFromYawPitchRoll(cameraTargetPosition=[0, 0, 0.5], distance=1.75, yaw=-25,
+                                                      pitch=-45, roll=0, upAxisIndex=2)
+    projection_matrix = p.computeProjectionMatrixFOV(fov=90, aspect=float(width) / height, nearVal=0.1, farVal=7.5)
     try:
-        img = p.getCameraImage(width, height, viewMatrix=view_matrix, projectionMatrix = projection_matrix, renderer=p.ER_BULLET_HARDWARE_OPENGL)
+        img = p.getCameraImage(width, height, viewMatrix=view_matrix, projectionMatrix=projection_matrix,
+                               renderer=p.ER_BULLET_HARDWARE_OPENGL)
 
         rgb_opengl = img[2]
 
@@ -877,11 +877,13 @@ def save_render_to_file(env, save_dir, person_id, pose_id, object):
 
         rgbim_no_alpha.save(imagename)
     except Exception as e:
-        print ("exception when save render to file: ", e)
+        print("exception when save render to file: ", e)
+
 
 def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik: bool, robot_pose=None,
-                  robot_joint_angles=None, save_to_file=False, save_metrics = False, is_augmented = False):
-    env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=handover_obj, person_id=person_id, is_augmented=is_augmented)
+                  robot_joint_angles=None, save_to_file=False, save_metrics=False, is_augmented=False):
+    env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=handover_obj, person_id=person_id,
+                   is_augmented=is_augmented)
     if not save_to_file and not save_metrics:
         env.render()  # need to call reset after render
     env.reset()
@@ -967,7 +969,8 @@ def render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik
 # TODO: add check distance from hand to object & robot collision
 def check_pose_validity(original_human_info: HumanInfo, new_human_info: HumanInfo, human, end_effector):
     err = {}
-    env_penetrations, self_penetrations = detect_collisions(original_human_info, new_human_info.self_collisions, new_human_info.env_collisions, human, end_effector)
+    env_penetrations, self_penetrations = detect_collisions(original_human_info, new_human_info.self_collisions,
+                                                            new_human_info.env_collisions, human, end_effector)
     if len(env_penetrations) > 0:
         err["env_penetrations"] = env_penetrations
     if len(self_penetrations) > 0:
@@ -981,7 +984,8 @@ def render_nn_result(env_name, data, person_id, smpl_file, handover_obj, real=Fa
     env.reset()
 
     smpl_name = os.path.basename(smpl_file).split(".")[0]
-    p.addUserDebugText("person: {}, smpl: {}, real: {}".format(person_id, smpl_name, real), [0, 0, 1], textColorRGB=[1, 0, 0])
+    p.addUserDebugText("person: {}, smpl: {}, real: {}".format(person_id, smpl_name, real), [0, 0, 1],
+                       textColorRGB=[1, 0, 0])
 
     env.human.reset_controllable_joints(data["end_effector"])
     joint_angles = data["human"]["joint_angles"] if not real else data["joint_angles"]
@@ -1000,20 +1004,22 @@ def render_nn_result(env_name, data, person_id, smpl_file, handover_obj, real=Fa
     destroy_env(env)
 
 
-def render_pose(env_name, person_id, smpl_file, is_augmented = False):
-    env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=None, person_id=person_id, is_augmented=is_augmented)
+def render_pose(env_name, person_id, smpl_file, is_augmented=False):
+    env = make_env(env_name, coop=True, smpl_file=smpl_file, object_name=None, person_id=person_id,
+                   is_augmented=is_augmented)
     # env.render()  # need to call reset after render
     env.reset()
     # eyeline_side = get_eyeline_side(env.human)
-    pose_id =smpl_file.split("/")[-1].split(".")[0]
+    pose_id = smpl_file.split("/")[-1].split(".")[0]
     dir = "trained_models/poses"
     os.makedirs(dir, exist_ok=True)
-    save_render_to_file (env, "trained_models/poses", person_id, pose_id, "")
+    save_render_to_file(env, "trained_models/poses", person_id, pose_id, "")
     # while True:
     #     keys = p.getKeyboardEvents()
     #     if ord('q') in keys:
     #         break
     destroy_env(env)
+
 
 def save_train_result(save_dir, env_name, person_id, smpl_file, actions):
     save_dir = get_save_dir(save_dir, env_name, person_id, smpl_file)
@@ -1033,6 +1039,7 @@ def destroy_env(env):
     env.disconnect()
     env.close()
     gc.collect()
+
 
 def find_new_penetrations(old_collisions: Set, new_collisions: Set, human, end_effector, penetration_threshold) -> int:
     # TODO: remove magic number (might need to check why self colllision happen in such case)
@@ -1061,7 +1068,7 @@ def find_new_penetrations(old_collisions: Set, new_collisions: Set, human, end_e
         else:
             # collision in old collision
             initial_depth = initial_collision_map[(link1, link2)] if (link1, link2) in initial_collision_map else \
-            initial_collision_map[(link2, link1)]
+                initial_collision_map[(link2, link1)]
             if abs(penetration) > max(penetration_threshold["old"],
                                       initial_depth):  # magic number. we have penetration between spine4 and shoulder in pose 5
                 # print ("old collision with deep penetration: ", collision)
@@ -1147,5 +1154,3 @@ def translate_bed_to_realworld(env, cord):
 
     corner = find_corner(env)
     return np.array(cord) - corner
-
-

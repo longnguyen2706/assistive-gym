@@ -11,7 +11,7 @@ from trimesh import Trimesh
 from assistive_gym.envs.utils.human_urdf_dict import HumanUrdfDict
 from assistive_gym.envs.utils.smpl_geom import generate_geom
 from assistive_gym.envs.utils.urdf_editor import UrdfEditor, UrdfJoint, UrdfLink
-from experimental.urdf_name_resolver import get_urdf_filepath, get_urdf_mesh_folderpath
+from assistive_gym.envs.urdf.urdf_name_resolver import get_urdf_filepath, get_urdf_mesh_folderpath
 
 
 """

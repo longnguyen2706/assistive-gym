@@ -2,7 +2,7 @@ import os
 
 BASEDIR = os.path.dirname(os.path.realpath(__file__))
 
-URDF_FOLDER = 'urdf'
+URDF_FOLDER = '/home/louis/Documents/Projects/assistive-gym/experimental/urdf'
 AUG_URDF_FOLDER= '/home/louis/Documents/hrl/synthetic_dataset/urdf'
 
 def get_urdf_folderpath(person_id, is_augmented=False):

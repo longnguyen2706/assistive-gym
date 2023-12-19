@@ -1,4 +1,5 @@
 import concurrent
+import gc
 import json
 import time
 
@@ -24,21 +25,22 @@ SMPL_FILES = ['s01', 's02', 's03', 's04', 's05', 's06', 's07', 's08', 's09', 's1
               's13', 's14', 's15', 's16', 's17', 's18', 's19', 's20', 's21', 's22', 's23', 's24', 's25',
               's26', 's27', 's28', 's29', 's30', 's31', 's32', 's33', 's34', 's35', 's36', 's37', 's38',
               's39', 's40', 's41', 's42', 's43', 's44', 's45']
-# SMPL_FILES = ['s02']
 
-OBJECTS = ['cane']
+
+OBJECTS = ['cane'] # 'cup', 'cane', 'pill'
+
 #### Define static configs ####
 SMPL_DIR = 'examples/data/slp3d/'
 ENV = "HumanComfort-v1_rerun_dec15_cane" #"HumanComfort-v1_rerun_dec15_cup"
 SEED = 1001
 # SAVE_DIR = 'trained_models'
-SAVE_DIR = '/home/louis/Documents/hrl/results'
+SAVE_DIR = '/home/louis/Documents/hrl/results' # trained file dirs are saved here
 SIMULATE_COLLISION = False
 ROBOT_IK = True
 END_EFFECTOR = 'right_hand'
 
 ### DEFINE MULTIPROCESS SETTING ###
-NUM_WORKERS = 32
+NUM_WORKERS = 1
 
 
 def get_dynamic_configs():
@@ -55,8 +57,8 @@ def get_dynamic_configs():
 def do_render(config):
     p, s, o = config
     print(p, s, o)
-    render_pose(ENV, p, s)
-    # render(ENV, p, s, SAVE_DIR, o, ROBOT_IK, save_to_file=False, save_metrics=False)
+    # render_pose(ENV, p, s)
+    render(ENV, p, s, SAVE_DIR, o, ROBOT_IK, save_to_file=False, save_metrics=False)
 
 
 def get_invalid_cases(filepath):
@@ -92,6 +94,7 @@ if __name__ == '__main__':
             try:
                 print('Done rendering for {}'.format(res))
                 del futures[future]
+                gc.collect()
             except Exception as exc:
                 print('%r generated an exception: %s' % (res, exc))
     executor.shutdown()

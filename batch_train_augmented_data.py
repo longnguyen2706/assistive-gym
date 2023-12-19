@@ -1,3 +1,4 @@
+import gc
 import json
 import time
 
@@ -5,6 +6,7 @@ from assistive_gym.train import train
 import concurrent.futures
 import os
 
+# define the file prefix and the range of the file index that you want to load
 class FileFilter:
     def __init__(self, pref, lower, upper):
         self.pref = pref
@@ -17,14 +19,15 @@ class FileFilter:
             return self.lower <= idx <= self.upper
         return False
 
+
 #### Define path configs ####
-SYNTHETIC_DATA= '/home/louis/Documents/hrl/synthetic_dataset/'
+SYNTHETIC_DATA = '/home/louis/Documents/hrl/synthetic_dataset/'
 SMPL_DIR = os.path.join(SYNTHETIC_DATA, 'smpl/smpl_data')
 URDF_DIR = os.path.join(SYNTHETIC_DATA, 'urdf')
 
 #### Define static configs ####
 OBJECTS = ['cane']
-FILES_FILTERS = [FileFilter('f_2', 0, 1999), FileFilter('m_11', 0, 1999)] 
+FILES_FILTERS = [FileFilter('f_2', 0, 1999), FileFilter('m_11', 0, 1999)]
 
 ENV = 'HumanComfort-v1_augmented_cane'
 SEED = 1001
@@ -37,7 +40,8 @@ END_EFFECTOR = 'right_hand'
 exception_file = os.path.join(SAVE_DIR, ENV, 'exception.txt')
 
 ### DEFINE MULTIPROCESS SETTING ###
-NUM_WORKERS =24
+NUM_WORKERS = 24
+
 
 def get_aug_files():
     files = []
@@ -45,10 +49,11 @@ def get_aug_files():
     print(len(dirs))
     for d in dirs:
         for filter in FILES_FILTERS:
-            if filter.is_valid(d):
+            if filter.is_valid(d): # load only the files in range
                 files.append(d)
     # print (len(files), files)
     return files
+
 
 # def clean():
 #     dirs = os.listdir(URDF_DIR)
@@ -58,16 +63,16 @@ def get_aug_files():
 
 def get_dynamic_configs(rerun_missing=False):
     # invalid_cases = get_invalid_cases()
-    configs =[]
+    configs = []
     filenames = []
-    filenames =  get_missing_files() if rerun_missing else get_aug_files()
-   
+    filenames = get_missing_files() if rerun_missing else get_aug_files()
+
     for f in filenames:
-        smpl_file = os.path.join(SMPL_DIR,  f + '.pkl')
+        smpl_file = os.path.join(SMPL_DIR, f + '.pkl')
         for o in OBJECTS:
             configs.append((f, smpl_file, o))
     configs.sort()
-    print (len(configs), configs)
+    print(len(configs), configs)
     return configs
 
 
@@ -84,30 +89,32 @@ def get_missing_files():
     result_dir = os.path.join(SAVE_DIR, ENV)
     result_files = os.listdir(result_dir)
     miss_count = 0
-    processed_count =0
+    processed_count = 0
     missed_files = []
     for f in get_aug_files():
         if f not in result_files:
             # print (f)
-            miss_count +=1
+            miss_count += 1
             missed_files.append(f)
         else:
-            processed_count +=1
-    print ("processed: ", processed_count, "missed: ", miss_count)
+            processed_count += 1
+    print("processed: ", processed_count, "missed: ", miss_count)
     return missed_files
+
 
 def do_train(config):
     p, s, o = config
-    print (p, s, o)
+    print(p, s, o)
     try:
-        train(ENV, SEED, s, p, END_EFFECTOR,  SAVE_DIR, RENDER_GUI, SIMULATE_COLLISION, ROBOT_IK, o, is_augmented=True)
+        train(ENV, SEED, s, p, END_EFFECTOR, SAVE_DIR, RENDER_GUI, SIMULATE_COLLISION, ROBOT_IK, o, is_augmented=True)
         # mp_read(ENV, SEED, s, p, END_EFFECTOR,  SAVE_DIR, RENDER_GUI, SIMULATE_COLLISION, ROBOT_IK, o)
         return "Done training for {} {} {}".format(p, s, o)
-    except Exception as e: 
-        message= "Exception for {} {} {}, cause {} \n".format(p, s, o, e)
-        with open(exception_file, 'a') as f: 
+    except Exception as e:
+        message = "Exception for {} {} {}, cause {} \n".format(p, s, o, e)
+        with open(exception_file, 'a') as f:
             f.write(message)
         f.close()
+
 
 if __name__ == '__main__':
     counter = 0
@@ -120,10 +127,11 @@ if __name__ == '__main__':
         }
         for future in concurrent.futures.as_completed(futures):
             res = futures[future]
-            counter +=1
+            counter += 1
             try:
-                print('Done training for {}'.format(res), 'progress: {} / {}'.format(counter, len(configs)) )
+                print('Done training for {}'.format(res), 'progress: {} / {}'.format(counter, len(configs)))
                 del futures[future]
+                gc.collect()
             except Exception as exc:
                 print('%r generated an exception: %s' % (res, exc))
     executor.shutdown()

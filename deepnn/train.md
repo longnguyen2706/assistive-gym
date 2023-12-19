@@ -1,4 +1,5 @@
-pill config 
+--- config for training neural network for pill --- 
+
 Best trial config: {'lr': 0.0012743689880716444, 'weight_decay': 1.8385226343464778e-05, 'layer_sizes': [3200, 384, 96, 64], 'batch_size': 16, 'object': 'pill'}
 Best trial final validation loss: 0.09417984634637833
 

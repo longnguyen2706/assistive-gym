@@ -7,12 +7,12 @@ from assistive_gym.envs.utils.dto import RobotSetting, InitRobotSetting, EnvConf
     SearchResult, TrialResult, HandoverValidity, BestKinematicResult, MeanKinematicResult, PosTransPos, HumanRobotResult
 from assistive_gym.envs.utils.train_utils import *
 
-
 LOG = get_logger()
 MAX_ITERATION = 500
-RENDER_UI = False
+RENDER_UI = True
 MAX_TRIAL = 1
-DEBUG= False
+DEBUG = False
+
 
 def cal_object_specific_cost(env, handover_object, bedside, end_effector):
     if handover_object == 'cup':
@@ -20,8 +20,9 @@ def cal_object_specific_cost(env, handover_object, bedside, end_effector):
     elif handover_object == 'cane':
         return cal_ee_bedside_dist_cost(env, bedside, end_effector, GRIPPER_BEDSIDE_OFFSET['cane'])
     else:
-        return 0
-    
+        return 0 # nothing for pill
+
+
 def render_robot(env, robot_setting):
     # print('render robot', robot_setting.robot_joint_angles)
     env.robot.set_base_pos_orient(robot_setting.base_pos, robot_setting.base_orient)
@@ -30,34 +31,21 @@ def render_robot(env, robot_setting):
         robot_setting.robot_joint_angles)
     env.tool.reset_pos_orient()
 
+
 def check_validity(handover_validity: HandoverValidity):
-    if len(handover_validity.new_env_penetrations) or len(handover_validity.new_self_penetrations) or handover_validity.robot_dist_to_target>0.1:
+    if len(handover_validity.new_env_penetrations) or len(
+            handover_validity.new_self_penetrations) or handover_validity.robot_dist_to_target > 0.1:
         return False
     return True
 
-def get_human_robot_info(env, result: TrialResult, env_config: EnvConfig): 
-    human, robot= env.human, env.robot
+
+def get_human_robot_info(env, result: TrialResult, env_config: EnvConfig):
+    human, robot = env.human, env.robot
     robot_setting, end_effector, handover_obj = result.robot_setting, env_config.end_effector, env_config.handover_obj
-    
+
     human.set_joint_angles(human.controllable_joint_indices, result.joint_angles)
     render_robot(env, robot_setting)
     _, ik_target_pos = find_ee_ik_goal(human, end_effector, handover_obj)
-
-    # return HumanRobotResult(
-    #     pelvis=human.get_pos_orient(human.human_dict.get_fixed_joint_id("pelvis"), center_of_mass=True),
-    #     joint_angles=result.joint_angles,
-    #     ee=PosTransPos(human.get_ee_pos_orient(end_effector), translate_wrt_human_pelvis(human, np.array(
-    #         human.get_ee_pos_orient(end_effector)[0]), np.array(
-    #         human.get_ee_pos_orient(end_effector)[
-    #             1]))),
-    #     ik_target=PosTransPos([np.array(ik_target_pos), np.array(robot_setting.gripper_orient)],
-    #                           translate_wrt_human_pelvis(human, np.array(ik_target_pos),
-    #                                                      np.array(robot_setting.gripper_orient))),
-    #     robot=PosTransPos([np.array(robot_setting.base_pos), np.array(robot_setting.base_orient)],
-    #                       translate_wrt_human_pelvis(human, np.array(robot_setting.base_pos),
-    #                                                  np.array(robot_setting.base_orient))),
-    #     robot_joint_angles=robot_setting.robot_joint_angles)
-
 
     return {
         'pelvis': human.get_pos_orient(human.human_dict.get_fixed_joint_id("pelvis"), center_of_mass=True),
@@ -168,8 +156,8 @@ def run_trial(env, init_result: MainEnvInitResult, search_config: SearchConfig):
                 best_cost = sr.cost
                 best_angle = sr.joint_angles
                 best_robot_setting = sr.robot_setting
-        if timestep%10 ==0: 
-            LOG.info ("step: ", timestep)
+        if timestep % 10 == 0:
+            LOG.info("step: ", timestep)
         optimizer.tell(solutions, fitness_values)
 
         mean_evolution.append(np.mean(solutions, axis=0))
@@ -179,7 +167,7 @@ def run_trial(env, init_result: MainEnvInitResult, search_config: SearchConfig):
         mean_energy.append(np.mean(energy_changes, axis=0))
         mean_torque.append(np.mean(torques, axis=0))
 
-        if timestep >50 and validity_count / len(solutions) / timestep < 0.25:  # stuck
+        if timestep > 50 and validity_count / len(solutions) / timestep < 0.25:  # stuck
             LOG.info(
                 f"{bcolors.OKBLUE} Stuck at step: {timestep}, validity count: {validity_count}, validity ratio: {validity_count / len(solutions) / timestep}, {bcolors.ENDC}")
             # reinit optimizer
@@ -198,8 +186,8 @@ def run_trial(env, init_result: MainEnvInitResult, search_config: SearchConfig):
         f"{bcolors.OKBLUE} Best cost: {optimizer.best.f} {best_cost} {bcolors.ENDC}")
     return result
 
+
 def init_env(env, handover_obj, person_id="", pose_id=""):
-    
     env.reset()
 
     # time.sleep(100)
@@ -210,9 +198,10 @@ def init_env(env, handover_obj, person_id="", pose_id=""):
     # reset the end effector based on the object
     end_effector = handover_obj_config.end_effector
     human.reset_controllable_joints(end_effector)
-    robot_base, robot_orient, robot_side = find_robot_start_pos_orient(env, end_effector, handover_obj_config.robot_side)
+    robot_base, robot_orient, robot_side = find_robot_start_pos_orient(env, end_effector,
+                                                                       handover_obj_config.robot_side)
 
-    print ("end effector: ", end_effector)
+    print("end effector: ", end_effector)
     robot_setting = InitRobotSetting(robot_base, robot_orient, robot_side)
     # init collision check
     env_object_ids = [furniture.body, plane.body]  # set env object for collision check
@@ -242,33 +231,32 @@ def init_env(env, handover_obj, person_id="", pose_id=""):
                              human.controllable_joint_lower_limits, human.controllable_joint_upper_limits,
                              robot_setting)
 
+
 def train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', person_id='p001',
           end_effector='right_hand', save_dir='./trained_models/', render=False, simulate_collision=False,
-          robot_ik=False, handover_obj=None, is_augmented = False):
+          robot_ik=False, handover_obj=None, is_augmented=False):
     start_time = time.time()
     env = make_env(env_name, person_id, smpl_file, handover_obj, True, is_augmented=is_augmented)
-    try: 
+    try:
         init_result: MainEnvInitResult = init_env(env, handover_obj, person_id, smpl_file)
 
-        env_config: EnvConfig =  EnvConfig(env_name, person_id, smpl_file, handover_obj, init_result.end_effector, True)
+        env_config: EnvConfig = EnvConfig(env_name, person_id, smpl_file, handover_obj, init_result.end_effector, True)
 
         # init sub env processes
         search_config = SearchConfig(robot_ik, init_result.env_object_ids, init_result.original_info,
-                                    init_result.max_dynamics, handover_obj,
-                                    init_result.handover_obj_config, init_result.robot_setting)
-
+                                     init_result.max_dynamics, handover_obj,
+                                     init_result.handover_obj_config, init_result.robot_setting)
 
         # smpl_name = os.path.basename(smpl_file)
         # p.addUserDebugText("person: {}, smpl: {}".format(person_id, smpl_name), [0, 0, 1], textColorRGB=[1, 0, 0])
 
-        # best_mean_cost,  best_mean_dist, best_mean_m, best_mean_energy, best_mean_torque, best_mean_evolution, best_mean_reba = [], [], [], [], [], [], []
         best_trial_cost, best_trial_result = float('inf'), None
         for i in range(MAX_TRIAL):
             result = run_trial(env, init_result, search_config)
             if result.best_kinematic_result.cost < best_trial_cost:
                 best_trial_cost = result.best_kinematic_result.cost
                 best_trial_result = result
-        
+
         human_robot_info = get_human_robot_info(env, best_trial_result, env_config)
         action = {
             "solution": best_trial_result.joint_angles,
@@ -302,12 +290,11 @@ def train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', 
         print("training time (s): ", time.time() - start_time)
         return action
     except Exception as e:
-        print ("Exception when training: ", e)
+        print("Exception when training: ", e)
         print(traceback.format_exc())
-        return e 
-    finally: 
+        return e
+    finally:
         destroy_env(env)
-    
 
 
 def save_train_result(save_dir, env_name, person_id, smpl_file, actions, key, handover_obj):
@@ -327,12 +314,11 @@ def save_train_result(save_dir, env_name, person_id, smpl_file, actions, key, ha
     json_data = {}
     action = actions[key]
 
-    
     for key in ["cost", "end_effector", "m", "dist", "energy", "torque"]:
         json_data[key] = action[key]
     json_data["wrt_pelvis"] = json.dumps(action["wrt_pelvis"], cls=NumpyEncoder)
     json_data["validity"] = action["validity"].to_json()
-    dumped = json.dumps(json_data, indent=4) # dump the whole action dict
+    dumped = json.dumps(json_data, indent=4)  # dump the whole action dict
     # dumped = jsonpickle.encode (json_data) # dump the whole action dict
     with open(os.path.join(save_dir, handover_obj + ".json"), "w") as f:
         f.write(dumped)
