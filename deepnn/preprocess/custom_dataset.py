@@ -32,6 +32,11 @@ class SMPLDataset(Dataset):
         # print (input_dir, output_dir)
         # list all subdirectories in 'output'
         person_ids = sorted([f for f in os.listdir(output_dir) if os.path.isdir(os.path.join(output_dir, f))])
+        invalid_files = json.load(open('/invalid_ik_cases_1212_pill.json', 'r'))
+        invalid_set = set()
+        for f in invalid_files:
+            invalid_set.add((f[0], f[1], f[2]))
+        # print (len(invalid_set), invalid_set)   
         # print(person_ids)
         for p in person_ids:
             subinput_dir, sub_output_dir, sub_metric_dir = os.path.join(input_dir, p), os.path.join(output_dir, p), os.path.join(metric_dir, p)
@@ -45,11 +50,12 @@ class SMPLDataset(Dataset):
                 valid_output_files = []
                 for f in output_files:
                     object = os.path.basename(f).split('.')[0]
-                    metric_file = os.path.join(subsub_metric_dir, object + '.json')
-                    metric = json.load(open(metric_file, 'r'))
+                    # metric_file = os.path.join(subsub_metric_dir, object + '.json')
+                    # metric = json.load(open(metric_file, 'r'))
                     # if 'env_penetrations' not in metric and 'self_penetrations' not in metric: # valid
                     # if 'env_penetrations' not in metric: # valid
-                    valid_output_files.append(f)
+                    if not (p, pose_id, object) in invalid_set:
+                        valid_output_files.append(f)
 
                 # sub_outputfile_list.extend([os.path.join(subsub_output_dir, f) for f in os.listdir(subsub_output_dir) if f.endswith(object + '.json')])
                 if len(valid_output_files) >0:
@@ -87,12 +93,18 @@ class SMPLDataset(Dataset):
 
         model_input = ModelInput(input['pose'], input['betas'])
         if self.human_only:
-            model_output = ModelOutputHumanOnly(output['joint_angles'])
+            data = json.loads(output['wrt_pelvis'])
+            # print (data['joint_angles'])
+
+            model_output = ModelOutputHumanOnly(data['joint_angles'])
         else:
+            # TODO: fix with the new format
             model_output = ModelOutput(output['joint_angles'], output['robot']['original'][0], output['robot']['original'][1], output['robot_joint_angles'])
 
         feature = model_input.to_tensor()
         label = model_output.to_tensor()
+        end_effector = 0 if output['end_effector'] == 'left_hand' else 1
+        end_effector = torch.tensor(end_effector, dtype=torch.long)
 
         if self.transform:
             feature = self.transform(feature)
@@ -100,6 +112,7 @@ class SMPLDataset(Dataset):
         return {
             'feature': feature,
             'label': label,
+            'end_effector': end_effector,
             'feature_path': inputfile_path,
             'label_path': outputfile_path
         }

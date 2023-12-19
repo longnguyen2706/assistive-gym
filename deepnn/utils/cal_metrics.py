@@ -21,20 +21,21 @@ class Metrics:
             "avg_ik_dists": sum(self.ik_dists) / len(self.ik_dists),
             "std_ik_dists": np.std(self.ik_dists),
             "avg_torques": sum(self.torques) / len(self.torques),
-            "invalid_ik_dists": len([d for d in self.ik_dists if d > 0.2]) / len(self.ik_dists),
+            "invalid_ik_dists_percentage": len([d for d in self.ik_dists if d > 0.2]) / len(self.ik_dists),
             "avg_ik_dist_excluding_invalid": sum([d for d in self.ik_dists if d < 0.2]) / len([d for d in self.ik_dists if d < 0.2]),
         }
 
 
 # METRICS_DIR = '../data/input/metrics2/HumanComfort-v1_rerun'
 
-METRICS_DIR = '/home/louis/Documents/Projects/assistive-gym/trained_models/HumanComfort-v1_rerun_dec12'
+# METRICS_DIR = '/home/louis/Documents/Projects/assistive-gym/trained_models/HumanComfort-v1_rerun_dec15'
+METRICS_DIR = '/home/louis/Documents/hrl/results/HumanComfort-v1_rerun_dec15_cup'
 def get_data_metrics():
     person_ids = sorted([f for f in os.listdir(METRICS_DIR) if os.path.isdir(os.path.join(METRICS_DIR, f))])
     counter = {
         # 'cane': Metrics(),
-        # 'cup':  Metrics(),
-        'pill': Metrics()
+        'cup':  Metrics(),
+        # 'pill': Metrics()
     }
     invalid_cases = set()
     for p in person_ids:
@@ -43,8 +44,8 @@ def get_data_metrics():
 
         personal_counter = {
             # 'cane': Metrics(),
-            # 'cup':  Metrics(),
-            'pill': Metrics()
+            'cup':  Metrics(),
+            # 'pill': Metrics()
         }
         for pose_id in pose_ids:
             subsub_metrics_dir = os.path.join(sub_metrics_dir, pose_id)
@@ -68,6 +69,7 @@ def get_data_metrics():
 
                 if metrics['validity']['robot_dist_to_target'] > 0.2:
                     invalid_cases.add((p, pose_id, object_name))
+
                     print (p, pose_id, object_name, metrics['validity']['robot_dist_to_target'])
                 counter[object_name].ik_dists.append(metrics['validity']['robot_dist_to_target'])
                 counter[object_name].dists.append(metrics['dist'])
@@ -88,8 +90,8 @@ def get_data_metrics():
     invalid_cases = sorted(list(invalid_cases))
     print ( len(invalid_cases))
     print ( len(invalid_cases), invalid_cases)
-    with open('../../invalid_ik_cases.json', 'w') as outfile:
-        outfile.write(json.dumps(invalid_cases, indent=4))
+    # with open('../../invalid_ik_cases_cup.json', 'w') as outfile:
+    #     outfile.write(json.dumps(invalid_cases, indent=4))
 
 
 if __name__ == '__main__':

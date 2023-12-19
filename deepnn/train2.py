@@ -47,9 +47,9 @@ def get_model(config):
 
 def get_data_split(batch_size, object):  # 60% train, 20% val, 20% test
     smpl_dataset = SMPLDataset(INPUT_PATH, object, transform=None, human_only = OUTPUT_HUMAN_ONLY)
-    augmented_dataset = AugmentedDataset(AUGMENTED_PATH, object, transform=None, human_only = OUTPUT_HUMAN_ONLY)
+    # augmented_dataset = AugmentedDataset(AUGMENTED_PATH, object, transform=None, human_only = OUTPUT_HUMAN_ONLY)
     # datasets = torch.utils.data.ConcatDataset([smpl_dataset, augmented_dataset])
-    datasets = augmented_dataset
+    datasets = smpl_dataset
     train_size, val_size = int(len(datasets) * 0.8), int(len(datasets) * 0.0)
     test_size = len(datasets) - train_size - val_size
 
@@ -85,9 +85,10 @@ def train(config, exp_name="ray", is_tune=True):
             model.train(True)
             # print (features.shape, labels.shape)
             # Move data to the defined device
-            features, gt_angles = train_data['feature'], train_data['label']
+            features, gt_angles, end_effectors = train_data['feature'], train_data['label'], train_data['end_effector']
             features = features.to(device)
             gt_angles = gt_angles.to(device)
+            end_effectors = end_effectors.to(device)
             # print (train_data['feature_path'][0], train_data['label_path'][0])
             # print (features[0][:72])
             # print ("gt_angles: ", gt_angles[0])
@@ -96,8 +97,8 @@ def train(config, exp_name="ray", is_tune=True):
             optimizer.zero_grad()
             pred_angles = model(features)
             # print(features[0][:72])
-            gt_poses = prep_smpl_data(features, gt_angles, torch.ones((features.shape[0], 1)))
-            pred_poses = prep_smpl_data(features, pred_angles, torch.ones((features.shape[0], 1)))
+            gt_poses = prep_smpl_data(features, gt_angles, end_effectors)
+            pred_poses = prep_smpl_data(features, pred_angles, end_effectors) #torch.ones((features.shape[0], 1))
             # print("gt_poses: ", gt_poses[0][:72])
             # forward_smpl(torch.reshape(features[0], (1, -1)), vis=True)
             # forward_smpl(torch.reshape(gt_poses[0], (1, -1)), vis=True)
@@ -367,7 +368,7 @@ if __name__ == '__main__':
     best_config = {'lr': 0.00034736271280210167, 'weight_decay': 0.012936570242830842, 'dropout': 0.025, 'layer_sizes': [7168, 3584, 256, 128, 32], 'batch_size': 64, 'object': 'pill'}
 
 
-    train(best_config,exp_name='t18_aug_2', is_tune=False)
+    train(best_config,exp_name='t20_aug_2', is_tune=False)
 
     # load model and output angle to file
     # model_checkpoint= 'model_pill_epoch_200_2023-12-06 22:56:17.022110.ckpt'

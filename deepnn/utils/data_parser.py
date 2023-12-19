@@ -142,6 +142,7 @@ class ModelOutput:
 class ModelOutputHumanOnly:
     def __init__(self, human_joint_angles):
         self.human_joint_angles = human_joint_angles  # len 15
+     
         assert len(human_joint_angles) == 15, "human_joint_angles should be len 15"
 
     # @timing

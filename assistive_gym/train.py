@@ -12,6 +12,7 @@ LOG = get_logger()
 MAX_ITERATION = 500
 RENDER_UI = False
 MAX_TRIAL = 1
+DEBUG= False
 
 def cal_object_specific_cost(env, handover_object, bedside, end_effector):
     if handover_object == 'cup':
@@ -197,7 +198,7 @@ def run_trial(env, init_result: MainEnvInitResult, search_config: SearchConfig):
         f"{bcolors.OKBLUE} Best cost: {optimizer.best.f} {best_cost} {bcolors.ENDC}")
     return result
 
-def init_env(env, handover_obj): 
+def init_env(env, handover_obj, person_id="", pose_id=""):
     
     env.reset()
 
@@ -206,13 +207,10 @@ def init_env(env, handover_obj):
 
     # choose end effector
     handover_obj_config = get_handover_object_config(handover_obj, env)
-    # if handover_obj_config and handover_obj_config.end_effector:  # reset the end effector based on the object
-    #     human.reset_controllable_joints(handover_obj_config.end_effector)
-    #     end_effector = handover_obj_config.end_effector
     # reset the end effector based on the object
     end_effector = handover_obj_config.end_effector
     human.reset_controllable_joints(end_effector)
-    robot_base, robot_orient, robot_side = find_robot_start_pos_orient(env, end_effector)
+    robot_base, robot_orient, robot_side = find_robot_start_pos_orient(env, end_effector, handover_obj_config.robot_side)
 
     print ("end effector: ", end_effector)
     robot_setting = InitRobotSetting(robot_base, robot_orient, robot_side)
@@ -226,11 +224,18 @@ def init_env(env, handover_obj):
 
     if RENDER_UI:
         env.render()
+
     env.reset()
+
     # draw original ee pos
     original_ee_pos = human.get_pos_orient(human.human_dict.get_dammy_joint_id(end_effector), center_of_mass=True)[0]
     draw_point(original_ee_pos, size=0.01, color=[0, 1, 0, 1])
     original_info.original_ee_pos = original_ee_pos  # TODO: refactor
+
+    if DEBUG:
+        p.addUserDebugText("person: {}, smpl: {}".format(person_id, pose_id), [0, 0, 1], textColorRGB=[1, 0, 0])
+        get_pelvis_side(env.human)
+        get_eyeline_side(env.human)
 
     return MainEnvInitResult(original_info, max_dynamics, env_object_ids, human_link_robot_collision, end_effector,
                              handover_obj_config,
@@ -243,7 +248,7 @@ def train(env_name, seed=0, smpl_file='examples/data/smpl_bp_ros_smpl_re2.pkl', 
     start_time = time.time()
     env = make_env(env_name, person_id, smpl_file, handover_obj, True, is_augmented=is_augmented)
     try: 
-        init_result: MainEnvInitResult = init_env(env, handover_obj)
+        init_result: MainEnvInitResult = init_env(env, handover_obj, person_id, smpl_file)
 
         env_config: EnvConfig =  EnvConfig(env_name, person_id, smpl_file, handover_obj, init_result.end_effector, True)
 

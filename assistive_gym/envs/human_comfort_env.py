@@ -12,7 +12,7 @@ class HumanComfortEnv(AssistiveEnv):
     def __init__(self):
         self.robot = StretchDex('wheel_right')
         self.human = HumanUrdf()
-
+        self.gpu = True
         super(HumanComfortEnv, self).__init__(robot=self.robot, human=self.human, task='', obs_robot_len=len(self.robot.controllable_joint_indices), 
                                          obs_human_len=len(self.human.controllable_joint_indices), render=False) #hardcoded
         self.target_pos = np.array([0, 0, 0])

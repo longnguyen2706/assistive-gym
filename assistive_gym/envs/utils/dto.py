@@ -96,11 +96,12 @@ class InitRobotSetting:
 
 
 class HandoverObjectConfig:
-    def __init__(self, object_type: HandoverObject, weights: list, limits: list, end_effector: Optional[str]):
+    def __init__(self, object_type: HandoverObject, weights: list, limits: list, end_effector: str, robot_side: str):
         self.object_type = object_type
         self.weights = weights
         self.limits = limits
         self.end_effector = end_effector
+        self.robot_side = robot_side
 
 
 class EnvConfig:

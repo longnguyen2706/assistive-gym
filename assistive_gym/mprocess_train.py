@@ -137,7 +137,7 @@ def init_main_env(env, handover_obj):
     # reset the end effector based on the object
     end_effector = handover_obj_config.end_effector
     human.reset_controllable_joints(end_effector)
-    robot_base, robot_orient, robot_side = find_robot_start_pos_orient(env, end_effector)
+    robot_base, robot_orient, robot_side = find_robot_start_pos_orient(env, end_effector, handover_obj_config.robot_side)
     robot_setting = InitRobotSetting(robot_base, robot_orient, robot_side)
     # init collision check
     env_object_ids = [furniture.body, plane.body]  # set env object for collision check
