@@ -9,8 +9,8 @@ from assistive_gym.envs.utils.train_utils import *
 
 
 LOG = get_logger()
-MAX_ITERATION = 500
-RENDER_UI = False
+MAX_ITERATION = 10**3
+RENDER_UI = True
 MAX_TRIAL = 1
 DEBUG= False
 
@@ -90,7 +90,9 @@ def get_search_result(env, joint_angles, search_config: SearchConfig):
     # print("s: ", s, 'human', human.controllable_joint_indices, 'end_effector', end_effector, 'handover_obj', handover_obj)
     # set angle directly
     human.reset_controllable_joints(end_effector)
-    human.set_joint_angles(human.controllable_joint_indices, joint_angles)  # force set joint angle
+
+    human_joint_angles, robot_base_orient, robot_joint_angles = joint_angles[0:15], joint_angles[15:18], joint_angles[18:]
+    human.set_joint_angles(human.controllable_joint_indices, human_joint_angles)  # force set joint angle
 
     # check collision
     env_collisions, self_collisions = human.check_env_collision(search_config.env_object_ids,
@@ -103,31 +105,23 @@ def get_search_result(env, joint_angles, search_config: SearchConfig):
     # cal dist to bedside
     object_specific_cost = cal_object_specific_cost(env, handover_obj, search_config.initial_robot_setting.robot_side,
                                                     end_effector)
-    if search_config.robot_ik:  # solve robot ik when doing training
-        has_valid_robot_ik, robot_joint_angles, robot_base_pos, robot_base_orient, robot_side, robot_penetrations, robot_dist_to_target, gripper_orient = find_robot_ik_solution(
-            env,
-            end_effector,
-            handover_obj, search_config.initial_robot_setting)
-    else:
-        ee_link_idx = human.human_dict.get_dammy_joint_id(end_effector)
-        ee_collision_radius = COLLISION_OBJECT_RADIUS[search_config.handover_obj]  # 20cm range
-        ee_collision_body = human.add_collision_object_around_link(ee_link_idx,
-                                                                   radius=ee_collision_radius)  # TODO: ignore collision with hand`
 
-        ee_collision_body_pos, ee_collision_body_orient = human.get_ee_collision_shape_pos_orient(end_effector,
-                                                                                                  ee_collision_radius)
-        p.resetBasePositionAndOrientation(ee_collision_body, ee_collision_body_pos, ee_collision_body_orient,
-                                          physicsClientId=env.id)
-        has_valid_robot_ik = True
+    robot, furniture, tool = env.robot, env.furniture, env.tool
+    ee_pos, target_pos = find_ee_ik_goal(human, end_effector, handover_obj)
+    robot_base = [robot_base_orient[0], robot_base_orient[1], search_config.initial_robot_setting.base_pos[2]]
+    robot_orient = robot.get_quaternion([0, 0, robot_base_orient[2]])
+    robot_penetrations, jwkli, robot_dist_to_target, gripper_pos, gripper_orient= robot.get_env_feedback(robot_base, robot_orient, robot_joint_angles, search_config.initial_robot_setting.robot_side, target_pos, collision_objects={
+                                                                                       furniture: None,
+                                                                                       human: None}, tool=tool)
 
-    cost, m, dist, energy, torque = cost_func(human, end_effector, joint_angles,
+    cost, m, dist, energy, torque = cost_func(human, end_effector, human_joint_angles,
                                               search_config.original_info.original_ee_pos, search_config.original_info,
                                               search_config.max_dynamics, new_self_penetrations, new_env_penetrations,
-                                              has_valid_robot_ik, robot_penetrations, robot_dist_to_target,
-                                              0, search_config.handover_obj_config, search_config.robot_ik,
+                                              robot_penetrations, robot_dist_to_target, jwkli,
+                                              search_config.handover_obj_config, search_config.robot_ik,
                                               object_specific_cost)
-
-    robot_setting = RobotSetting(robot_base_pos, robot_base_orient, robot_joint_angles, robot_side,
+    robot_base_pos, robot_base_orient = robot.get_base_pos_orient()
+    robot_setting = RobotSetting(robot_base_pos, robot_base_orient, robot_joint_angles, search_config.initial_robot_setting.robot_side,
                                  gripper_orient)
     handover_validity = HandoverValidity(new_self_penetrations, new_env_penetrations, robot_penetrations,
                                          robot_dist_to_target)
@@ -139,21 +133,33 @@ def get_search_result(env, joint_angles, search_config: SearchConfig):
 
 def run_trial(env, init_result: MainEnvInitResult, search_config: SearchConfig):
     # print (init_result, search_config)
+    robot = env.robot
     timestep = 0
     mean_cost, mean_dist, mean_m, mean_energy, mean_torque, mean_evolution, mean_reba = [], [], [], [], [], [], []
+    robot_base_pos, robot_base_orient = init_result.robot_setting.base_pos, init_result.robot_setting.base_orient
+    robot_x, robot_y, robot_theta= robot_base_pos[0], robot_base_pos[1], robot.get_euler(robot_base_orient)[2]
+    robot_bases = [robot_x, robot_y, robot_theta]
+    robot_bases_lower_bounds = [robot_x-0.5, robot_y -1, robot_theta - np.pi/2]
+    robot_bases_upper_bounds = [robot_x + 0.5, robot_y + 1, robot_theta + np.pi / 2]
+
+    init_robot_joint_angles = robot.get_joint_angles(robot.right_arm_joint_indices)
     # init optimizer
-    x0 = np.array(init_result.original_info.angles)
-    optimizer = init_optimizer(x0, 0.05, init_result.joint_lower_limits, init_result.joint_upper_limits)
+    init_joint_angles = np.concatenate((init_result.original_info.angles, np.array(robot_bases), init_robot_joint_angles))
+    joint_lower_bounds = np.concatenate((init_result.human_joint_lower_limits, np.array(robot_bases_lower_bounds), robot.controllable_joint_lower_limits))
+    joint_upper_bounds = np.concatenate((init_result.human_joint_upper_limits, np.array(robot_bases_upper_bounds), robot.controllable_joint_upper_limits))
+    optimizer = init_optimizer(init_joint_angles, 0.1, joint_lower_bounds, joint_upper_bounds)
 
     best_cost, best_angle, best_robot_setting = float('inf'), None, None
     validity_count = 0
 
     while timestep < MAX_ITERATION and not optimizer.stop():
+        # time.sleep(0.1)
         timestep += 1
         solutions = optimizer.ask()
         fitness_values, dists, manipus, energy_changes, torques = [], [], [], [], []
 
         for joint_angles in solutions:
+            print ("timestep: ", timestep, "joint_angles: ", joint_angles)
             sr: SearchResult = get_search_result(env, joint_angles, search_config)
             # print (result)
             fitness_values.append(sr.cost)
@@ -179,11 +185,11 @@ def run_trial(env, init_result: MainEnvInitResult, search_config: SearchConfig):
         mean_energy.append(np.mean(energy_changes, axis=0))
         mean_torque.append(np.mean(torques, axis=0))
 
-        if timestep >50 and validity_count / len(solutions) / timestep < 0.25:  # stuck
-            LOG.info(
-                f"{bcolors.OKBLUE} Stuck at step: {timestep}, validity count: {validity_count}, validity ratio: {validity_count / len(solutions) / timestep}, {bcolors.ENDC}")
-            # reinit optimizer
-            optimizer = init_optimizer(x0, 0.05, init_result.joint_lower_limits, init_result.joint_upper_limits)
+        # if timestep >50 and validity_count / len(solutions) / timestep < 0.25:  # stuck
+        #     LOG.info(
+        #         f"{bcolors.OKBLUE} Stuck at step: {timestep}, validity count: {validity_count}, validity ratio: {validity_count / len(solutions) / timestep}, {bcolors.ENDC}")
+        #     # reinit optimizer
+        #     optimizer = init_optimizer(init_joint_angles, 0.05, init_result.human_joint_lower_limits, init_result.human_joint_upper_limits)
 
     # # get the kinematic result for best solution
     sr: SearchResult = get_search_result(env, best_angle, search_config)

@@ -347,7 +347,7 @@ def run_trial(init_result, main_env_task_queue, main_env_result_queue, sub_env_t
     # init optimizer
     x0 = np.array(init_result.original_info.angles)
 
-    optimizer = init_optimizer(x0, 0.05, init_result.joint_lower_limits, init_result.joint_upper_limits)
+    optimizer = init_optimizer(x0, 0.05, init_result.human_joint_lower_limits, init_result.human_joint_upper_limits)
 
     best_cost, best_angle, best_robot_setting = float('inf'), None, None
     validity_count = 0

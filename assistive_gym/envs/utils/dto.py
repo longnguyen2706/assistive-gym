@@ -159,15 +159,15 @@ class SearchResult:
 class MainEnvInitResult:
     def __init__(self, original_info: HumanInfo, max_dynamics: MaximumHumanDynamics, env_object_ids,
                  human_link_robot_collision, end_effector, handover_obj_config,
-                 joint_lower_limits, joint_upper_limits, robot_setting: InitRobotSetting):
+                 human_joint_lower_limits, human_joint_upper_limits, robot_setting: InitRobotSetting):
         self.original_info = original_info
         self.max_dynamics = max_dynamics
         self.env_object_ids = env_object_ids
         self.human_link_robot_collision = human_link_robot_collision
         self.end_effector = end_effector
         self.handover_obj_config = handover_obj_config
-        self.joint_lower_limits = joint_lower_limits
-        self.joint_upper_limits = joint_upper_limits
+        self.human_joint_lower_limits = human_joint_lower_limits
+        self.human_joint_upper_limits = human_joint_upper_limits
         self.robot_setting = robot_setting
 
 

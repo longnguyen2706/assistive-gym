@@ -113,3 +113,5 @@ class StretchDex(Robot):
         for i in [3, 32]:
             p.changeVisualShape(self.body, i, rgbaColor=dark_gray, physicsClientId=id)
 
+        self.controllable_joint_lower_limits = np.array([self.lower_limits[i] for i in self.right_arm_joint_indices])
+        self.controllable_joint_upper_limits = np.array([self.upper_limits[i] for i in self.right_arm_joint_indices])

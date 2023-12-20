@@ -10,6 +10,7 @@ import gc
 import gym
 import numpy as np
 import pybullet as p
+import torch
 import yaml
 from cma import CMA, CMAEvolutionStrategy
 from cmaes import CMA
@@ -67,7 +68,7 @@ objectTaskMapping = {
     HandoverObject.CANE: "comfort_standing_up"
 }
 
-YAML_FILE = os.path.join(os.getcwd(), 'params/param_1509.yaml')
+YAML_FILE = os.path.join(os.getcwd(), 'params/param_2012.yaml')
 
 IMG_SIZE = (1920, 1080)
 def load_yaml(yaml_file):
@@ -110,6 +111,7 @@ def find_ee_ik_goal(human, end_effector, handover_obj):
     target_pos = np.array(ee_pos) + ee_norm_vec * OBJECT_PALM_OFFSET[
         handover_obj]  # need to depends on the size of the object as well
     return ee_pos, target_pos
+
 
 #@timing
 def find_robot_ik_solution(env, end_effector: str, handover_obj: str, init_robot_setting: InitRobotSetting):
@@ -477,8 +479,8 @@ def object_type_to_name(object_type: HandoverObject):
 # TODO: better refactoring for seperating robot-ik/ non robot ik mode
 def cost_func(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.ndarray,
               original_info: HumanInfo,
-              max_dynamics: MaximumHumanDynamics, new_self_penetrations, new_env_penetrations, has_valid_robot_ik,
-              robot_penetrations, robot_dist_to_target, angle_dist,
+              max_dynamics: MaximumHumanDynamics, new_self_penetrations, new_env_penetrations,
+              robot_penetrations, robot_dist_to_target, jwkli,
               object_config: Optional[HandoverObjectConfig], robot_ik_mode: bool, object_specific_cost: float):
     # cal energy
     energy_change, energy_original, energy_final = cal_energy_change(human, original_info.link_positions, ee_name)
@@ -521,6 +523,9 @@ def cost_func(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.n
         # if not has_valid_robot_ik:
         # cost += 1000
         # print('No valid ik solution found ', robot_dist_to_target)
+
+        jwkli_cost = w['jwlki']/ jwkli
+        cost += jwkli_cost
         ik_cost = w['ik_dist'] * robot_dist_to_target
         cost += ik_cost
         if robot_penetrations:
@@ -529,10 +534,11 @@ def cost_func(human, ee_name: str, angle_config: np.ndarray, ee_target_pos: np.n
             # print(robot_penetrations)]
             robot_penetration_cost = w['robot_penetration'] * sum(robot_penetrations)
             cost += robot_penetration_cost
-    # print('cost: ', cost / 100, 'object specific cost: ', o_specific_cost / 100, 'self_penetration_cost: ',
-    #       self_penetration_cost / 100, 'env_penetration_cost: ',
-    #       env_penetration_cost / 100, 'ik_cost: ', ik_cost / 100, 'robot_penetration_cost: ',
-    #       robot_penetration_cost / 100)
+
+    print('cost: ', cost / 100, 'object specific cost: ', o_specific_cost / 100, 'self_penetration_cost: ',
+          self_penetration_cost / 100, 'env_penetration_cost: ',
+          env_penetration_cost / 100, 'ik_cost: ', ik_cost / 100, 'robot_penetration_cost: ',
+          robot_penetration_cost / 100, 'jwkli_cost: ',jwkli_cost/ 100)
 
     return cost / 100, manipulibility, dist, energy_final, torque
 
@@ -786,8 +792,8 @@ def translate_wrt_human_pelvis(human, pos, orient):
 
 def init_optimizer(x0, sigma, lower_bounds, upper_bounds):  # for cmaes library
     opts = {}
-    opts['tolfun'] = 1e-2
-    opts['tolx'] = 1e-2
+    opts['tolfun'] = 1e-4
+    opts['tolx'] = 1e-4
 
     for i in range(x0.size):
         if x0[i] < lower_bounds[i]:
@@ -796,7 +802,7 @@ def init_optimizer(x0, sigma, lower_bounds, upper_bounds):  # for cmaes library
             x0[i] = upper_bounds[i]
     for i in range(len(lower_bounds)):
         if lower_bounds[i] == 0:
-            lower_bounds[i] = -1e-9
+            lower_bounds[i] = -1e-9 # to avoid zero division
         if upper_bounds[i] == 0:
             upper_bounds[i] = 1e-9
     # bounds = [lower_bounds, upper_bounds]

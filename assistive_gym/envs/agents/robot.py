@@ -476,3 +476,73 @@ class Robot(Agent):
         joint_limit_weight = np.diag(weights)
         return joint_limit_weight
 
+
+    def detect_all_collisions(self, tool, collision_objects, right: bool):
+
+        tool_collisions = []
+        if tool is not None:
+            tool.reset_pos_orient()
+            tool_collision_objects = collision_objects.copy()
+            tool_collision_objects[
+                self] = None  # Need to add the robot to the collision objects to check for collisions
+            tool_collisions = self.detect_tool_collisions(tool, tool_collision_objects)  # TODO: refdctor
+
+        robot_collisions = self.detect_robot_collisions(collision_objects)
+
+        collisions = robot_collisions + tool_collisions
+
+        return collisions
+
+    def cal_jlwki(self, target_joint_angles, arm):
+
+
+        # Reset all robot joints to their defaults
+        # self.reset_joints()
+
+        a = 6
+        # Check if the robot can reach all target locations from this base pose
+        right = (arm == 'right')
+        ee = self.right_end_effector if right else self.left_end_effector
+        ik_indices = self.right_arm_ik_indices if right else self.left_arm_ik_indices
+        lower_limits = self.right_arm_lower_limits if right else self.left_arm_lower_limits
+        upper_limits = self.right_arm_upper_limits if right else self.left_arm_upper_limits
+
+        _, motor_positions, _, _ = self.get_motor_joint_states()
+        joint_velocities = [0.0] * len(motor_positions)
+        joint_accelerations = [0.0] * len(motor_positions)
+        center_of_mass = \
+            p.getLinkState(self.body, ee, computeLinkVelocity=True, computeForwardKinematics=True,
+                           physicsClientId=self.id)[2]
+        J_linear, J_angular = p.calculateJacobian(self.body, ee, localPosition=center_of_mass,
+                                                  objPositions=motor_positions,
+                                                  objVelocities=joint_velocities,
+                                                  objAccelerations=joint_accelerations,
+                                                  physicsClientId=self.id)
+        J_linear = np.array(J_linear)[:, ik_indices]
+        J_angular = np.array(J_angular)[:, ik_indices]
+        J = np.concatenate([J_linear, J_angular], axis=0)
+        # Joint-limited-weighting
+        joint_limit_weight = self.joint_limited_weighting(target_joint_angles, lower_limits,
+                                                          upper_limits)
+        # Joint-limited-weighted kinematic isotropy (JLWKI)
+        det = max(np.linalg.det(np.matmul(np.matmul(J, joint_limit_weight), J.T)), 0)
+        jlwki = np.power(det, 1.0 / a) / (
+                np.trace(np.matmul(np.matmul(J, joint_limit_weight), J.T)) / a)
+
+        return jlwki
+
+    def get_env_feedback(self, robot_base, robot_orient, target_joint_angles, arm, target_pos, collision_objects={},  tool=None):
+        right = (arm == 'right')
+        # base = [robot_base[0], robot_base[1], 0]
+        # orient = [0, 0, robot_base[2]]
+        # self.set_base_pos_orient(base, self.get_quaternion(orient))
+        self.set_base_pos_orient(robot_base, robot_orient)
+        self.set_joint_angles(self.right_arm_joint_indices if right else self.left_arm_joint_indices,
+                              target_joint_angles)
+        collisions = self.detect_all_collisions(tool, collision_objects, right)
+        jlwki = self.cal_jlwki(target_joint_angles, arm)
+        gripper_pos, gripper_orient = self.get_pos_orient(
+            self.right_end_effector if right else self.left_end_effector)
+        dist_to_target = np.linalg.norm(target_pos - np.array(gripper_pos))
+
+        return collisions, jlwki, dist_to_target, gripper_pos, gripper_orient
