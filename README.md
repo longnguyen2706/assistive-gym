@@ -256,3 +256,40 @@ bash realtime_assistive_gym.sh # will trigger assistive-gym/realtime_train.py wh
 ```
 Or trigger realtime_train.py directly with args commands
 
+# How to train Neural Network for Human Comfort Handover
+## Environment
+- Ubuntu 20.04
+- pytorch 2.0 (latest)
+
+## Data 
+Both real data and augmented data folder can be modified as your wish. Here is the current setting
+- Real data (collected from SLP3D dataset) - dataset = `deepnn/preprocess/custom_dataset.py`
+  - Convert the SLP3D dataset to json format and put under `deepnn/data/input/searchinput/`
+  - Copy the train results from CMAES and put under `deepnn/data/input/searchoutput/`
+- Augmented data (collected with augmented dataset) - dataset = `deepnn/preprocess/augmented_dataset.py`
+  - Convert the SLP3D dataset to json format and put under `synthetic_dataset/smpl/compressed_data`
+  - Copy the train results from CMAES and put under `results/HumanComfort-v1_augmented`
+
+## Train
+- We have 2 versions of modelling
+  - `deepnn/train_nn.py` - Loss function = MSE angle loss 
+  - `deepnn/train_nn_smpl.py` - Loss function = MSE angle loss + MSE joint position loss. For every joint angle configuration that NN generated, we subtitute it to the SMPL joint angles, feedforward SMPL net to get the joint positions
+
+- To run
+```bash
+python3 train_nn_smpl.py
+```
+- By default, it will run some hyper parameters tuning by Ray Tune and train with the best setting. You can change the code to 
+  - Run with different parameters setting - including increasing the layers 
+  - Run with different loss function
+  - Run with just the best setting (copied from hyperparam.txt), without Ray Tune
+
+- For example, to give more layers, simply extends this layer_sizes list 
+```python
+ "layer_sizes": [
+           tune.grid_search(list(range(1024, 8192, 1024))),
+            tune.grid_search(list(range(512, 4096, 512))), tune.grid_search(list(range(256, 1024, 256))),
+                     tune.grid_search(list(range(64, 256, 64))), tune.grid_search(list(range(32, 64, 32)))],
+```
+
+
