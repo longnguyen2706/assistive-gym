@@ -6,7 +6,7 @@ from assistive_gym.envs.env import AssistiveEnv
 from assistive_gym.envs.utils.human_utils import set_self_collisions, disable_self_collisions
 from assistive_gym.envs.utils.urdf_utils import load_smpl
 from experimental.human_urdf import HumanUrdf
-
+import time
 
 class HumanComfortEnv(AssistiveEnv):
     def __init__(self):
@@ -140,7 +140,7 @@ class HumanComfortEnv(AssistiveEnv):
         # Enable rendering
         p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1, physicsClientId=self.id)
         # drop human on bed
-        for i in range(300):
+        for i in range(1000):
             p.stepSimulation(physicsClientId=self.id)
 
         # enable self collision and reset joint angle after dropping on bed
@@ -152,6 +152,7 @@ class HumanComfortEnv(AssistiveEnv):
         set_self_collisions(self.human.body, self.id)
         self.human.initial_self_collisions= self.human.check_self_collision()
 
+        time.sleep(10)
         self.init_env_variables()
         return self._get_obs()
 

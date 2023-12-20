@@ -868,20 +868,27 @@ def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik: boo
             print("no robot pose found")
         render_result(env_name, action, person_id, smpl_file, handover_obj, robot_ik, robot_pose, robot_joint_angles, save_to_file=save_to_file, save_metrics=save_metrics, is_augmented=is_augmented)
 
-def save_render_to_file(env, save_dir, person_id, pose_id, object):
+def save_render_to_file(save_dir, person_id, pose_id, object):
     width, height = IMG_SIZE
-    view_matrix = p.computeViewMatrixFromYawPitchRoll(cameraTargetPosition=[0, 0, 0.5], distance=1.75, yaw=-25, pitch=-45, roll=0, upAxisIndex=2)
+    ypr = [[-25, -45, 0], [-90, -10, 0], [25, -45, 0]]
+
     projection_matrix = p.computeProjectionMatrixFOV(fov=90, aspect=float(width)/height, nearVal=0.1, farVal=7.5)
     try:
-        img = p.getCameraImage(width, height, viewMatrix=view_matrix, projectionMatrix = projection_matrix, renderer=p.ER_BULLET_HARDWARE_OPENGL)
+        for i, view in enumerate(ypr):
+            view_matrix = p.computeViewMatrixFromYawPitchRoll(cameraTargetPosition=[0, 0, 0.5], distance=1.75, yaw=view[0],
+                                                              pitch=view[1], roll=view[2], upAxisIndex=2)
+            img = p.getCameraImage(width, height, viewMatrix=view_matrix, projectionMatrix = projection_matrix, renderer=p.ER_BULLET_HARDWARE_OPENGL)
 
-        rgb_opengl = img[2]
+            rgb_opengl = img[2]
 
-        rgbim = Image.fromarray(rgb_opengl)
-        rgbim_no_alpha = rgbim.convert('RGB')
-        imagename = os.path.join(save_dir, "{}_{}_{}.jpg".format(person_id, pose_id, object))
+            rgbim = Image.fromarray(rgb_opengl)
+            rgbim_no_alpha = rgbim.convert('RGB')
+            if object:
+                imagename = os.path.join(save_dir, "{}_{}_{}_{}.jpg".format(person_id, pose_id, object, i+1))
+            else:
+             imagename = os.path.join(save_dir, "{}_{}_{}.jpg".format(person_id, pose_id, i+1))
 
-        rgbim_no_alpha.save(imagename)
+            rgbim_no_alpha.save(imagename)
     except Exception as e:
         print ("exception when save render to file: ", e)
 
@@ -1012,9 +1019,9 @@ def render_pose(env_name, person_id, smpl_file, is_augmented = False):
     env.reset()
     # eyeline_side = get_eyeline_side(env.human)
     pose_id =smpl_file.split("/")[-1].split(".")[0]
-    dir = "trained_models/poses"
+    dir = "trained_models/poses2"
     os.makedirs(dir, exist_ok=True)
-    save_render_to_file (env, "trained_models/poses", person_id, pose_id, "")
+    save_render_to_file ("trained_models/poses2", person_id, pose_id, "")
     # while True:
     #     keys = p.getKeyboardEvents()
     #     if ord('q') in keys:

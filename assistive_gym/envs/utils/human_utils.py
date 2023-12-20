@@ -128,15 +128,15 @@ def set_joint_angles_2(human_id, pose):
 def change_dynamic_properties(human_id, link_ids):
     for link_id in link_ids:
         p.changeDynamics(human_id, link_id,
-                         lateralFriction=10,
-                         spinningFriction=10,
-                         rollingFriction=10,
+                         lateralFriction=1,
+                         spinningFriction=1,
+                         rollingFriction=1,
                          restitution=0.1,
                          linearDamping=1,
                          angularDamping=1,
-                         contactStiffness=1e3,
+                         contactStiffness=1e2,
                          # contact stiffness need to be large otherwise the body will penetrate the ground
-                         contactDamping=1e10)  # 1e10contact damping need to be much larger than contact stiffness so that no bounciness
+                         contactDamping=1e4)  # 1e10contact damping need to be much larger than contact stiffness so that no bounciness
 
 
 def check_collision(body_id, other_body_id, include_penetration=True):

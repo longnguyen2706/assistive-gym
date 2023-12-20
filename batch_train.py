@@ -46,7 +46,7 @@ END_EFFECTOR = 'right_hand'
 
 exception_file = os.path.join(SAVE_DIR, ENV, 'exception.txt')
 ### DEFINE MULTIPROCESS SETTING ###
-NUM_WORKERS = 3
+NUM_WORKERS = 1
 
 def get_dynamic_configs(re_run_failed_cases=False):
     # invalid_cases = get_invalid_cases()
