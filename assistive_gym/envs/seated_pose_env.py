@@ -336,7 +336,7 @@ class SeatedPoseEnv(AssistiveEnv):
         # SHIFT Pelvis
         p_y = self.human.get_ee_pos_orient("pelvis")[0][1]
         shift_y = -0.2 -p_y
-        shift_dict = {'wheelchair2':-0.15, 'stool':0.15, 'stool2':0.05}
+        shift_dict = {'wheelchair2':-0.15, 'stool':0.15, 'stool2':0.05, 'couch':-0.45}
         if self.furniture.furniture_type in shift_dict.keys():
             shift_y += shift_dict[self.furniture.furniture_type]
         
@@ -350,70 +350,91 @@ class SeatedPoseEnv(AssistiveEnv):
             smpl_data.global_orient = smpl_data.global_orient[0]
         else: smpl_data.global_orient[0] += new_x_or
 
-        self.human.set_global_orientation(smpl_data, [0, shift_y,  bed_height+0.2])
+        x_pos = 0
+        if self.furniture.furniture_type == 'couch': x_pos = (random.random() * 0.75) + 0.5 # range 0.5 to 1.25
+        self.human.set_global_orientation(smpl_data, [x_pos, shift_y,  bed_height+0.2])
         return smpl_data
     
-    def align_mesh(self, downward_shift=False):
-        out = p.getContactPoints(self.human.id, self.furniture.id)
-        if downward_shift:
-            print("shifitng mesh body down")
+    def align_mesh(self, downward_shift=False, forward_shift=False):
+        out = p.getContactPoints(self.human.body, self.furniture.body)
+        if forward_shift:
+            print("shifting mesh body out")
             totalShift = 0
-            while totalShift <= 0.1 and len(out) == 0:
-                    pos, ori = p.getBasePositionAndOrientation(self.human.id)
-                    copy_pos = (pos[0], pos[1], pos[2] - 0.01)
-                    p.resetBasePositionAndOrientation(self.human.id, copy_pos, ori)
-                    totalShift += 0.01
-                    out = p.getContactPoints(self.human.id, self.furniture.id)
+            # using the left and right ankles to help define maximum shift
+            left_ = self.human.get_pos_orient(7)[0][1]
+            right = self.human.get_pos_orient(8)[0][1]
+            while totalShift <= 0.2 and (left_ > -0.3 or right > -0.3):
+                    pos, ori = p.getBasePositionAndOrientation(self.human.body)
+                    copy_pos = (pos[0], pos[1] - 0.02, pos[2])
+                    p.resetBasePositionAndOrientation(self.human.body, copy_pos, ori)
+                    totalShift += 0.02
+                    left_ = self.human.get_pos_orient(7)[0][1]
+                    right = self.human.get_pos_orient(8)[0][1]
         else:
-            if len(out) == 0: return
-            dist = out[8]
-            if dist < 0:
-                print("aligning mesh")
+            if downward_shift:
+                print("shifitng mesh body down")
                 totalShift = 0
-                while totalShift <= 0.1 and dist < 0:
-                    pos, ori = p.getBasePositionAndOrientation(self.human.id)
-                    pos[2] += 0.01
-                    p.resetBasePositionAndOrientation(self.human.id, pos, ori)
-                    totalShift += 0.01
-                    out = p.getContactPoints(self.human.id, self.furniture.id)
-                    dist = out[8]
-            
-            out = p.getContactPoints(self.human.id, self.furniture.id)
-            dist = out[8]
-            
-            if dist < 0:
-                pos, ori = p.getBasePositionAndOrientation(self.human.id)
-                pos[2] -= 0.05 # put it back halfway
-                p.resetBasePositionAndOrientation(self.human.id, pos, ori)
-                totalShift = 0
-                while totalShift <= 0.1 and dist < 0:
-                    pos, ori = p.getBasePositionAndOrientation(self.human.id)
-                    pos[1] -= 0.01
-                    p.resetBasePositionAndOrientation(self.human.id, pos, ori)
-                    totalShift += 0.01
-                    out = p.getContactPoints(self.human.id, self.furniture.id)
-                    dist = out[8]
-            
-            out = p.getContactPoints(self.human.id, self.furniture.id)
-            dist = out[8]   
-            if dist < 0:
-                pos, ori = p.getBasePositionAndOrientation(self.human.id)
-                pos[1] += 0.05 # put it back halfway
-                p.resetBasePositionAndOrientation(self.human.id, pos, ori)     
+                while totalShift <= 0.1 and len(out) == 0:
+                        pos, ori = p.getBasePositionAndOrientation(self.human.body)
+                        copy_pos = (pos[0], pos[1], pos[2] - 0.01)
+                        p.resetBasePositionAndOrientation(self.human.body, copy_pos, ori)
+                        totalShift += 0.01
+                        out = p.getContactPoints(self.human.body, self.furniture.body)
+            else:
+                if len(out) == 0: return
+                dist = out[8]
+                if dist < 0:
+                    print("aligning mesh")
+                    totalShift = 0
+                    while totalShift <= 0.1 and dist < 0:
+                        pos, ori = p.getBasePositionAndOrientation(self.human.body)
+                        pos[2] += 0.01
+                        p.resetBasePositionAndOrientation(self.human.body, pos, ori)
+                        totalShift += 0.01
+                        out = p.getContactPoints(self.human.body, self.furniture.body)
+                        dist = out[8]
+                
+                out = p.getContactPoints(self.human.body, self.furniture.body)
+                dist = out[8]
+                
+                if dist < 0:
+                    pos, ori = p.getBasePositionAndOrientation(self.human.body)
+                    pos[2] -= 0.05 # put it back halfway
+                    p.resetBasePositionAndOrientation(self.human.body, pos, ori)
+                    totalShift = 0
+                    while totalShift <= 0.1 and dist < 0:
+                        pos, ori = p.getBasePositionAndOrientation(self.human.body)
+                        pos[1] -= 0.01
+                        p.resetBasePositionAndOrientation(self.human.body, pos, ori)
+                        totalShift += 0.01
+                        out = p.getContactPoints(self.human.body, self.furniture.body)
+                        dist = out[8]
+                
+                out = p.getContactPoints(self.human.body, self.furniture.body)
+                dist = out[8]   
+                if dist < 0:
+                    pos, ori = p.getBasePositionAndOrientation(self.human.body)
+                    pos[1] += 0.05 # put it back halfway
+                    p.resetBasePositionAndOrientation(self.human.body, pos, ori)     
         
     def set_env_camera(self, randomize=RANDOMIZE_CAMERA):
         if randomize:
-            distance_sq = 6.25 if self.furniture.furniture_type == 'stool' else 2.89
+            distance_sq = 6.25 if self.furniture.furniture_type in ['stool', 'stool2', 'couch'] else 2.89
             if self.furniture.furniture_type == 'stool2':
                 x_pos = (random.random() * 3) - 1.5
                 y_pos = math.sqrt(distance_sq - (x_pos**2))
                 self.setup_camera([x_pos, -y_pos, 1.75], [0, 0, 0.8], camera_height=1080, camera_width=1920)
+            elif self.furniture.furniture_type == 'couch':
+                x_pos = (random.random() * 3) - 1.5
+                y_pos = math.sqrt(distance_sq - (x_pos**2))
+                self.setup_camera([x_pos + 0.5, -y_pos, 1], [0.75, 0, 0.6], camera_height=1080, camera_width=1920)
             else: 
                 x_pos = (random.random() * 3) - 1.5
                 y_pos = math.sqrt(distance_sq - (x_pos**2))
                 self.setup_camera([x_pos, -y_pos, 1.2], [0, 0, 0.65], camera_height=1080, camera_width=1920)
         else: 
-            if self.furniture.furniture_type in ['stool']: self.setup_camera([0, -2, 1.5], [0, 0, 0.65], camera_height=1080, camera_width=1920) 
+            if self.furniture.furniture_type in ['stool']: self.setup_camera([0, -2, 1.5], [0, 0, 0.65], camera_height=1080, camera_width=1920)
+            elif self.furniture.furniture_type in ['couch']: self.setup_camera([0.75, -2.5, 1], [0.75, 0, 0.6], camera_height=1080, camera_width=1920)  
             elif self.furniture.furniture_type == 'stool2': self.setup_camera([0, -2, 1.75], [0, 0, 0.8], camera_height=1080, camera_width=1920) 
             else: self.setup_camera([0, -1.7, 1.2], [0, 0, 0.65], camera_height=1080, camera_width=1920)
     
@@ -422,7 +443,7 @@ class SeatedPoseEnv(AssistiveEnv):
 
         # magic happen here - now call agent.init()
         # self.build_assistive_env('diningchair')
-        self.build_assistive_env('stool2')
+        self.build_assistive_env('couch')
 
         # disable self collision before dropping on bed
         num_joints = p.getNumJoints(self.human.body, physicsClientId=self.id)
@@ -469,7 +490,7 @@ class SeatedPoseEnv(AssistiveEnv):
         
         p.removeAllUserDebugItems()
         
-        # for i in range(15): 
+        # for i in range(5): 
             # p.addUserDebugText("final pose: " + str(3 - i), [0, 0, 1.5], [1, 0, 0]) # red text
             # time.sleep(1)
             # p.removeAllUserDebugItems()
@@ -486,7 +507,7 @@ class SeatedPoseEnv(AssistiveEnv):
         # magic happen here - now call agent.init()
         smpl_data = self.assign_smplx_gender(smpl_data)
         # self.build_assistive_env('diningchair', human_angles=angs, smpl_data=smpl_data)
-        self.build_assistive_env('stool2', human_angles=angs, smpl_data=smpl_data)
+        self.build_assistive_env('couch', human_angles=angs, smpl_data=smpl_data)
         self.set_env_camera()
         # self.align_mesh()
 
@@ -501,6 +522,8 @@ class SeatedPoseEnv(AssistiveEnv):
             pos[2] = self.furniture.get_heights(set_on_ground=True)[0]  + 0.1
         elif self.furniture.furniture_type == 'wheelchair2':
             pos[2] -= 0.05
+        elif self.furniture.furniture_type == 'couch':
+            pos[1] -= 0.35
         
         orient = [0.0, 0.0, 0.0]
         orient[0] -= np.pi/4
@@ -511,6 +534,7 @@ class SeatedPoseEnv(AssistiveEnv):
         
         # check for floating human and adjust
         if self.furniture.furniture_type in ['stool', 'wheelchair2']: self.align_mesh(downward_shift=True)
+        elif self.furniture.furniture_type == 'couch': self.align_mesh(forward_shift=True)
 
         # STEP: simulation
         p.setTimeStep(1/240., physicsClientId=self.id)
@@ -521,12 +545,16 @@ class SeatedPoseEnv(AssistiveEnv):
         # RUN: sim for viewing etc.
         # print("WARNING: not writing data, please change in seated_pose_env.py reset_mesh()")
         # self.write_train_data(smpl_data, angles)
-        
-        # for i in range(15):
-        #     p.stepSimulation(physicsClientId=self.id)
-        #     keys = p.getKeyboardEvents()
-        #     if ord('q') in keys:
-        #         break
+        print("right ankle location: ", self.human.get_pos_orient(8))
+        print("left  ankle location: ", self.human.get_pos_orient(7))
+
+        # for i in range(10):
+            # p.stepSimulation(physicsClientId=self.id)
+            # keys = p.getKeyboardEvents()
+            # if ord('q') in keys:
+            #     pos, ori = p.getBasePositionAndOrientation(1)
+            #     copy_pos = (pos[0], pos[1] - 0.1, pos[2])
+            #     p.resetBasePositionAndOrientation(1, copy_pos, ori)
             # time.sleep(1)
 
         self.write_train_data(smpl_data, angles)
