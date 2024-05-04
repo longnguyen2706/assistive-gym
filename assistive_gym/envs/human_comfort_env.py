@@ -75,7 +75,7 @@ class HumanComfortEnv(AssistiveEnv):
                 return human_obs
 
             return {'robot': robot_obs, 'human': human_obs}
-        return robot_obs
+        return robot_obsdrinking
 
     def reset_human(self, is_collision):
         if not is_collision:

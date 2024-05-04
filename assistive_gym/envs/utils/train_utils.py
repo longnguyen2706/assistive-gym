@@ -842,7 +842,6 @@ def render(env_name, person_id, smpl_file, save_dir, handover_obj, robot_ik: boo
             try:
                 robot_pose = action["wrt_pelvis"]["robot"]['original']
                 robot_joint_angles = action["wrt_pelvis"]["robot_joint_angles"]
-
             except Exception as e:
                 print("no robot pose found")
 
@@ -1150,5 +1149,4 @@ def translate_bed_to_realworld(env, cord):
 
     corner = find_corner(env)
     return np.array(cord) - corner
-
 

@@ -62,8 +62,12 @@ def generate_urdfs():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Util script for human urdf generation')
+<<<<<<< HEAD
     parser.add_argument('--ref-urdf-file', default='assistive_gym/envs/assets/human/ref_mesh.urdf',
                         help='Path to reference urdf file')
+=======
+    parser.add_argument('--ref-urdf-file', default='assistive_gym/envs/assets/human/ref_mesh.urdf',  help='Path to reference urdf file')
+>>>>>>> 2473b099c011cbf60265700d449dacece1233a0a
     parser.add_argument('--person-id', default='p001', help='Person id')
     parser.add_argument('--smpl-file', default='examples/data/slp3d/p001/s01.pkl',
                         help='Path to smpl file')

@@ -7,8 +7,15 @@ from assistive_gym.mprocess_train import mp_train, mp_load
 import json
 import os
 import time
+<<<<<<< HEAD
 
 from assistive_gym.mprocess_train import mp_train, mp_read
+=======
+import pickle as pkl
+import numpy as np
+import torch
+from assistive_gym.mprocess_train import mp_train
+>>>>>>> 2473b099c011cbf60265700d449dacece1233a0a
 from assistive_gym.train import train
 import concurrent.futures
 
@@ -16,7 +23,11 @@ import concurrent.futures
 ### testing config ###
 # PERSON_IDS = ['p001', 'p002']
 # SMPL_FILES = ['s01', 's08', 's13', 's18', 's19', 's20', 's24', 's30', 's36', 's40', 's44']
+<<<<<<< HEAD
 PERSON_IDS = ['p005', 'p006', 'p007']
+=======
+PERSON_IDS = ['p000']
+>>>>>>> 2473b099c011cbf60265700d449dacece1233a0a
 SMPL_FILES = ['s01']
 # SMPL_FILES = ['s01', 's02', 's03', 's04', 's05', 's06', 's07', 's08', 's09', 's10', 's11', 's12',
 #               's16', 's17', 's18', 's19', 's20', 's21', 's22', 's23', 's24', 's25', 's26',
@@ -118,6 +129,7 @@ def get_invalid_cases():
 def do_train(config):
     p, s, o = config
     print (p, s, o)
+<<<<<<< HEAD
     try:
         train(ENV, SEED, s, p, END_EFFECTOR,  SAVE_DIR, RENDER_GUI, SIMULATE_COLLISION, ROBOT_IK, o)
         # mp_read(ENV, SEED, s, p, END_EFFECTOR,  SAVE_DIR, RENDER_GUI, SIMULATE_COLLISION, ROBOT_IK, o)
@@ -152,3 +164,36 @@ if __name__ == '__main__':
     end = time.time()
     print("Total time taken: {}".format(end - start))
 
+=======
+    mp_train(ENV, SEED, s, p, END_EFFECTOR,  SAVE_DIR, RENDER_GUI, SIMULATE_COLLISION, ROBOT_IK, o)
+    return "Done training for {} {} {}".format(p, s, o)
+
+
+if __name__ == '__main__':
+    configs = get_dynamic_configs()
+    # OPEN and PRINT: compare new pkl to regular
+    # smpl_file_test = pkl.load(open('examples/data/slp3d/p001/s00.pkl', 'rb'))
+    # smpl_file_norm = pkl.load(open('examples/data/slp3d/p001/s01.pkl', 'rb'))
+    # print("smpl_file_norm: ", smpl_file_norm['global_orient'])
+    # print("smpl_file_test: ", smpl_file_test['global_orient'])
+    # print("\n\ns00 smpl body_pose: ", smpl_file_test['body_pose'], "\njoint #: ", len(smpl_file_test['body_pose'][0])/3)
+    
+    # # APPEND: add [0, 0, 0] for pelvis, left hand, right_hand
+    # body_pose = np.append(np.array([0, 0, 0]), smpl_file_test['body_pose'][0])
+    # body_pose = np.append(body_pose, np.array([0, 0, 0, 0, 0, 0]))
+    # print("body_pose edited: ", body_pose)
+    # print("joint #: ", len(smpl_file_test['body_pose'][0])/3)
+    
+    # # WRITE: append and save edited body pose to pkl file
+    # smpl_file_test['body_pose'] = torch.from_numpy(body_pose)
+    # smpl_file_test['gloabl_orient'] = smpl_file_test['global_orient'][0]
+    # smpl_file_test['transl'] = smpl_file_test['transl'][0]
+    # # print("edited: ", smpl_file_test['gloabl_orient'])
+    # pkl.dump(smpl_file_test, open("examples/data/slp3d/p001/s0.pkl", 'wb'))
+    # input("continue?")
+    # ORIGINAL: leave unchanged
+    with concurrent.futures.ProcessPoolExecutor(max_workers=NUM_WORKERS) as executor:
+        results = executor.map(do_train, configs)
+    for num, result in enumerate(results):
+        print('Done training for {} {}'.format(num, result))
+>>>>>>> 2473b099c011cbf60265700d449dacece1233a0a
