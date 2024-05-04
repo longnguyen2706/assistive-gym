@@ -20,7 +20,7 @@ from assistive_gym.envs.utils.plot_utils import plot
 from assistive_gym.envs.utils.smpl_dict import SMPLDict
 from scipy.spatial.transform import Rotation as R
 
-from assistive_gym.envs.utils.urdf_utils import convert_aa_to_euler_quat, load_smpl, generate_urdf, SMPLData
+from assistive_gym.envs.utils.urdf_utils import  convert_aa_to_euler_quat, load_smpl, generate_urdf, SMPLData
 import kinpy as kp
 
 #######################################  Static settting ##########################################
@@ -46,7 +46,7 @@ class HumanUrdf(Agent):
     def __init__(self):
         super(HumanUrdf, self).__init__()
         # variables for assistive gym agent
-        self.controllable_joint_indices = right_arm_joint_indices
+        self.controllable_joint_indices = list(range(0, 93))
         self.controllable = True
         self.motor_forces = 1.0
         self.motor_gains = 0.005
@@ -59,6 +59,7 @@ class HumanUrdf(Agent):
 
         # will be init in self.init()
         self.chain = None
+        self.all_joint_indices = list(range(0, 93))
 
     def set_urdf_path(self, urdf_path):
         self.urdf_path = urdf_path
@@ -117,15 +118,16 @@ class HumanUrdf(Agent):
         smpl_angles, _ = convert_aa_to_euler_quat(pose[smpl_dict.get_pose_ids(smpl_joint_name)])
 
         robot_joints = self.human_dict.get_joint_ids(robot_joint_name)
-        print ("joint name: ", smpl_joint_name, " angles: ", smpl_angles*180/np.pi)
+        # print ("joint name: ", smpl_joint_name, " angles: ", smpl_angles*180/np.pi)
         self.set_joint_angles(robot_joints, smpl_angles, use_limits=use_limits)
-
+    
     def set_global_orientation(self, smpl_data: SMPLData, pos):
         set_global_orientation(self.body, smpl_data.global_orient, pos)
 
     def reset_controllable_joints(self, end_effector):
-        if end_effector not in ['left_hand', 'right_hand']:
+        if end_effector not in ['left_hand', 'right_hand', 'all']:
             raise ValueError("end_effector must be either 'left_hand' or 'right_hand'")
+        self.end_effector = end_effector
         self.controllable_joint_indices = left_arm_joint_indices if end_effector == 'left_hand' else right_arm_joint_indices
         self.controllable_joint_lower_limits = np.array([self.lower_limits[i] for i in self.controllable_joint_indices])
         self.controllable_joint_upper_limits = np.array([self.upper_limits[i] for i in self.controllable_joint_indices])
@@ -171,6 +173,7 @@ class HumanUrdf(Agent):
         plot(mean_evolution, "Mean Evolution", "Iteration", "Mean Evolution")
 
     def init(self, physics_id, np_random):
+        print("urdf path: ", self.urdf_path)
         self.body = p.loadURDF(self.urdf_path, [0, 0, 0],
                                flags=p.URDF_USE_SELF_COLLISION,
                                useFixedBase=False)
@@ -184,6 +187,7 @@ class HumanUrdf(Agent):
 
         # enable force torque sensor
         for i in self.controllable_joint_indices:
+            # print ("enabling force torque sensor for joint: ", i, self.body, physics_id)
             p.enableJointForceTorqueSensor(self.body, i, enableSensor=True, physicsClientId=physics_id)
 
         super(HumanUrdf, self).init(self.body, physics_id, np_random)
@@ -309,7 +313,36 @@ class HumanUrdf(Agent):
         for _ in range(5):  # 5 is the number of skip steps
             p.stepSimulation(physicsClientId=self.id)
 
+    def align_chair(self):
+        p.removeAllUserDebugItems()
+        norm = [0, 0, 1] # want no z variation
+        lh_pos, lh_orient = self.get_ee_pos_orient("left_hip")
+        rh_pos, rh_orient = self.get_ee_pos_orient("right_hip")
 
+        lh_rot = np.array(p.getMatrixFromQuaternion(lh_orient))
+        lh_dir = lh_rot.reshape(3, 3)[:, 1]
+
+        rh_rot = np.array(p.getMatrixFromQuaternion(rh_orient))
+        rh_dir = rh_rot.reshape(3, 3)[:, 1]
+
+        # lines for debugging
+        p.addUserDebugLine(lh_pos, lh_dir, [0, 1, 0]) # green
+        p.addUserDebugLine(rh_pos, rh_dir, [1, 0, 0]) # red
+
+        # remove x component
+        lh_dir[0] = 0
+        rh_dir[0] = 0
+
+        # normalize
+        lh_dir = lh_dir / np.linalg.norm(lh_dir)
+        rh_dir = rh_dir / np.linalg.norm(rh_dir)
+        
+        # find and return the smaller of the two angles (this will be the x-rotation to align with the chair seat)
+        l_ang = np.arccos(np.dot(norm, lh_dir))
+        r_ang = np.arccos(np.dot(norm, rh_dir))
+        return min((l_ang, r_ang)) - np.pi/2 # hips should be 90 deg off from the chair base
+    
+    
     def get_reba_score(self, end_effector="right_hand"):
         human_dict = HumanUrdfDict()
         rebaScore = RebaScore()
@@ -376,7 +409,6 @@ class HumanUrdf(Agent):
         wrist_orientation = p.getLinkState(self.body, wrist_ind)[1]
         array = p.getEulerFromQuaternion(wrist_orientation)
         return array[2]
-
     
     def get_eyeline_offset(self, end_effector):
         fov = self.get_fov()
@@ -421,7 +453,6 @@ class HumanUrdf(Agent):
         # the hand in a certain direction or change how we model the cone of vision
 
         return False
-
 
     def get_fov(self, l=0.25):
         # casts field of view from head 0.5m outward to define a line of sight -- will check that 0.5m is reasonable
@@ -472,6 +503,33 @@ class HumanUrdf(Agent):
             return 0
             # return abs(0.5 * (hand - center)) # TRY LATER: add a slight bias toward the center
         return min(hand - end_r[0], hand - end_l[0])
+
+    def visibility(self, end_effector):
+        # inspired by [] - may have to offset 90deg due to straight = perp to the ground
+        head_pos, head_or = self.get_ee_pos_orient("head")
+        rotation = np.array(p.getMatrixFromQuaternion(head_or))
+        head_dir = rotation.reshape(3, 3)[:, 2]
+        hand_pos, _ = self.get_ee_pos_orient(end_effector)
+        x_obj_dir = np.array([- head_pos[0] + hand_pos[0], - head_pos[1] + hand_pos[1], - head_pos[2] + hand_pos[2]])
+        # for debugging
+        end_head_pos = np.array(head_pos) + (np.array(head_dir) * 0.25)
+        # print("head pos: ", head_pos, "   head end pos: ", end_head_pos, " head_dir: ", head_dir, "\nend effector: ", end_effector, "   hand_pos: ", hand_pos, "   hand_dir: ", x_obj_dir)
+        p.addUserDebugLine(head_pos, end_head_pos, [1, 0, 0], lineWidth=2.0) # red head orientation vector
+        p.addUserDebugLine(head_pos, hand_pos, [0, 1, 0], lineWidth=2.0) # green head to hand vec
+
+        head_dir = np.array(head_dir) / np.linalg.norm(head_dir)
+        x_obj_dir = np.array(x_obj_dir) / np.linalg.norm(x_obj_dir)
+        print("\n############\nend effector: ", end_effector, "\nhead_dir: ", head_dir)
+        print("object dir: ", x_obj_dir)
+
+        # not including orientation of object as of now
+        vis = np.arccos(np.dot(head_dir, x_obj_dir))
+
+        # attempting a different type of return
+        diff = head_dir - x_obj_dir # both have already been normalized
+        print("mag of difference: ", np.linalg.norm(diff))
+        # typically return abs(vis)
+        return np.linalg.norm(diff)
 
     
     def rotate_3d(self, point, axis, angle_degrees):
@@ -622,8 +680,10 @@ class HumanUrdf(Agent):
                 collision_pairs.update(check_collision(self.body, env_body))
         else:
             joint_indices = self.human_dict.get_real_link_indices(end_effector)
+            # print("joint_indices: ", joint_indices)
             for env_body in body_ids:
                 pairs = check_collision(self.body, env_body)
+                # print ("pairs: ", pairs)
                 for pair in pairs:
                     if  pair[0] in joint_indices or pair[1] in joint_indices:
                         collision_pairs.add( pair)

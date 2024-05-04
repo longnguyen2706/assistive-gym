@@ -2,6 +2,8 @@ import time
 
 import numpy as np
 import pybullet as p
+
+from assistive_gym.envs.utils.debug_utils import timing
 from .agent import Agent
 from ..utils.human_utils import check_collision
 from scipy.spatial.transform import Rotation as R
@@ -123,6 +125,7 @@ class Robot(Agent):
         self.set_joint_angles(self.right_arm_joint_indices if right else self.left_arm_joint_indices, np.array(best_ik_angles))
         return False, np.array(best_ik_angles)
 
+    #@timing
     def ik_random_restarts2(self, right, target_pos, target_orient, max_iterations=1000, max_ik_random_restarts=40, success_threshold=0.03, randomize_limits=False, collision_objects=None, tool = None):
         '''
 
@@ -139,9 +142,10 @@ class Robot(Agent):
         if target_orient is not None and len(target_orient) < 4:
             target_orient = self.get_quaternion(target_orient)
 
-        best_ik_angles = None
-        best_ik_distance = 0
+        best_ik_angles = []
+        best_ik_distance = float('inf')
         best_collisions = []
+        best_gripper_orient = []
         for r in range(max_ik_random_restarts):
             target_joint_angles = self.ik(self.right_end_effector if right else self.left_end_effector, target_pos,
                                           target_orient,
@@ -157,7 +161,9 @@ class Robot(Agent):
             tool_collisions = []
             if tool is not None:
                 tool.reset_pos_orient()
-                tool_collisions = self.detect_tool_collisions(tool, collision_objects)  # TODO: refdctor
+                tool_collision_objects = collision_objects.copy()
+                tool_collision_objects[self] = None  # Need to add the robot to the collision objects to check for collisions
+                tool_collisions = self.detect_tool_collisions(tool, tool_collision_objects)  # TODO: refdctor
 
             robot_collisions = self.detect_robot_collisions(collision_objects)
 
@@ -174,30 +180,31 @@ class Robot(Agent):
                         # not valid
                         has_collision = True
                         break
-                if has_collision:
-                   continue
+                # if has_collision: # TODO: revise
+                #    continue
 
                 gripper_pos, gripper_orient = self.get_pos_orient(
                     self.right_end_effector if right else self.left_end_effector)
-                if np.linalg.norm(target_pos - np.array(gripper_pos)) < success_threshold and (
+                if not has_collision and np.linalg.norm(target_pos - np.array(gripper_pos)) < success_threshold and (
                         target_orient is None or np.linalg.norm(
                         target_orient - np.array(gripper_orient)) < success_threshold or np.isclose(
                         np.linalg.norm(target_orient - np.array(gripper_orient)), 2, atol=success_threshold)):
                     self.set_joint_angles(self.right_arm_joint_indices if right else self.left_arm_joint_indices,
                                           target_joint_angles)
-                    return True, np.array(target_joint_angles),  collisions, np.linalg.norm(target_pos - np.array(gripper_pos))
+                    return True, np.array(target_joint_angles),  collisions, np.linalg.norm(target_pos - np.array(gripper_pos)), gripper_orient
             else:
                 # print("Failed to find IK solution")
                 self.set_joint_angles(self.right_arm_joint_indices if right else self.left_arm_joint_indices,
                                       target_joint_angles)
             # update the 'best' value for all the cases we don't have a valid solution
-            if best_ik_angles is None or np.linalg.norm(target_pos - np.array(gripper_pos)) < best_ik_distance:
+            if len(best_ik_angles) ==0 or np.linalg.norm(target_pos - np.array(gripper_pos)) < best_ik_distance:
                 best_ik_angles = target_joint_angles
                 best_ik_distance = np.linalg.norm(target_pos - np.array(gripper_pos))
                 best_collisions = collisions
+                best_gripper_orient = gripper_orient
         # print (best_ik_angles, np.array(best_ik_angles).shape)
         # self.set_joint_angles(self.right_arm_joint_indices if right else self.left_arm_joint_indices, np.array(best_ik_angles))
-        return False, np.array(best_ik_angles), best_collisions, best_ik_distance
+        return False, np.array(best_ik_angles), best_collisions, best_ik_distance, best_gripper_orient
 
     def detect_tool_collisions(self, tool, collision_objects):
 
@@ -327,6 +334,7 @@ class Robot(Agent):
         return best_position, best_orientation, best_start_joint_poses
 
     #TODO: for the bed, robot seems to run under, so need to find a better way to model. Might be a different bed/ using AABB
+    #@timing
     def position_robot_toc2(self, base_pos, arms, start_pos_orient, target_pos_orients, human, base_euler_orient=np.zeros(3),
                            max_ik_iterations=200, max_ik_random_restarts=1, randomize_limits=False, attempts=100,
                            jlwki_restarts=1, check_env_collisions=False, right_side=True,
@@ -351,7 +359,7 @@ class Robot(Agent):
             # Randomize base position and orientation
             random_pos = np.array(
                 [self.np_random.uniform(-random_position if right_side else 0, 0 if right_side else random_position),
-                 self.np_random.uniform(-random_position, random_position), 0])
+                 self.np_random.uniform(-random_position*2, random_position*2), 0])
             random_orientation = self.get_quaternion([base_euler_orient[0], base_euler_orient[1],
                                                       base_euler_orient[2] + np.deg2rad(
                                                           self.np_random.uniform(-random_rotation, random_rotation))])
@@ -385,7 +393,7 @@ class Robot(Agent):
                         # Reset state in case anything was perturbed from the last iteration
                         human.set_joint_angles(human.controllable_joint_indices, human_angles)
                         # Find IK solution
-                        success, joint_positions_q_star, collisions, _= self.ik_random_restarts2(right, target_pos, target_orient,
+                        success, joint_positions_q_star, collisions, _, _= self.ik_random_restarts2(right, target_pos, target_orient,
                                                                                   max_iterations=max_ik_iterations,
                                                                                   max_ik_random_restarts=max_ik_random_restarts,
                                                                                   success_threshold=0.02,
@@ -393,7 +401,7 @@ class Robot(Agent):
                                                                                    collision_objects=collision_objects,
                                                                                    tool = tool)
                         if not success:
-                            continue
+                            continue  # TODO: revise
                         _, motor_positions, _, _ = self.get_motor_joint_states()
                         joint_velocities = [0.0] * len(motor_positions)
                         joint_accelerations = [0.0] * len(motor_positions)
@@ -442,8 +450,8 @@ class Robot(Agent):
 
             human.set_joint_angles(human.controllable_joint_indices, human_angles)
 
-        if best_position is None:
-            return None, None, None
+        if best_position is None: # TODO: beter handling
+            return np.array(base_pos)+ random_pos, random_orientation, start_joint_poses # changed from None, None, None
         # Reset state in case anything was perturbed
         human.set_joint_angles(human.controllable_joint_indices, human_angles)
 
@@ -453,7 +461,7 @@ class Robot(Agent):
         for i, arm in enumerate(arms):
             self.set_joint_angles(self.right_arm_joint_indices if arm == 'right' else self.left_arm_joint_indices,
                                   best_start_joint_poses[i])
-        return best_position, best_orientation, best_start_joint_poses
+        return np.array(base_pos)+ best_position, best_orientation, best_start_joint_poses
 
     def joint_limited_weighting(self, q, lower_limits, upper_limits):
         phi = 0.5

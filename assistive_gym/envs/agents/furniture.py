@@ -8,6 +8,7 @@ class Furniture(Agent):
         super(Furniture, self).__init__()
 
     def init(self, furniture_type, directory, id, np_random, wheelchair_mounted=False):
+        self.furniture_type = furniture_type
         if 'wheelchair' in furniture_type:
             left = False
             if 'left' in furniture_type:
@@ -36,6 +37,14 @@ class Furniture(Agent):
             furniture = p.loadURDF(os.path.join(directory, 'dinnerware', 'bowl.urdf'), basePosition=bowl_pos, baseOrientation=[0, 0, 0, 1], physicsClientId=id)
         elif furniture_type == 'nightstand':
             furniture = p.loadURDF(os.path.join(directory, 'nightstand', 'nightstand.urdf'), basePosition=np.array([-0.9, 0.7, 0]), baseOrientation=[0, 0, 0, 1], physicsClientId=id)
+        elif furniture_type == 'diningchair':
+            furniture = p.loadURDF(os.path.join(directory, 'diningchair', 'chair.urdf'), basePosition=np.array([0, 0, 0]), baseOrientation=[0, 0, 0, 1], physicsClientId=id)
+        elif furniture_type == 'wheelchair2':
+            furniture = p.loadURDF(os.path.join(directory, 'wheelchair2', 'wheelchair.urdf'), basePosition=np.array([0, 0, 0]), baseOrientation=[0, 0, 0, 1], physicsClientId=id)
+        elif furniture_type == 'stool':
+            furniture = p.loadURDF(os.path.join(directory, 'stool', 'stool.urdf'), basePosition=np.array([0, 0, 0]), baseOrientation=[1, 0, 0, 1], physicsClientId=id)
+        elif furniture_type == 'stool2':
+            furniture = p.loadURDF(os.path.join(directory, 'stool2', 'barStool.urdf'), basePosition=np.array([0, 0, 0]), baseOrientation=[1, 0, 0, 1], physicsClientId=id)
         else:
             furniture = None
 

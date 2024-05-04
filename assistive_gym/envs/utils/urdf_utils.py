@@ -25,6 +25,16 @@ class SMPLData:
         self.betas = betas
         self.global_orient = global_orient
         self.transl = transl
+        self.gender = None
+        self.smpl_file = None
+        self.r_hand_pose = None
+        self.l_hand_pose = None
+        self.r_eye_pose = None
+        self.l_eye_pose = None
+        self.jaw_pose = None
+        self.expression = None
+        self.person_id = None
+        self.pose_id = None
 
 def get_template_smpl_path(gender):
     if not gender:
@@ -38,6 +48,10 @@ def load_smpl(filepath) -> SMPLData:
 
         if len(data["body_pose"]) == 69: # we need to extends the dimension of the smpl_data['pose'] from 69 to 72 to match the urdf
             data["body_pose"] = np.concatenate((np.array([0.0, 0.0, 0.0]), data["body_pose"]))
+        else: 
+            data["body_pose"] = np.array(data["body_pose"])
+    if "transl" not in data:
+        data["transl"] = None
     smpl_data: SMPLData = SMPLData(data["body_pose"], data["betas"], data["global_orient"], data["transl"])
     return smpl_data
 
@@ -194,11 +208,15 @@ JOINT_SETTING = {
 
 
 #################################### URDF Generation ##################################################################
-def generate_human_mesh(physic_id, gender, ref_urdf_path, out_urdf_folder, smpl_path):
-    smpl_data = load_smpl(smpl_path)
+def generate_human_mesh(physic_id, gender, ref_urdf_path, out_urdf_folder, smpl_path=None, smpl_data=None):
+    if smpl_data is None:
+        if smpl_path is None: raise Exception("smpl_data or path is required")
+        else: smpl_data = load_smpl(smpl_path)
 
 
     out_geom_folder = get_urdf_mesh_folderpath(out_urdf_folder)
+
+
     template_smpl_path = get_template_smpl_path(gender)
     hull_dict, joint_pos_dict, _ = generate_geom(template_smpl_path, smpl_data, out_geom_folder)
     out_urdf_file = get_urdf_filepath(out_urdf_folder)
@@ -244,6 +262,68 @@ def euler_convert_np(q, from_seq='XYZ', to_seq='XYZ'):
 
 def deg_to_rad(deg):
     return deg * np.pi / 180.0
+
+def get_aa_from_euler(euler):
+    euler = torch.tensor(euler)
+    rot_mat = (t3d.euler_angles_to_matrix(euler, "XYZ")).numpy()
+    
+    trace = np.trace(rot_mat)
+    angle = np.arccos((trace - 1)/2.0)
+    eigvals, eigvec = np.linalg.eig(rot_mat)
+    idx = np.argmax(eigvals)
+    axis = eigvec[:, idx].real
+
+    axis /= np.linalg.norm(axis)
+    aa = np.multiply(axis, angle)
+
+    return aa
+
+def batch_rot2aa(
+    Rs: torch.Tensor, epsilon: float = 1e-7
+) -> torch.Tensor:
+    """
+    Rs is B x 3 x 3
+    void cMathUtil::RotMatToAxisAngle(const tMatrix& mat, tVector& out_axis,
+                                      double& out_theta)
+    {
+        double c = 0.5 * (mat(0, 0) + mat(1, 1) + mat(2, 2) - 1);
+        c = cMathUtil::Clamp(c, -1.0, 1.0);
+
+        out_theta = std::acos(c);
+
+        if (std::abs(out_theta) < 0.00001)
+        {
+            out_axis = tVector(0, 0, 1, 0);
+        }
+        else
+        {
+            double m21 = mat(2, 1) - mat(1, 2);
+            double m02 = mat(0, 2) - mat(2, 0);
+            double m10 = mat(1, 0) - mat(0, 1);
+            double denom = std::sqrt(m21 * m21 + m02 * m02 + m10 * m10);
+            out_axis[0] = m21 / denom;
+            out_axis[1] = m02 / denom;
+            out_axis[2] = m10 / denom;
+            out_axis[3] = 0;
+        }
+    }
+    """
+
+    cos = 0.5 * (torch.einsum('bii->b', [Rs]) - 1)
+    cos = torch.clamp(cos, -1 + epsilon, 1 - epsilon)
+
+    theta = torch.acos(cos)
+
+    m21 = Rs[:, 2, 1] - Rs[:, 1, 2]
+    m02 = Rs[:, 0, 2] - Rs[:, 2, 0]
+    m10 = Rs[:, 1, 0] - Rs[:, 0, 1]
+    denom = torch.sqrt(m21 * m21 + m02 * m02 + m10 * m10 + epsilon)
+
+    axis0 = torch.where(torch.abs(theta) < 0.00001, m21, m21 / denom)
+    axis1 = torch.where(torch.abs(theta) < 0.00001, m02, m02 / denom)
+    axis2 = torch.where(torch.abs(theta) < 0.00001, m10, m10 / denom)
+
+    return theta.unsqueeze(1) * torch.stack([axis0, axis1, axis2], 1)
 
 #################################### Joint & Link Properties ###########################################################
 def mul_tuple(t, multiplier):

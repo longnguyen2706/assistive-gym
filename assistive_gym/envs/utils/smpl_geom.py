@@ -104,8 +104,8 @@ def generate_geom(default_model_path, smpl_data= None, outdir=None):
 
 def generate_geom2(default_model_path, smpl_data= None, outdir=None):
     smpl_parser = SMPL_Parser(default_model_path)
-    pose = torch.zeros((1, 72)) # reset the model to default pose
-
+    # pose = torch.zeros((1, 72)) # reset the model to default pose
+    pose=smpl_data.body_pose
     # print("smpl data body pose: ", smpl_data.body_pose)
     if len(smpl_data.body_pose) == 69:
         body_pose = np.array([0, 0, 0])
