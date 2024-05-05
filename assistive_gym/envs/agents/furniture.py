@@ -47,6 +47,8 @@ class Furniture(Agent):
             furniture = p.loadURDF(os.path.join(directory, 'stool2', 'barStool.urdf'), basePosition=np.array([0, 0, 0]), baseOrientation=[1, 0, 0, 1], physicsClientId=id)
         elif furniture_type == 'couch':
             furniture = p.loadURDF(os.path.join(directory, 'couch', 'couch.urdf'), basePosition=np.array([0, 0, 0]), baseOrientation=[1, 0, 0, 1], physicsClientId=id)
+        elif furniture_type == 'couch2':
+            furniture = p.loadURDF(os.path.join(directory, 'couch2', 'couch2.urdf'), basePosition=np.array([0, 0, 0]), baseOrientation=[1, 0, 0, 1], physicsClientId=id)    
         else:
             furniture = None
 
